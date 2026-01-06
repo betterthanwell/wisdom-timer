@@ -18,22 +18,35 @@ class AudioManager {
   // Initialize audio elements (call this on user interaction to satisfy browser autoplay policy)
   async init() {
     try {
-      // Create bell audio elements
+      // Create and preload bell audio elements FIRST (they're critical and small)
       this.bells.start = new Audio(AUDIO_SOURCES.bells.start);
       this.bells.interval = new Audio(AUDIO_SOURCES.bells.interval);
       this.bells.end = new Audio(AUDIO_SOURCES.bells.end);
 
-      // Set bell volumes
-      Object.values(this.bells).forEach(audio => {
+      // Set bell volumes and preload
+      const bellLoadPromises = Object.values(this.bells).map(audio => {
         if (audio) {
           audio.volume = this.bellVolume;
+          audio.preload = 'auto';
+          audio.load(); // Force loading
+          // Return a promise that resolves when audio can play
+          return new Promise((resolve) => {
+            audio.addEventListener('canplaythrough', () => resolve(), { once: true });
+            // Timeout fallback in case loading takes too long
+            setTimeout(resolve, 2000);
+          });
         }
+        return Promise.resolve();
       });
 
-      // Create ambient audio element
+      // Wait for bells to load before creating ambient audio
+      await Promise.all(bellLoadPromises);
+
+      // Create ambient audio element AFTER bells are ready
       this.ambientAudio = new Audio();
       this.ambientAudio.loop = true;
       this.ambientAudio.volume = 0; // Start at 0 for fade in
+      this.ambientAudio.preload = 'auto';
 
       this.isInitialized = true;
       return true;
