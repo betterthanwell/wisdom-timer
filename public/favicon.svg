@@ -2,16 +2,9 @@
   <!-- Background circle -->
   <circle cx="50" cy="50" r="48" fill="#F97316" opacity="0.95"/>
 
-  <!-- Zen enso circle (incomplete circle representing enlightenment) -->
-  <circle cx="50" cy="50" r="35" fill="none" stroke="#FDE68A" stroke-width="6"
-          stroke-linecap="round" stroke-dasharray="200 20" opacity="0.9"/>
+  <!-- Complete meditation circle -->
+  <circle cx="50" cy="50" r="35" fill="none" stroke="#FDE68A" stroke-width="6" opacity="0.9"/>
 
   <!-- Inner meditation symbol -->
   <circle cx="50" cy="50" r="8" fill="#FDE68A" opacity="0.8"/>
-
-  <!-- Subtle timer dots (like clock markers) -->
-  <circle cx="50" cy="22" r="2.5" fill="#FDE68A" opacity="0.6"/>
-  <circle cx="78" cy="50" r="2.5" fill="#FDE68A" opacity="0.6"/>
-  <circle cx="50" cy="78" r="2.5" fill="#FDE68A" opacity="0.6"/>
-  <circle cx="22" cy="50" r="2.5" fill="#FDE68A" opacity="0.6"/>
 </svg>
