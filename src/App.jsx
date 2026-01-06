@@ -135,7 +135,7 @@ function MeditationTimerApp() {
         </h1>
 
         {/* Main Timer Card */}
-        <GlassCard strong className="p-8 md:p-12">
+        <GlassCard strong className="p-8 md:p-12 !mt-2">
           <div className="space-y-8">
             {/* Timer Display */}
             <TimerDisplay
