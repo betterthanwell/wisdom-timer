@@ -172,12 +172,16 @@ MIT License - feel free to use this project for personal or commercial purposes.
 All audio files used in this project are licensed under **CC0 1.0 Universal (Public Domain)**. While attribution is not legally required, we credit the following creators:
 
 ### Bell Sounds
-- **Start & End Bells** - "Lovely Meditation Bell" by A Clock in the Kingdom
-  Source: [Internet Archive](https://archive.org/details/LovelyMeditationBell)
+- **Start Bell** - "Singing Bell Hit 2" by ryancacophony
+  Source: [Freesound.org](https://freesound.org/people/ryancacophony/sounds/202017/)
   License: CC0 1.0 Universal (Public Domain)
 
 - **Interval Bell (Woodblock)** - "Wood Block Hit" by thomasjaunism
   Source: [Freesound.org](https://freesound.org/people/thomasjaunism/sounds/218460/)
+  License: CC0 1.0 Universal (Public Domain)
+
+- **End Bell** - "Lovely Meditation Bell" by A Clock in the Kingdom
+  Source: [Internet Archive](https://archive.org/details/LovelyMeditationBell)
   License: CC0 1.0 Universal (Public Domain)
 
 ### Ambient Sounds
