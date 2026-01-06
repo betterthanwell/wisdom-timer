@@ -180,8 +180,8 @@ All audio files used in this project are licensed under **CC0 1.0 Universal (Pub
   Source: [Freesound.org](https://freesound.org/people/thomasjaunism/sounds/218460/)
   License: CC0 1.0 Universal (Public Domain)
 
-- **End Bell** - "Lovely Meditation Bell" by A Clock in the Kingdom
-  Source: [Internet Archive](https://archive.org/details/LovelyMeditationBell)
+- **End Bell** - "Gling" by manuelsound
+  Source: [Freesound.org](https://freesound.org/people/manuelsound/sounds/829480/)
   License: CC0 1.0 Universal (Public Domain)
 
 ### Ambient Sounds
