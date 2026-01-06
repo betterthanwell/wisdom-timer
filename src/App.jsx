@@ -124,7 +124,13 @@ function MeditationTimerApp() {
     <div className="min-h-screen bg-gradient-to-br from-[#FDE68A] to-[#F97316] flex items-center justify-center p-4">
       <div className="w-full max-w-2xl space-y-6">
         {/* Logo */}
-        <h1 className="text-4xl md:text-5xl font-bold text-white text-center drop-shadow-lg">
+        <h1
+          className="text-4xl md:text-5xl font-bold text-white text-center"
+          style={{
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.4), 0 0 30px rgba(255, 255, 255, 0.2)',
+            WebkitTextStroke: '1px rgba(0, 0, 0, 0.1)'
+          }}
+        >
           Wisdom Timer
         </h1>
 
