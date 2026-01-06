@@ -65,54 +65,6 @@ public/
         └── forest.mp3           # Forest sounds
 ```
 
-### 🎵 Where to Find Free Audio
-
-#### 1. Freesound.org (Recommended for Bells)
-- **URL**: https://freesound.org
-- **License**: CC0 (Public Domain) or CC-BY (attribution required)
-- **Search terms**: "tibetan bell", "singing bowl", "meditation bell", "zen chime"
-- **Best for**: High-quality meditation bells and chimes
-
-#### 2. Pixabay Audio Library
-- **URL**: https://pixabay.com/sound-effects/
-- **License**: Free for commercial use (no attribution required)
-- **Search terms**: "zen bell", "gong", "rain ambience", "ocean waves", "forest sounds"
-- **Best for**: Both bells and nature sounds
-
-#### 3. FreePD.com
-- **URL**: https://freepd.com
-- **License**: Public Domain
-- **Best for**: Ambient background sounds (rain, ocean, nature)
-
-#### 4. BBC Sound Effects Archive
-- **URL**: https://sound-effects.bbcrewind.co.uk/
-- **License**: RemArc License (check for your use case)
-- **Best for**: Professional nature recordings
-
-### 🎚️ Audio Processing Tips
-
-Use **Audacity** (free, open-source audio editor) to prepare your audio files:
-
-**For Bells:**
-1. Keep them short (1-5 seconds)
-2. Trim any silence at start/end
-3. Normalize volume to -3dB
-4. Export as MP3 (128-192kbps)
-
-**For Ambient Sounds:**
-1. Create 10-15 minute seamless loops
-2. Add fade in/out at loop points (0.5-1 second)
-3. Normalize volume to -3dB
-4. Export as MP3 (128kbps is sufficient)
-5. Keep file sizes reasonable (<2MB each)
-
-**Quick Audacity Workflow:**
-1. Import audio → Select All (Cmd/Ctrl+A)
-2. Effect → Normalize (-3dB)
-3. For loops: Select last 2 seconds → Effect → Fade Out
-4. Select first 2 seconds → Effect → Fade In
-5. File → Export → Export as MP3
-
 ## ⌨️ Keyboard Shortcuts
 
 - **Space** - Play/Pause timer
