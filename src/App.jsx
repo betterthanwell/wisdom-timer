@@ -157,7 +157,7 @@ function MeditationTimerApp() {
         </GlassCard>
 
         {/* Settings Card */}
-        <GlassCard className="p-6 mt-8">
+        <GlassCard className="p-6 !mt-6">
           <div className="space-y-6">
             {/* Settings Header */}
             <div className="flex items-center gap-2 text-white">
