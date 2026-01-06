@@ -2,6 +2,8 @@
 
 A beautiful, modern meditation timer with ambient sounds, interval bells, and a stunning gradient UI.
 
+**🌐 Live Demo: [https://wisdom-timer-online.vercel.app/](https://wisdom-timer-online.vercel.app/)**
+
 ![Meditation Timer](https://img.shields.io/badge/React-19.2.0-blue) ![Vite](https://img.shields.io/badge/Vite-7.3.0-purple) ![Tailwind](https://img.shields.io/badge/Tailwind-4.1.18-cyan)
 
 ## ✨ Features
@@ -44,11 +46,11 @@ npm run build
 npm run preview
 ```
 
-## 🔊 Adding Audio Files
+## 🔊 Audio Files
 
-The app will work without audio files, but to enable the bells and ambient sounds, you'll need to add 7 audio files to the `public/audio` directory:
+The app includes the following audio files in the `public/audio` directory:
 
-### Required Audio Files Structure
+### Audio Files Structure
 
 ```
 public/
@@ -60,8 +62,7 @@ public/
     └── ambient/
         ├── rain.mp3             # Rain ambience
         ├── ocean.mp3            # Ocean waves
-        ├── forest.mp3           # Forest sounds
-        └── white-noise.mp3      # White noise
+        └── forest.mp3           # Forest sounds
 ```
 
 ### 🎵 Where to Find Free Audio
@@ -216,14 +217,25 @@ MIT License - feel free to use this project for personal or commercial purposes.
 
 ## 🙏 Audio Attribution
 
-If you use CC-BY licensed audio, add attribution to your app. Example:
+All audio files used in this project are licensed under **CC0 1.0 Universal (Public Domain)**. While attribution is not legally required, we credit the following creators:
 
-```html
-<footer>
-  <p>Bell sound "Tibetan Singing Bowl" by [Author Name] (CC-BY 3.0)</p>
-  <p>Rain sound "Gentle Rain" by [Author Name] (CC-BY 4.0)</p>
-</footer>
-```
+### Bell Sounds
+- **Meditation Bell** - "Lovely Meditation Bell" by A Clock in the Kingdom
+  Source: [Internet Archive](https://archive.org/details/LovelyMeditationBell)
+  License: CC0 1.0 Universal (Public Domain)
+
+### Ambient Sounds
+- **Rain** - "Light Gentle Rain" by Naturthusiast
+  Source: [Internet Archive](https://archive.org/details/naturesounds-soundtheraphy/Light+Gentle+Rain.mp3)
+  License: CC0 1.0 Universal (Public Domain)
+
+- **Ocean Waves** - "Birds With Ocean Waves on the Beach" by Naturthusiast
+  Source: [Internet Archive](https://archive.org/details/naturesounds-soundtheraphy/Birds+With+Ocean+Waves+on+the+Beach.mp3)
+  License: CC0 1.0 Universal (Public Domain)
+
+- **Forest** - "Relaxing Nature Sounds - Birdsong Sound" by Naturthusiast
+  Source: [Internet Archive](https://archive.org/details/naturesounds-soundtheraphy/Relaxing+Nature+Sounds+-+Birdsong+Sound.mp3)
+  License: CC0 1.0 Universal (Public Domain)
 
 ## 🤝 Contributing
 
