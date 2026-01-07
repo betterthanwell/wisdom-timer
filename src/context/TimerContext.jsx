@@ -16,8 +16,8 @@ const ActionTypes = {
 
 // Initial state
 const initialState = {
-  duration: 600, // 10 minutes default
-  presetDurations: [600, 1800, 2700, 3600], // 10, 30, 45, 60 minutes
+  duration: 1800, // 30 minutes default
+  presetDurations: [1800, 2700, 3600, 5400], // 30, 45, 60, 90 minutes
   intervalBellsEnabled: false,
   intervalDuration: 300, // 5 minutes
   selectedAmbient: null,
