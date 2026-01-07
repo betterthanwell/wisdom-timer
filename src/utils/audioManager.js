@@ -1,5 +1,8 @@
 import { AUDIO_SOURCES } from '../constants/audioSources';
 
+// Tiny silent MP3 (base64) - approximately 0.1 seconds of silence
+const SILENT_MP3 = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwmHAAAAAAD/+1DEAAAIAANIAAAAQAAAaQAAAAQAAANIAAAAQAAAaQAAAARMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU=';
+
 class AudioManager {
   constructor() {
     this.bells = {
@@ -14,8 +17,6 @@ class AudioManager {
     this.ambientVolume = 0.5;
     this.isInitialized = false;
     this.fadeInterval = null;
-    this.isSilentPlaying = false;
-    this.audioContext = null;
   }
 
   // Initialize audio elements (call this on user interaction to satisfy browser autoplay policy)
@@ -51,152 +52,11 @@ class AudioManager {
       this.ambientAudio.volume = 0; // Start at 0 for fade in
       this.ambientAudio.preload = 'auto';
 
-      // Try to setup background audio features (optional - don't block if it fails)
-      try {
-        // Create AudioContext for Web Audio API (better background support)
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-        // Resume AudioContext if suspended (required on iOS)
-        if (this.audioContext.state === 'suspended') {
-          await this.audioContext.resume();
-        }
-
-        // Create silent audio for keeping audio session alive on iOS
-        this.silentAudio = this.createSilentAudio();
-
-        // Setup Media Session API for lock screen controls
-        this.setupMediaSession();
-      } catch (bgError) {
-        console.warn('Background audio features not available:', bgError.message);
-        // Continue without background features - basic audio will still work
-      }
-
       this.isInitialized = true;
       return true;
     } catch (error) {
       console.error('Failed to initialize audio:', error);
       return false;
-    }
-  }
-
-  // Create a silent audio element that loops to keep audio session alive
-  createSilentAudio() {
-    // Create a very short silent audio using a data URI
-    // This is a minimal valid MP3 file that's essentially silent
-    const silentAudio = new Audio();
-    silentAudio.loop = true;
-    silentAudio.volume = 0.01; // Near-silent but not zero (some browsers ignore zero volume)
-
-    // Generate silent audio using AudioContext
-    if (this.audioContext) {
-      const oscillator = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
-      gainNode.gain.value = 0.001; // Nearly silent
-      oscillator.connect(gainNode);
-      gainNode.connect(this.audioContext.destination);
-      oscillator.frequency.value = 0; // No audible frequency
-      this.silentOscillator = oscillator;
-      this.silentGainNode = gainNode;
-    }
-
-    return silentAudio;
-  }
-
-  // Setup Media Session API for lock screen integration
-  setupMediaSession() {
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: 'Meditation Timer',
-        artist: 'Wisdom Timer',
-        album: 'Meditation Session',
-      });
-
-      // Handle media session actions
-      navigator.mediaSession.setActionHandler('play', () => {
-        // Resume audio if paused - this will be handled by the app
-        this.resumeAudioSession();
-      });
-
-      navigator.mediaSession.setActionHandler('pause', () => {
-        // Pause audio - this will be handled by the app
-      });
-    }
-  }
-
-  // Update media session metadata with timer info
-  updateMediaSession(title, timeRemaining) {
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: title || 'Meditation Timer',
-        artist: timeRemaining ? `${Math.floor(timeRemaining / 60)}:${String(timeRemaining % 60).padStart(2, '0')} remaining` : 'Wisdom Timer',
-        album: 'Meditation Session',
-      });
-      navigator.mediaSession.playbackState = 'playing';
-    }
-  }
-
-  // Start silent audio to keep audio session alive (for locked screen)
-  async startSilentAudio() {
-    if (this.isSilentPlaying || !this.audioContext) return;
-
-    try {
-      // Resume AudioContext if suspended
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-      }
-
-      // Start oscillator-based silent audio
-      if (this.silentOscillator && !this.isSilentPlaying) {
-        this.silentOscillator.start();
-        this.isSilentPlaying = true;
-      }
-
-      // Update media session to indicate playing
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.playbackState = 'playing';
-      }
-    } catch (error) {
-      // Oscillator may already be started, create a new one
-      try {
-        this.silentOscillator = this.audioContext.createOscillator();
-        this.silentGainNode = this.audioContext.createGain();
-        this.silentGainNode.gain.value = 0.001;
-        this.silentOscillator.connect(this.silentGainNode);
-        this.silentGainNode.connect(this.audioContext.destination);
-        this.silentOscillator.frequency.value = 0;
-        this.silentOscillator.start();
-        this.isSilentPlaying = true;
-      } catch (innerError) {
-        console.warn('Could not start silent audio:', innerError.message);
-      }
-    }
-  }
-
-  // Stop silent audio
-  stopSilentAudio() {
-    if (!this.isSilentPlaying) return;
-
-    try {
-      if (this.silentOscillator) {
-        this.silentOscillator.stop();
-        this.silentOscillator.disconnect();
-      }
-    } catch (error) {
-      // Oscillator may already be stopped
-    }
-
-    this.isSilentPlaying = false;
-
-    // Update media session
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.playbackState = 'paused';
-    }
-  }
-
-  // Resume audio session (called from media session controls)
-  resumeAudioSession() {
-    if (this.audioContext && this.audioContext.state === 'suspended') {
-      this.audioContext.resume();
     }
   }
 
@@ -214,11 +74,6 @@ class AudioManager {
     }
 
     try {
-      // Ensure AudioContext is active (important for iOS background playback)
-      if (this.audioContext && this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-      }
-
       // Clone the audio to allow overlapping bells
       const bellClone = bell.cloneNode();
       bellClone.volume = this.bellVolume;
@@ -378,19 +233,55 @@ class AudioManager {
       this.ambientAudio.pause();
       this.ambientAudio = null;
     }
-    // Stop silent audio
     this.stopSilentAudio();
-
-    // Close AudioContext
-    if (this.audioContext) {
-      this.audioContext.close();
-      this.audioContext = null;
-    }
-
     Object.keys(this.bells).forEach(key => {
       this.bells[key] = null;
     });
     this.isInitialized = false;
+  }
+
+  // Setup Media Session API for lock screen display (call when timer starts)
+  setupMediaSession(title, timeRemaining) {
+    if (!('mediaSession' in navigator)) return;
+
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: title || 'Meditation Timer',
+        artist: timeRemaining
+          ? `${Math.floor(timeRemaining / 60)}:${String(timeRemaining % 60).padStart(2, '0')} remaining`
+          : 'Wisdom Timer',
+        album: 'Meditation Session',
+      });
+      navigator.mediaSession.playbackState = 'playing';
+    } catch (e) {
+      // Media Session API not fully supported, ignore
+    }
+  }
+
+  // Start silent audio to keep audio session alive (for iOS locked screen)
+  startSilentAudio() {
+    if (this.silentAudio) return; // Already playing
+
+    try {
+      this.silentAudio = new Audio(SILENT_MP3);
+      this.silentAudio.loop = true;
+      this.silentAudio.volume = 0.01; // Near-silent
+      this.silentAudio.play().catch(() => {
+        // Silent audio failed to play, not critical
+        this.silentAudio = null;
+      });
+    } catch (e) {
+      // Failed to create silent audio, not critical
+      this.silentAudio = null;
+    }
+  }
+
+  // Stop silent audio
+  stopSilentAudio() {
+    if (this.silentAudio) {
+      this.silentAudio.pause();
+      this.silentAudio = null;
+    }
   }
 }
 

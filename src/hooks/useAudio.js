@@ -69,20 +69,19 @@ export const useAudio = () => {
     audioManager.setAmbientVolume(volume);
   }, []);
 
-  // Start silent audio for background playback (iOS locked screen support)
-  const startSilentAudio = useCallback(async () => {
-    if (!isInitialized) return;
-    await audioManager.startSilentAudio();
-  }, [isInitialized]);
+  // Setup/update media session for lock screen (iOS)
+  const setupMediaSession = useCallback((title, timeRemaining) => {
+    audioManager.setupMediaSession(title, timeRemaining);
+  }, []);
+
+  // Start silent audio to keep audio session alive (iOS locked screen)
+  const startSilentAudio = useCallback(() => {
+    audioManager.startSilentAudio();
+  }, []);
 
   // Stop silent audio
   const stopSilentAudio = useCallback(() => {
     audioManager.stopSilentAudio();
-  }, []);
-
-  // Update media session metadata (for lock screen display)
-  const updateMediaSession = useCallback((title, timeRemaining) => {
-    audioManager.updateMediaSession(title, timeRemaining);
   }, []);
 
   return {
@@ -96,8 +95,8 @@ export const useAudio = () => {
     stopAmbient,
     setBellVolume,
     setAmbientVolume,
+    setupMediaSession,
     startSilentAudio,
     stopSilentAudio,
-    updateMediaSession,
   };
 };
