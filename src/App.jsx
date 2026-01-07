@@ -3,6 +3,7 @@ import { Settings as SettingsIcon } from 'lucide-react';
 import { TimerProvider, useTimerContext } from './context/TimerContext';
 import { useTimer } from './hooks/useTimer';
 import { useAudio } from './hooks/useAudio';
+import { useWakeLock } from './hooks/useWakeLock';
 import { GlassCard } from './components/UI/GlassCard';
 import { Button } from './components/UI/Button';
 import { TimerDisplay } from './components/Timer/TimerDisplay';
@@ -12,6 +13,7 @@ import { DurationSelector } from './components/Settings/DurationSelector';
 import { IntervalSettings } from './components/Settings/IntervalSettings';
 import { AmbientSoundSelector } from './components/Settings/AmbientSoundSelector';
 import { VolumeControls } from './components/Settings/VolumeControls';
+import { ScreenSettings } from './components/Settings/ScreenSettings';
 
 function MeditationTimerApp() {
   const { state, actions } = useTimerContext();
@@ -23,8 +25,17 @@ function MeditationTimerApp() {
     stopAmbient,
     setBellVolume,
     setAmbientVolume,
+    startSilentAudio,
+    stopSilentAudio,
+    updateMediaSession,
     isInitialized,
   } = useAudio();
+
+  const {
+    isSupported: wakeLockSupported,
+    requestWakeLock,
+    releaseWakeLock,
+  } = useWakeLock();
 
   // Track if this is the first start (vs resume from pause)
   const isFirstStartRef = useRef(true);
@@ -36,16 +47,36 @@ function MeditationTimerApp() {
   const handleTimerStart = () => {
     playBell('start');
     // Only start ambient on first start, not on resume
-    if (isFirstStartRef.current && state.selectedAmbient) {
-      playAmbient(state.selectedAmbient);
+    if (isFirstStartRef.current) {
+      if (state.selectedAmbient) {
+        playAmbient(state.selectedAmbient);
+      } else {
+        // No ambient sound selected - start silent audio to keep audio session alive
+        // This enables the ending bell to play even when screen is locked
+        startSilentAudio();
+      }
+      // Update media session for lock screen display
+      updateMediaSession('Meditation in Progress', state.duration);
     }
     isFirstStartRef.current = false;
+
+    // Request wake lock if enabled
+    if (state.keepScreenAwake) {
+      requestWakeLock();
+    }
   };
 
   const handleTimerComplete = () => {
     playBell('end');
     stopAmbient();
+    stopSilentAudio();
     isFirstStartRef.current = true; // Reset for next session
+
+    // Release wake lock
+    releaseWakeLock();
+
+    // Update media session
+    updateMediaSession('Meditation Complete', 0);
   };
 
   const handleIntervalBell = () => {
@@ -56,6 +87,7 @@ function MeditationTimerApp() {
   const handlePause = () => {
     timer.pause();
     pauseAmbient();
+    // Note: We don't stop silent audio on pause to maintain audio session
   };
 
   // Handle start/resume
@@ -65,12 +97,18 @@ function MeditationTimerApp() {
     if (!isFirstStartRef.current && state.selectedAmbient) {
       resumeAmbient();
     }
+    // Re-request wake lock if enabled (may have been released on visibility change)
+    if (state.keepScreenAwake) {
+      requestWakeLock();
+    }
   };
 
   // Handle reset - stop ambient sound
   const handleReset = () => {
     timer.reset();
     stopAmbient();
+    stopSilentAudio();
+    releaseWakeLock();
     isFirstStartRef.current = true; // Reset for next session
   };
 
@@ -115,6 +153,13 @@ function MeditationTimerApp() {
       setShowBrightBg(false);
     }
   }, [timer.isComplete]);
+
+  // Update media session with remaining time (for lock screen display)
+  useEffect(() => {
+    if (timer.isRunning && isInitialized) {
+      updateMediaSession('Meditation in Progress', timer.timeRemaining);
+    }
+  }, [timer.timeRemaining, timer.isRunning, isInitialized, updateMediaSession]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -246,6 +291,14 @@ function MeditationTimerApp() {
                 setAmbientVolume(vol);
               }}
               disabled={false}
+            />
+
+            {/* Screen & Background Audio Settings */}
+            <ScreenSettings
+              keepScreenAwake={state.keepScreenAwake}
+              onKeepScreenAwakeChange={actions.setKeepScreenAwake}
+              wakeLockSupported={wakeLockSupported}
+              disabled={timer.isRunning}
             />
 
             {/* Audio Initialization Notice */}
