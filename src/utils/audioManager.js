@@ -21,14 +21,6 @@ class AudioManager {
   // Initialize audio elements (call this on user interaction to satisfy browser autoplay policy)
   async init() {
     try {
-      // Create AudioContext for Web Audio API (better background support)
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-      // Resume AudioContext if suspended (required on iOS)
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-      }
-
       // Create and preload bell audio elements FIRST (they're critical and small)
       this.bells.start = new Audio(AUDIO_SOURCES.bells.start);
       this.bells.interval = new Audio(AUDIO_SOURCES.bells.interval);
@@ -59,11 +51,25 @@ class AudioManager {
       this.ambientAudio.volume = 0; // Start at 0 for fade in
       this.ambientAudio.preload = 'auto';
 
-      // Create silent audio for keeping audio session alive on iOS
-      this.silentAudio = this.createSilentAudio();
+      // Try to setup background audio features (optional - don't block if it fails)
+      try {
+        // Create AudioContext for Web Audio API (better background support)
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-      // Setup Media Session API for lock screen controls
-      this.setupMediaSession();
+        // Resume AudioContext if suspended (required on iOS)
+        if (this.audioContext.state === 'suspended') {
+          await this.audioContext.resume();
+        }
+
+        // Create silent audio for keeping audio session alive on iOS
+        this.silentAudio = this.createSilentAudio();
+
+        // Setup Media Session API for lock screen controls
+        this.setupMediaSession();
+      } catch (bgError) {
+        console.warn('Background audio features not available:', bgError.message);
+        // Continue without background features - basic audio will still work
+      }
 
       this.isInitialized = true;
       return true;
@@ -131,11 +137,11 @@ class AudioManager {
 
   // Start silent audio to keep audio session alive (for locked screen)
   async startSilentAudio() {
-    if (this.isSilentPlaying) return;
+    if (this.isSilentPlaying || !this.audioContext) return;
 
     try {
       // Resume AudioContext if suspended
-      if (this.audioContext && this.audioContext.state === 'suspended') {
+      if (this.audioContext.state === 'suspended') {
         await this.audioContext.resume();
       }
 
@@ -151,7 +157,7 @@ class AudioManager {
       }
     } catch (error) {
       // Oscillator may already be started, create a new one
-      if (this.audioContext) {
+      try {
         this.silentOscillator = this.audioContext.createOscillator();
         this.silentGainNode = this.audioContext.createGain();
         this.silentGainNode.gain.value = 0.001;
@@ -160,6 +166,8 @@ class AudioManager {
         this.silentOscillator.frequency.value = 0;
         this.silentOscillator.start();
         this.isSilentPlaying = true;
+      } catch (innerError) {
+        console.warn('Could not start silent audio:', innerError.message);
       }
     }
   }
