@@ -2,23 +2,25 @@
 
 A beautiful, modern meditation timer with ambient sounds, interval bells, and a stunning gradient UI.
 
-**🌐 Live Demo: [https://wisdom-timer-online.vercel.app/](https://wisdom-timer-online.vercel.app/)**
+**🌐 Live Demo: [https://wisdomtimer.app/](https://wisdomtimer.app/)**
 
 ![Meditation Timer](https://img.shields.io/badge/React-19.2.0-blue) ![Vite](https://img.shields.io/badge/Vite-7.3.0-purple) ![Tailwind](https://img.shields.io/badge/Tailwind-4.1.18-cyan)
 
 ## ✨ Features
 
-✅ **Custom timer** - Specify any duration with minute/second inputs
-✅ **Preset buttons** - Quick access to 10, 30, 45, 60 minute sessions
-✅ **Start bell** - Welcoming tone when meditation begins
-✅ **End bell** - Completion tone when timer finishes
-✅ **Interval bells** - Optional periodic reminders during meditation
-✅ **Ambient sounds** - Rain, ocean, forest, white-noise (seamless looping)
+✅ **Custom timer** - Specify any duration with minute/second inputs (default: 45 minutes)
+✅ **Preset buttons** - Quick access to 30, 45, 60, 90 minute sessions
+✅ **Singing bowl start bell** - Beautiful Tibetan singing bowl when meditation begins
+✅ **Woodblock interval bell** - Gentle knock-on-wood for periodic reminders
+✅ **Gling end bell** - Pure resonant tone (35.5s sustain) when meditation completes
+✅ **Enlightenment burst** - Stunning 9-second sunburst animation on completion with three pulsing waves
+✅ **Ambient sounds** - Rain, ocean, forest (seamless looping)
 ✅ **Volume controls** - Separate controls for bells and ambient sounds
+✅ **Keyboard shortcuts** - Space to play/pause, R to reset
 ✅ **Settings persistence** - Automatically saves your preferences
 ✅ **Responsive design** - Beautiful on mobile, tablet, and desktop
-✅ **Modern UI** - Gradient background with glass-morphism effects
-✅ **Smooth animations** - Polished interactions and transitions
+✅ **Modern UI** - Warm gradient background with glass-morphism effects
+✅ **Smart audio loading** - Bells preload before ambient sounds for instant playback
 
 ## 🚀 Getting Started
 
@@ -131,7 +133,8 @@ Edit `src/context/TimerContext.jsx`:
 
 ```javascript
 const initialState = {
-  presetDurations: [600, 1800, 2700, 3600], // 10, 30, 45, 60 min
+  duration: 2700, // 45 minutes default
+  presetDurations: [1800, 2700, 3600, 5400], // 30, 45, 60, 90 min
   // Change to your preferred durations (in seconds)
 };
 ```
