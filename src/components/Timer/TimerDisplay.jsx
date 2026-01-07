@@ -12,19 +12,33 @@ export const TimerDisplay = ({ timeRemaining, progress, isRunning, isComplete })
     <>
       {/* Enlightenment Burst Animation */}
       {isComplete && (
-        <div
-          className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center"
-          style={{
-            animation: 'enlightenmentBurst 3s ease-out forwards'
-          }}
-        >
+        <>
+          {/* Darkening overlay for contrast */}
           <div
-            className="w-full h-full"
+            className="fixed inset-0 pointer-events-none z-50"
             style={{
-              background: 'radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(253, 230, 138, 0.8) 30%, rgba(251, 191, 36, 0.4) 60%, transparent 100%)',
+              background: 'rgba(0, 0, 0, 0.7)',
+              animation: 'enlightenmentDarken 9s ease-in-out forwards'
             }}
           />
-        </div>
+          {/* Light burst */}
+          <div
+            className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center"
+            style={{
+              animation: 'enlightenmentBurst 9s ease-out forwards'
+            }}
+          >
+            <div
+              className="aspect-square"
+              style={{
+                width: '200vh',
+                height: '200vh',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(253, 230, 138, 0.8) 30%, rgba(251, 191, 36, 0.4) 60%, transparent 100%)',
+              }}
+            />
+          </div>
+        </>
       )}
 
       <div className="flex flex-col items-center justify-center">

@@ -19,20 +19,29 @@
 }
 
 @keyframes enlightenmentBurst {
-  0% {
+  0%, 100% {
     opacity: 0;
     transform: scale(0);
   }
-  30% {
+  10%, 43%, 76% {
     opacity: 1;
+    transform: scale(2);
   }
-  70% {
-    opacity: 1;
+  23%, 56%, 89% {
+    opacity: 0;
     transform: scale(3);
   }
-  100% {
+}
+
+@keyframes enlightenmentDarken {
+  0%, 100% {
     opacity: 0;
-    transform: scale(3.5);
+  }
+  5%, 38%, 71% {
+    opacity: 0.4;
+  }
+  15%, 48%, 81% {
+    opacity: 0;
   }
 }
 
