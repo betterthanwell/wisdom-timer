@@ -158,7 +158,7 @@ function MeditationTimerApp() {
             WebkitTextStroke: '1px rgba(0, 0, 0, 0.1)'
           }}
         >
-          Wisdom Timer
+          {showBrightBg ? 'Wisdom Time!' : 'Wisdom Timer'}
         </h1>
 
         {/* Main Timer Card */}
