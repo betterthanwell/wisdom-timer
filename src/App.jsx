@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { TimerProvider, useTimerContext } from './context/TimerContext';
 import { useTimer } from './hooks/useTimer';
@@ -28,6 +28,9 @@ function MeditationTimerApp() {
 
   // Track if this is the first start (vs resume from pause)
   const isFirstStartRef = useRef(true);
+
+  // Track bright background state after completion
+  const [showBrightBg, setShowBrightBg] = useState(false);
 
   // Callbacks for timer events
   const handleTimerStart = () => {
@@ -95,6 +98,24 @@ function MeditationTimerApp() {
     }
   }, [state.duration]);
 
+  // Manage bright background after completion
+  useEffect(() => {
+    if (timer.isComplete) {
+      // Show bright background during/after burst
+      setShowBrightBg(true);
+
+      // Fade back to original after 9-second burst completes
+      const fadeBackTimeout = setTimeout(() => {
+        setShowBrightBg(false);
+      }, 9000); // Match enlightenment burst duration
+
+      return () => clearTimeout(fadeBackTimeout);
+    } else {
+      // Reset immediately when timer restarts
+      setShowBrightBg(false);
+    }
+  }, [timer.isComplete]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -121,7 +142,13 @@ function MeditationTimerApp() {
   }, [timer.isRunning, handleStart, handlePause, handleReset]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FDE68A] to-[#F97316] flex items-center justify-center p-4">
+    <div
+      className={`min-h-screen flex items-center justify-center p-4 transition-all duration-[3000ms] ease-in-out ${
+        showBrightBg
+          ? 'bg-gradient-to-br from-[#FFFBEB] via-[#FEF3C7] to-[#FDE047]'
+          : 'bg-gradient-to-br from-[#FDE68A] to-[#F97316]'
+      }`}
+    >
       <div className="w-full max-w-2xl space-y-6">
         {/* Logo */}
         <h1
