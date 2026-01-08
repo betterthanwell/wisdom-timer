@@ -4,6 +4,7 @@ import { TimerProvider, useTimerContext } from './context/TimerContext';
 import { useTimer } from './hooks/useTimer';
 import { useAudio } from './hooks/useAudio';
 import { useWakeLock } from './hooks/useWakeLock';
+import { audioManager } from './utils/audioManager';
 import { GlassCard } from './components/UI/GlassCard';
 import { Button } from './components/UI/Button';
 import { TimerDisplay } from './components/Timer/TimerDisplay';
@@ -45,11 +46,12 @@ function MeditationTimerApp() {
   const [showBrightBg, setShowBrightBg] = useState(false);
 
   // Handle timer completion (called by both JS timer and background audio timer)
+  // Uses audioManager directly to avoid stale closure issues with useRef
   const handleTimerComplete = useRef(() => {
-    playBell('end');
-    stopAmbient();
-    stopSilentAudio();
-    clearBackgroundTimer();
+    audioManager.playBell('end');
+    audioManager.stopAmbient();
+    audioManager.stopSilentAudio();
+    audioManager.clearBackgroundTimer();
     releaseWakeLock();
     isFirstStartRef.current = true; // Reset for next session
   }).current;
@@ -61,16 +63,10 @@ function MeditationTimerApp() {
     if (isFirstStartRef.current) {
       if (state.selectedAmbient) {
         playAmbient(state.selectedAmbient);
-      } else {
-        // No ambient selected - start silent audio to keep audio session alive
-        // This allows bells to play even when screen is locked on iOS
-        startSilentAudio();
+        // Set up background timer for iOS locked screen support
+        setBackgroundTimer(state.duration, handleTimerComplete);
       }
       setupMediaSession('Meditation in Progress', state.duration);
-
-      // Set up background timer for iOS locked screen support
-      // This uses audio timeupdate events which keep firing even when JS is suspended
-      setBackgroundTimer(state.duration, handleTimerComplete);
 
       // Request wake lock if enabled
       if (state.keepScreenOn) {
