@@ -80,17 +80,24 @@ class AudioManager {
     }
 
     try {
-      // Clone the audio to allow overlapping bells
-      const bellClone = bell.cloneNode();
-      bellClone.volume = this.bellVolume;
-      await bellClone.play();
-
-      // Clean up after playing
-      bellClone.addEventListener('ended', () => {
-        bellClone.remove();
-      });
+      // On iOS, cloned audio elements may not have autoplay permission
+      // So we reuse the original element, resetting it if needed
+      bell.currentTime = 0;
+      bell.volume = this.bellVolume;
+      await bell.play();
     } catch (error) {
       console.error(`Failed to play bell "${type}":`, error);
+      // Fallback: try with a clone (works on desktop)
+      try {
+        const bellClone = bell.cloneNode();
+        bellClone.volume = this.bellVolume;
+        await bellClone.play();
+        bellClone.addEventListener('ended', () => {
+          bellClone.remove();
+        });
+      } catch (cloneError) {
+        console.error(`Fallback also failed for bell "${type}":`, cloneError);
+      }
     }
   }
 
