@@ -70,14 +70,15 @@ class AudioManager {
     }
 
     try {
-      // Clone the audio to allow overlapping bells
-      const bellClone = bell.cloneNode();
-      bellClone.volume = this.bellVolume;
-      await bellClone.play();
+      // Create a new Audio element instead of cloning to ensure volume is applied correctly
+      const bellAudio = new Audio(bell.src);
+      bellAudio.volume = this.bellVolume;
+      await bellAudio.play();
 
       // Clean up after playing
-      bellClone.addEventListener('ended', () => {
-        bellClone.remove();
+      bellAudio.addEventListener('ended', () => {
+        bellAudio.src = '';
+        bellAudio.remove();
       });
     } catch (error) {
       console.error(`Failed to play bell "${type}":`, error);
