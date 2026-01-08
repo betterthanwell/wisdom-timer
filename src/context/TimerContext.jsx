@@ -11,6 +11,7 @@ const ActionTypes = {
   SET_AMBIENT_SOUND: 'SET_AMBIENT_SOUND',
   SET_AMBIENT_VOLUME: 'SET_AMBIENT_VOLUME',
   SET_BELL_VOLUME: 'SET_BELL_VOLUME',
+  SET_KEEP_SCREEN_ON: 'SET_KEEP_SCREEN_ON',
   LOAD_SETTINGS: 'LOAD_SETTINGS',
 };
 
@@ -23,6 +24,7 @@ const initialState = {
   selectedAmbient: null,
   ambientVolume: 0.5,
   bellVolume: 0.7,
+  keepScreenOn: false,
 };
 
 // Reducer
@@ -45,6 +47,9 @@ const timerReducer = (state, action) => {
 
     case ActionTypes.SET_BELL_VOLUME:
       return { ...state, bellVolume: action.payload };
+
+    case ActionTypes.SET_KEEP_SCREEN_ON:
+      return { ...state, keepScreenOn: action.payload };
 
     case ActionTypes.LOAD_SETTINGS:
       return { ...state, ...action.payload };
@@ -75,6 +80,7 @@ export const TimerProvider = ({ children }) => {
       selectedAmbient: state.selectedAmbient,
       ambientVolume: state.ambientVolume,
       bellVolume: state.bellVolume,
+      keepScreenOn: state.keepScreenOn,
     });
   }, [
     state.duration,
@@ -83,6 +89,7 @@ export const TimerProvider = ({ children }) => {
     state.selectedAmbient,
     state.ambientVolume,
     state.bellVolume,
+    state.keepScreenOn,
     setSavedSettings,
   ]);
 
@@ -94,6 +101,7 @@ export const TimerProvider = ({ children }) => {
     setAmbientSound: (sound) => dispatch({ type: ActionTypes.SET_AMBIENT_SOUND, payload: sound }),
     setAmbientVolume: (volume) => dispatch({ type: ActionTypes.SET_AMBIENT_VOLUME, payload: volume }),
     setBellVolume: (volume) => dispatch({ type: ActionTypes.SET_BELL_VOLUME, payload: volume }),
+    setKeepScreenOn: (enabled) => dispatch({ type: ActionTypes.SET_KEEP_SCREEN_ON, payload: enabled }),
   };
 
   return (

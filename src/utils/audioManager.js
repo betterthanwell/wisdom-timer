@@ -272,16 +272,14 @@ class AudioManager {
   }
 
   // Start silent audio to keep audio session alive (for iOS locked screen)
-  // Uses an actual audio file at near-zero volume for better iOS compatibility
   startSilentAudio() {
     if (this.silentAudio) return; // Already playing
 
     try {
-      // Use a real audio file (rain) at near-zero volume - more reliable on iOS
-      // than a short data URI which iOS might not treat as valid media
-      this.silentAudio = new Audio(AUDIO_SOURCES.ambient.rain.path);
+      // Use the silent MP3 data URI - truly silent, no ambient sound
+      this.silentAudio = new Audio(SILENT_MP3);
       this.silentAudio.loop = true;
-      this.silentAudio.volume = 0.001; // Essentially inaudible
+      this.silentAudio.volume = 0.01;
 
       // Add timeupdate listener for background timer checking
       this.silentAudio.addEventListener('timeupdate', this.backgroundCheckBound);

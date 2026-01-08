@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Settings as SettingsIcon } from 'lucide-react';
+import { Settings as SettingsIcon, Smartphone } from 'lucide-react';
 import { TimerProvider, useTimerContext } from './context/TimerContext';
 import { useTimer } from './hooks/useTimer';
 import { useAudio } from './hooks/useAudio';
+import { useWakeLock } from './hooks/useWakeLock';
 import { GlassCard } from './components/UI/GlassCard';
 import { Button } from './components/UI/Button';
 import { TimerDisplay } from './components/Timer/TimerDisplay';
@@ -31,6 +32,12 @@ function MeditationTimerApp() {
     isInitialized,
   } = useAudio();
 
+  const {
+    isSupported: wakeLockSupported,
+    requestWakeLock,
+    releaseWakeLock,
+  } = useWakeLock();
+
   // Track if this is the first start (vs resume from pause)
   const isFirstStartRef = useRef(true);
 
@@ -43,6 +50,7 @@ function MeditationTimerApp() {
     stopAmbient();
     stopSilentAudio();
     clearBackgroundTimer();
+    releaseWakeLock();
     isFirstStartRef.current = true; // Reset for next session
   }).current;
 
@@ -63,6 +71,11 @@ function MeditationTimerApp() {
       // Set up background timer for iOS locked screen support
       // This uses audio timeupdate events which keep firing even when JS is suspended
       setBackgroundTimer(state.duration, handleTimerComplete);
+
+      // Request wake lock if enabled
+      if (state.keepScreenOn) {
+        requestWakeLock();
+      }
     }
     isFirstStartRef.current = false;
   };
@@ -97,6 +110,7 @@ function MeditationTimerApp() {
     stopAmbient();
     stopSilentAudio();
     clearBackgroundTimer();
+    releaseWakeLock();
     isFirstStartRef.current = true; // Reset for next session
   };
 
@@ -280,6 +294,29 @@ function MeditationTimerApp() {
               }}
               disabled={false}
             />
+
+            {/* Keep Screen On Toggle */}
+            {wakeLockSupported && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-white/70" />
+                  <span className="text-sm font-medium text-white">Keep Screen On</span>
+                </div>
+                <button
+                  onClick={() => actions.setKeepScreenOn(!state.keepScreenOn)}
+                  disabled={timer.isRunning}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    state.keepScreenOn ? 'bg-white/30' : 'bg-white/10'
+                  } ${timer.isRunning ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      state.keepScreenOn ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
 
             {/* Audio Initialization Notice */}
             {!isInitialized && (
