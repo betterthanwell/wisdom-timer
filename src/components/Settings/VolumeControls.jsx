@@ -26,6 +26,7 @@ export const VolumeControls = ({
             max="100"
             value={bellVolume * 100}
             onChange={(e) => onBellVolumeChange(parseInt(e.target.value) / 100)}
+            onInput={(e) => onBellVolumeChange(parseInt(e.target.value) / 100)}
             disabled={disabled}
             className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer slider"
             style={{
@@ -52,6 +53,7 @@ export const VolumeControls = ({
             max="100"
             value={ambientVolume * 100}
             onChange={(e) => onAmbientVolumeChange(parseInt(e.target.value) / 100)}
+            onInput={(e) => onAmbientVolumeChange(parseInt(e.target.value) / 100)}
             disabled={disabled}
             className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer slider"
             style={{
