@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
+import { createContext, useContext, useReducer, useEffect, useMemo, useRef } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const TimerContext = createContext();
@@ -58,13 +58,15 @@ const timerReducer = (state, action) => {
 export const TimerProvider = ({ children }) => {
   const [state, dispatch] = useReducer(timerReducer, initialState);
   const [savedSettings, setSavedSettings] = useLocalStorage('wisdomTimerSettings', {});
+  const hasLoadedRef = useRef(false);
 
   // Load settings from localStorage on mount
   useEffect(() => {
-    if (Object.keys(savedSettings).length > 0) {
+    if (!hasLoadedRef.current && Object.keys(savedSettings).length > 0) {
       dispatch({ type: ActionTypes.LOAD_SETTINGS, payload: savedSettings });
+      hasLoadedRef.current = true;
     }
-  }, []);
+  }, [savedSettings]);
 
   // Save settings to localStorage when state changes
   useEffect(() => {
@@ -86,15 +88,15 @@ export const TimerProvider = ({ children }) => {
     setSavedSettings,
   ]);
 
-  // Actions
-  const actions = {
+  // Actions - memoized to prevent unnecessary re-renders
+  const actions = useMemo(() => ({
     setDuration: (duration) => dispatch({ type: ActionTypes.SET_DURATION, payload: duration }),
     setIntervalBells: (enabled) => dispatch({ type: ActionTypes.SET_INTERVAL_BELLS, payload: enabled }),
     setIntervalDuration: (duration) => dispatch({ type: ActionTypes.SET_INTERVAL_DURATION, payload: duration }),
     setAmbientSound: (sound) => dispatch({ type: ActionTypes.SET_AMBIENT_SOUND, payload: sound }),
     setAmbientVolume: (volume) => dispatch({ type: ActionTypes.SET_AMBIENT_VOLUME, payload: volume }),
     setBellVolume: (volume) => dispatch({ type: ActionTypes.SET_BELL_VOLUME, payload: volume }),
-  };
+  }), [dispatch]);
 
   return (
     <TimerContext.Provider value={{ state, actions }}>
@@ -104,6 +106,7 @@ export const TimerProvider = ({ children }) => {
 };
 
 // Custom hook to use the timer context
+// eslint-disable-next-line react-refresh/only-export-components -- Standard pattern for context hooks
 export const useTimerContext = () => {
   const context = useContext(TimerContext);
   if (!context) {
