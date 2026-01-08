@@ -1,24 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export const DurationSelector = ({ duration, onChange, disabled = false }) => {
   const [minutes, setMinutes] = useState(Math.floor(duration / 60));
   const [seconds, setSeconds] = useState(duration % 60);
+  const debounceTimeoutRef = useRef(null);
 
   useEffect(() => {
     setMinutes(Math.floor(duration / 60));
     setSeconds(duration % 60);
   }, [duration]);
 
+  // Debounced onChange to prevent excessive context updates and localStorage writes
+  useEffect(() => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    debounceTimeoutRef.current = setTimeout(() => {
+      const totalSeconds = minutes * 60 + seconds;
+      onChange(totalSeconds);
+    }, 500); // Wait 500ms after user stops typing
+
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [minutes, seconds, onChange]);
+
   const handleMinutesChange = (e) => {
     const value = Math.max(0, Math.min(99, parseInt(e.target.value) || 0));
     setMinutes(value);
-    onChange(value * 60 + seconds);
   };
 
   const handleSecondsChange = (e) => {
     const value = Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
     setSeconds(value);
-    onChange(minutes * 60 + value);
   };
 
   return (
