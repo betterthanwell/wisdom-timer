@@ -22,6 +22,7 @@ class AudioManager {
     this.expectedEndTime = null;
     this.onTimerComplete = null;
     this.backgroundCheckBound = this.checkBackgroundTimer.bind(this);
+    this.backgroundCheckInterval = null;
   }
 
   // Initialize audio elements (call this on user interaction to satisfy browser autoplay policy)
@@ -298,15 +299,22 @@ class AudioManager {
   }
 
   // Set up background timer that works even when iOS screen is locked
-  // This uses the audio element's timeupdate event which keeps firing
+  // Uses multiple mechanisms: timeupdate events AND polling interval
   setBackgroundTimer(durationSeconds, onComplete) {
     this.expectedEndTime = Date.now() + (durationSeconds * 1000);
     this.onTimerComplete = onComplete;
 
-    // Also add listener to ambient audio if playing
+    // Method 1: Add listener to ambient audio if playing
     if (this.ambientAudio) {
       this.ambientAudio.addEventListener('timeupdate', this.backgroundCheckBound);
     }
+
+    // Method 2: Also use a polling interval as backup
+    // This will catch the completion when JS resumes after being suspended
+    if (this.backgroundCheckInterval) {
+      clearInterval(this.backgroundCheckInterval);
+    }
+    this.backgroundCheckInterval = setInterval(this.backgroundCheckBound, 1000);
   }
 
   // Clear background timer
@@ -318,15 +326,34 @@ class AudioManager {
     if (this.ambientAudio) {
       this.ambientAudio.removeEventListener('timeupdate', this.backgroundCheckBound);
     }
+
+    // Clear polling interval
+    if (this.backgroundCheckInterval) {
+      clearInterval(this.backgroundCheckInterval);
+      this.backgroundCheckInterval = null;
+    }
   }
 
   // Check if timer has completed (called from audio timeupdate events)
   checkBackgroundTimer() {
-    if (this.expectedEndTime && this.onTimerComplete) {
+    if (this.expectedEndTime) {
       if (Date.now() >= this.expectedEndTime) {
-        const callback = this.onTimerComplete;
-        this.clearBackgroundTimer();
-        callback();
+        // Clear the expected time first to prevent multiple triggers
+        this.expectedEndTime = null;
+
+        // Directly play the end bell - don't rely on callbacks
+        this.playBell('end');
+
+        // Call the callback if provided (for UI state updates)
+        if (this.onTimerComplete) {
+          const callback = this.onTimerComplete;
+          this.onTimerComplete = null;
+          try {
+            callback();
+          } catch (e) {
+            console.warn('Background timer callback error:', e);
+          }
+        }
       }
     }
   }
