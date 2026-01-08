@@ -84,6 +84,16 @@ export const useAudio = () => {
     audioManager.stopSilentAudio();
   }, []);
 
+  // Set up background timer (uses audio timeupdate for iOS locked screen support)
+  const setBackgroundTimer = useCallback((durationSeconds, onComplete) => {
+    audioManager.setBackgroundTimer(durationSeconds, onComplete);
+  }, []);
+
+  // Clear background timer
+  const clearBackgroundTimer = useCallback(() => {
+    audioManager.clearBackgroundTimer();
+  }, []);
+
   return {
     isInitialized,
     isPlaying,
@@ -98,5 +108,7 @@ export const useAudio = () => {
     setupMediaSession,
     startSilentAudio,
     stopSilentAudio,
+    setBackgroundTimer,
+    clearBackgroundTimer,
   };
 };

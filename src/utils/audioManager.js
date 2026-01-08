@@ -17,6 +17,11 @@ class AudioManager {
     this.ambientVolume = 0.5;
     this.isInitialized = false;
     this.fadeInterval = null;
+
+    // For iOS background timer support
+    this.expectedEndTime = null;
+    this.onTimerComplete = null;
+    this.backgroundCheckBound = this.checkBackgroundTimer.bind(this);
   }
 
   // Initialize audio elements (call this on user interaction to satisfy browser autoplay policy)
@@ -269,6 +274,10 @@ class AudioManager {
       this.silentAudio = new Audio(AUDIO_SOURCES.ambient.rain.path);
       this.silentAudio.loop = true;
       this.silentAudio.volume = 0.001; // Essentially inaudible
+
+      // Add timeupdate listener for background timer checking
+      this.silentAudio.addEventListener('timeupdate', this.backgroundCheckBound);
+
       this.silentAudio.play().catch(() => {
         // Silent audio failed to play, not critical
         this.silentAudio = null;
@@ -282,8 +291,43 @@ class AudioManager {
   // Stop silent audio
   stopSilentAudio() {
     if (this.silentAudio) {
+      this.silentAudio.removeEventListener('timeupdate', this.backgroundCheckBound);
       this.silentAudio.pause();
       this.silentAudio = null;
+    }
+  }
+
+  // Set up background timer that works even when iOS screen is locked
+  // This uses the audio element's timeupdate event which keeps firing
+  setBackgroundTimer(durationSeconds, onComplete) {
+    this.expectedEndTime = Date.now() + (durationSeconds * 1000);
+    this.onTimerComplete = onComplete;
+
+    // Also add listener to ambient audio if playing
+    if (this.ambientAudio) {
+      this.ambientAudio.addEventListener('timeupdate', this.backgroundCheckBound);
+    }
+  }
+
+  // Clear background timer
+  clearBackgroundTimer() {
+    this.expectedEndTime = null;
+    this.onTimerComplete = null;
+
+    // Remove listeners
+    if (this.ambientAudio) {
+      this.ambientAudio.removeEventListener('timeupdate', this.backgroundCheckBound);
+    }
+  }
+
+  // Check if timer has completed (called from audio timeupdate events)
+  checkBackgroundTimer() {
+    if (this.expectedEndTime && this.onTimerComplete) {
+      if (Date.now() >= this.expectedEndTime) {
+        const callback = this.onTimerComplete;
+        this.clearBackgroundTimer();
+        callback();
+      }
     }
   }
 }

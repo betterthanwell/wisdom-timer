@@ -26,6 +26,8 @@ function MeditationTimerApp() {
     setupMediaSession,
     startSilentAudio,
     stopSilentAudio,
+    setBackgroundTimer,
+    clearBackgroundTimer,
     isInitialized,
   } = useAudio();
 
@@ -34,6 +36,15 @@ function MeditationTimerApp() {
 
   // Track bright background state after completion
   const [showBrightBg, setShowBrightBg] = useState(false);
+
+  // Handle timer completion (called by both JS timer and background audio timer)
+  const handleTimerComplete = useRef(() => {
+    playBell('end');
+    stopAmbient();
+    stopSilentAudio();
+    clearBackgroundTimer();
+    isFirstStartRef.current = true; // Reset for next session
+  }).current;
 
   // Callbacks for timer events
   const handleTimerStart = () => {
@@ -48,15 +59,12 @@ function MeditationTimerApp() {
         startSilentAudio();
       }
       setupMediaSession('Meditation in Progress', state.duration);
+
+      // Set up background timer for iOS locked screen support
+      // This uses audio timeupdate events which keep firing even when JS is suspended
+      setBackgroundTimer(state.duration, handleTimerComplete);
     }
     isFirstStartRef.current = false;
-  };
-
-  const handleTimerComplete = () => {
-    playBell('end');
-    stopAmbient();
-    stopSilentAudio();
-    isFirstStartRef.current = true; // Reset for next session
   };
 
   const handleIntervalBell = () => {
@@ -67,14 +75,19 @@ function MeditationTimerApp() {
   const handlePause = () => {
     timer.pause();
     pauseAmbient();
+    clearBackgroundTimer(); // Clear background timer on pause
   };
 
   // Handle start/resume
   const handleStart = () => {
     timer.start();
-    // If resuming (not first start), resume ambient
-    if (!isFirstStartRef.current && state.selectedAmbient) {
-      resumeAmbient();
+    // If resuming (not first start), resume ambient and background timer
+    if (!isFirstStartRef.current) {
+      if (state.selectedAmbient) {
+        resumeAmbient();
+      }
+      // Re-set background timer with remaining time
+      setBackgroundTimer(timer.timeRemaining, handleTimerComplete);
     }
   };
 
@@ -83,6 +96,7 @@ function MeditationTimerApp() {
     timer.reset();
     stopAmbient();
     stopSilentAudio();
+    clearBackgroundTimer();
     isFirstStartRef.current = true; // Reset for next session
   };
 
