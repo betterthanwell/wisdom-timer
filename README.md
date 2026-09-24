@@ -24,6 +24,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 - **Interval bells** - a short woodblock knock every 1-30 minutes (optional); never at the very end, which belongs to the end bell
 - **End bell** - resonant "gling" (~35 s)
 - **Ambient sounds** - rain, ocean waves or forest, looping, with a 0.5 s fade in and out
+- **Bell patterns** - each bell (start, interval, end) can ring 1, 2 or 3 times, e.g. three strikes to begin and end; bowls 5 s apart, woodblock knocks 2 s apart
 - **Separate volume sliders** for bells and ambient sound; changes apply immediately, including to a bell that is still ringing
 
 ### While a session is in progress

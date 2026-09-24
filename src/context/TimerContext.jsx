@@ -14,6 +14,10 @@ const initialState = {
   bellVolume: 0.7,
   keepScreenAwake: true,
   settleSeconds: 0, // settling-in countdown before the start bell (off)
+  // How many times each bell rings (1-3)
+  startStrikes: 1,
+  intervalStrikes: 1,
+  endStrikes: 1,
 };
 
 // Reducer: every setting change is { type: 'SET_SETTING', key, value }
@@ -53,6 +57,7 @@ export const TimerProvider = ({ children }) => {
     setBellVolume: (volume) => setSetting('bellVolume', volume),
     setKeepScreenAwake: (enabled) => setSetting('keepScreenAwake', enabled),
     setSettleSeconds: (seconds) => setSetting('settleSeconds', seconds),
+    setBellStrikes: (bell, strikes) => setSetting(`${bell}Strikes`, strikes),
   };
 
   return (

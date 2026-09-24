@@ -129,6 +129,80 @@ describe('AudioManager', () => {
     });
   });
 
+  describe('bell patterns (several strikes)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    // Bells actually struck (not the preloaded templates created by init)
+    const strikes = (name) =>
+      bellElements().filter((a) => a.src.includes(name) && !Object.values(manager.bells).includes(a)).length;
+
+    it('rings once by default', async () => {
+      await manager.playBell('start');
+      await vi.advanceTimersByTimeAsync(20_000);
+      expect(strikes('bell-start')).toBe(1);
+    });
+
+    it('rings start and end bells several times, 5 seconds apart', async () => {
+      manager.playBell('end', 3);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(strikes('bell-end')).toBe(1);
+
+      await vi.advanceTimersByTimeAsync(4_999);
+      expect(strikes('bell-end')).toBe(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(strikes('bell-end')).toBe(2);
+
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(strikes('bell-end')).toBe(3);
+
+      await vi.advanceTimersByTimeAsync(20_000);
+      expect(strikes('bell-end')).toBe(3);
+    });
+
+    it('knocks interval bells 2 seconds apart', async () => {
+      manager.playBell('interval', 2);
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(strikes('bell-interval')).toBe(2);
+    });
+
+    it('plays later strikes at the current bell volume', async () => {
+      manager.setBellVolume(0.8);
+      manager.playBell('start', 2);
+      await vi.advanceTimersByTimeAsync(0);
+
+      manager.setBellVolume(0.3);
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(strikes('bell-start')).toBe(2);
+      expect(bellElements().at(-1).volume).toBe(0.3);
+    });
+
+    it('can cancel strikes that have not rung yet', async () => {
+      manager.playBell('start', 3);
+      await vi.advanceTimersByTimeAsync(0);
+      const first = bellElements().at(-1);
+
+      manager.cancelPendingBells();
+      await vi.advanceTimersByTimeAsync(20_000);
+      expect(strikes('bell-start')).toBe(1);
+      expect(first.paused).toBe(false); // the one already ringing rings out
+    });
+
+    it('cancels pending strikes on cleanup', async () => {
+      manager.playBell('start', 3);
+      await vi.advanceTimersByTimeAsync(0);
+
+      manager.cleanup();
+      await vi.advanceTimersByTimeAsync(20_000);
+      expect(strikes('bell-start')).toBe(1);
+    });
+  });
+
   describe('ambient sound', () => {
     beforeEach(() => {
       vi.useFakeTimers();

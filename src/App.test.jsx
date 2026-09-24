@@ -9,6 +9,7 @@ vi.mock('./utils/audioManager', () => ({
     init: vi.fn(async () => true),
     cleanup: vi.fn(),
     playBell: vi.fn(async () => {}),
+    cancelPendingBells: vi.fn(),
     playAmbient: vi.fn(async () => {}),
     pauseAmbient: vi.fn(),
     resumeAmbient: vi.fn(),
@@ -85,7 +86,7 @@ describe('App', () => {
       click('Rain');
       await completeOneSecondSession();
 
-      expect(audioManager.playBell).toHaveBeenCalledWith('end');
+      expect(audioManager.playBell).toHaveBeenCalledWith('end', 1);
       expect(audioManager.stopAmbient).toHaveBeenCalled();
     });
 
@@ -309,6 +310,42 @@ describe('App', () => {
     it('remembers the choice', async () => {
       await renderWithSettling('Settle in for 1m');
       expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).settleSeconds).toBe(60);
+    });
+  });
+
+  describe('bell patterns', () => {
+    it('rings each bell once by default', async () => {
+      await renderApp();
+      expect(button('End bell: 1 strike').getAttribute('aria-pressed')).toBe('true');
+      click('Start');
+      expect(audioManager.playBell).toHaveBeenCalledWith('start', 1);
+    });
+
+    it('rings the start bell as many times as chosen, and remembers it', async () => {
+      await renderApp();
+      click('Start bell: 3 strikes');
+      click('Start');
+
+      expect(audioManager.playBell).toHaveBeenCalledWith('start', 3);
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).startStrikes).toBe(3);
+    });
+
+    it('uses the chosen end bell pattern when a session completes', async () => {
+      await renderApp();
+      click('End bell: 2 strikes');
+      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } });
+      fireEvent.change(screen.getByLabelText('Seconds'), { target: { value: '1' } });
+      click('Start');
+      await screen.findByText('Complete', {}, { timeout: 3000 });
+
+      expect(audioManager.playBell).toHaveBeenCalledWith('end', 2);
+    });
+
+    it('cancels strikes that have not rung yet on reset', async () => {
+      await renderApp();
+      click('Start');
+      click('Reset');
+      expect(audioManager.cancelPendingBells).toHaveBeenCalled();
     });
   });
 

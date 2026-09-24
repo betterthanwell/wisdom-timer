@@ -16,6 +16,9 @@ const validators = {
   bellVolume: isVolume,
   keepScreenAwake: (value) => typeof value === 'boolean',
   settleSeconds: (value) => SETTLE_SECONDS.includes(value),
+  startStrikes: (value) => isWholeNumber(value, 1, 3),
+  intervalStrikes: (value) => isWholeNumber(value, 1, 3),
+  endStrikes: (value) => isWholeNumber(value, 1, 3),
 };
 
 // The settings that are saved: exactly those with a validator

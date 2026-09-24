@@ -84,6 +84,14 @@ describe('sanitizeSettings', () => {
     expect(sanitizeSettings({ settleSeconds: '60' }, withDefault).settleSeconds).toBe(0);
   });
 
+  it('only accepts 1 to 3 bell strikes', () => {
+    const withDefault = { ...defaults, startStrikes: 1, endStrikes: 1 };
+    expect(sanitizeSettings({ startStrikes: 3 }, withDefault).startStrikes).toBe(3);
+    expect(sanitizeSettings({ startStrikes: 4 }, withDefault).startStrikes).toBe(1);
+    expect(sanitizeSettings({ endStrikes: 0 }, withDefault).endStrikes).toBe(1);
+    expect(sanitizeSettings({ endStrikes: 1.5 }, withDefault).endStrikes).toBe(1);
+  });
+
   it('ignores saved keys that are not settings', () => {
     const result = sanitizeSettings({ presetDurations: [1], isAdmin: true }, defaults);
     expect(result.presetDurations).toEqual(defaults.presetDurations);
@@ -93,7 +101,7 @@ describe('sanitizeSettings', () => {
 
 describe('pickSavedSettings', () => {
   it('saves every validated setting, and nothing else', () => {
-    const saved = pickSavedSettings({ ...defaults, keepScreenAwake: false, settleSeconds: 20, somethingElse: 1 });
+    const saved = pickSavedSettings({ ...defaults, keepScreenAwake: false, settleSeconds: 20, startStrikes: 3, intervalStrikes: 1, endStrikes: 2, somethingElse: 1 });
     expect(saved).toEqual({
       duration: 2700,
       intervalBellsEnabled: false,
@@ -103,6 +111,9 @@ describe('pickSavedSettings', () => {
       bellVolume: 0.7,
       keepScreenAwake: false,
       settleSeconds: 20,
+      startStrikes: 3,
+      intervalStrikes: 1,
+      endStrikes: 2,
     });
   });
 });

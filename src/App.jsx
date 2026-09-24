@@ -18,11 +18,13 @@ import { AmbientSoundSelector } from './components/Settings/AmbientSoundSelector
 import { VolumeControls } from './components/Settings/VolumeControls';
 import { KeepAwakeSetting } from './components/Settings/KeepAwakeSetting';
 import { SettleSetting } from './components/Settings/SettleSetting';
+import { BellPatternSettings } from './components/Settings/BellPatternSettings';
 
 function MeditationTimerApp() {
   const { state, actions } = useTimerContext();
   const {
     playBell,
+    cancelPendingBells,
     playAmbient,
     pauseAmbient,
     stopAmbient,
@@ -36,22 +38,22 @@ function MeditationTimerApp() {
   const handleTimerStart = useCallback(() => {
     startNewDayIfNeeded();
     // Rings on resume too - that's intended
-    playBell('start');
+    playBell('start', state.startStrikes);
     // Starts the selected sound, or resumes it if it's the one that was paused
     if (state.selectedAmbient) {
       playAmbient(state.selectedAmbient);
     }
-  }, [startNewDayIfNeeded, playBell, playAmbient, state.selectedAmbient]);
+  }, [startNewDayIfNeeded, playBell, state.startStrikes, playAmbient, state.selectedAmbient]);
 
   const handleTimerComplete = useCallback(() => {
-    playBell('end');
+    playBell('end', state.endStrikes);
     stopAmbient();
     recordCompleted();
-  }, [playBell, stopAmbient, recordCompleted]);
+  }, [playBell, state.endStrikes, stopAmbient, recordCompleted]);
 
   const handleIntervalBell = useCallback(() => {
-    playBell('interval');
-  }, [playBell]);
+    playBell('interval', state.intervalStrikes);
+  }, [playBell, state.intervalStrikes]);
 
   // Initialize audio volumes
   useEffect(() => {
@@ -103,9 +105,10 @@ function MeditationTimerApp() {
   // Handle reset - stop ambient sound
   const handleReset = useCallback(() => {
     cancelSettling();
+    cancelPendingBells();
     resetTimer();
     stopAmbient();
-  }, [cancelSettling, resetTimer, stopAmbient]);
+  }, [cancelSettling, cancelPendingBells, resetTimer, stopAmbient]);
 
   // The session you're on today; once one completes, it stays on that number
   // until Play starts the next
@@ -309,6 +312,12 @@ function MeditationTimerApp() {
                 onToggle={actions.setIntervalBells}
                 onIntervalChange={actions.setIntervalDuration}
                 disabled={timer.isRunning}
+              />
+
+              {/* How many times each bell rings */}
+              <BellPatternSettings
+                strikes={{ start: state.startStrikes, interval: state.intervalStrikes, end: state.endStrikes }}
+                onChange={actions.setBellStrikes}
               />
 
               {/* Ambient Sounds */}

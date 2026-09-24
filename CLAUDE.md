@@ -31,7 +31,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 │   │   ├── Timer/               # TimerDisplay (time, status, "Session N", burst),
 │   │   │                        # TimerControls (Start/Pause/Reset), CircularProgress
 │   │   ├── Settings/            # PresetButtons, DurationSelector, IntervalSettings,
-│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting
+│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings
 │   │   └── UI/                  # GlassCard, Button, Switch (on/off toggle with accessible name)
 │   ├── hooks/
 │   │   ├── useTimer.js          # Countdown from the clock, pause/resume, interval bells, wake-ups
@@ -77,6 +77,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - **"Ends at HH:MM"** shows under the timer only while running (hidden when paused, since the end moves); locale time format via `formatClockTime()`.
 - **Quiet screen**: while running, the settings card and keyboard hint are hidden and the page dims (`quiet-dim` overlay); "Show settings" (`aria-expanded`) reveals them and lifts the dim for that run. Paused/stopped shows everything; every start begins quiet again.
 - **Settling in** (`settleSeconds`: 0/10/20/30/60, default 0 = off): only before a *new* session (from Ready or after completion), never on resume. Silent countdown ("Settling in…"), then the normal start. Counts as in-session: quiet screen, wake lock, duration locked. The main button becomes **Cancel**; Cancel, Space and Reset return to Ready. On completion it calls the *latest* `startTimer` via a ref, so changes made while settling (e.g. ambient sound) apply.
+- **Bell patterns**: `startStrikes`, `intervalStrikes`, `endStrikes` (1-3, default 1). Strikes are 5 s apart for start/end bowls, 2 s for the interval woodblock (`BELL_STRIKE_SPACING_MS`). Reset cancels strikes not yet rung; pause doesn't.
 - **Keep screen awake** (default on): a wake lock is held only while the timer is *running* (or settling in), not while paused. The toggle is hidden where the Wake Lock API isn't supported.
 - Product direction: functional meditation features only - no streaks, stats, social sharing or similar engagement features.
 
@@ -101,7 +102,8 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - Each bell plays on a fresh `Audio` element (overlap allowed; `cloneNode()` didn't reliably keep volume). Ringing bells are tracked in `ringingBells`, so bell volume changes reach bells that are still ringing.
 - Ambient: one looping element. `fade()` runs a fixed 20 steps over 500ms and always finishes, even where the browser ignores `volume` (iOS); the fade-in reads the target volume every step.
 - `playAmbient(id)`: resumes if `id` is the current (paused) sound, otherwise switches. `currentAmbient` is set before `play()` and cleared as soon as a stop begins, so stopping while starting stays stopped.
-- `cleanup()` stops all playback but keeps loaded sounds.
+- `playBell(type, strikes)` rings now and schedules later strikes (`pendingStrikes`); `cancelPendingBells()` drops the ones not yet rung. Each strike reads the current bell volume.
+- `cleanup()` stops all playback (and pending strikes) but keeps loaded sounds.
 - Sound files: bells are AAC in an MP4 container despite the `.mp3` names (browsers sniff content). Ambient files are long real recordings (10-36 min).
 
 ### Known platform limits
@@ -156,6 +158,7 @@ The gradients are Tailwind arbitrary-value classes in `App.jsx` (`from-[#FDE68A]
 - Vitest globals are off, so Testing Library doesn't auto-clean: call `cleanup()` in `afterEach`.
 - **Playwright** (`e2e/`): the production build in Chromium, WebKit and an iPhone 15 profile. First time: `npx playwright install chromium webkit`.
   - The page clock is faked **and frozen** (`clock.install()` then `clock.pauseAt()`); an unfrozen fake clock keeps flowing in real time, which made a test flaky on slow CI. Advance with `clock.fastForward` in 1-minute jumps; `runFor` fires every 100ms tick and is far too slow for long sessions.
+  - Playwright matches accessible names as **substrings** by default (Testing Library matches whole names): use `exact: true` for short names like `Start` ("Start bell: 3 strikes" also contains it).
   - Sounds are recorded, not heard: an init script wraps `HTMLMediaElement.prototype.play` and pushes file paths to `window.__sounds`.
 - **CI**: `ci.yml` (npm ci, lint, test, build) and `e2e.yml` (Playwright, report uploaded on failure), both on Node 24, on every PR and push to `main`.
 - **Bug fixes are test-first**: write a test, confirm it fails on the old code, then fix. When a new test passes immediately, check it against the old code before trusting it.
