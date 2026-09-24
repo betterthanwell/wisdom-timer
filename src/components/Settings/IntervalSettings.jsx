@@ -1,4 +1,5 @@
 import { Bell } from 'lucide-react';
+import { Switch } from '../UI/Switch';
 
 export const IntervalSettings = ({
   enabled,
@@ -16,22 +17,7 @@ export const IntervalSettings = ({
           <Bell className="w-4 h-4 text-white/70" />
           <span className="text-sm font-medium text-white">Interval Bells</span>
         </div>
-        <button
-          onClick={() => onToggle(!enabled)}
-          disabled={disabled}
-          role="switch"
-          aria-checked={enabled}
-          aria-label="Interval bells"
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            enabled ? 'bg-white/30' : 'bg-white/10'
-          } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-        >
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-              enabled ? 'translate-x-6' : 'translate-x-1'
-            }`}
-          />
-        </button>
+        <Switch checked={enabled} onChange={onToggle} label="Interval bells" disabled={disabled} />
       </div>
 
       {enabled && (

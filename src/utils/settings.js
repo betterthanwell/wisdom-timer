@@ -11,7 +11,12 @@ const validators = {
   selectedAmbient: (value) => value === null || Object.hasOwn(AUDIO_SOURCES.ambient, value),
   ambientVolume: isVolume,
   bellVolume: isVolume,
+  keepScreenAwake: (value) => typeof value === 'boolean',
 };
+
+// The settings that are saved: exactly those with a validator
+export const pickSavedSettings = (settings) =>
+  Object.fromEntries(Object.keys(validators).map((key) => [key, settings[key]]));
 
 // Merge saved settings over the defaults, keeping only values that are valid
 // (storage can hold old, hand-edited or corrupted data)

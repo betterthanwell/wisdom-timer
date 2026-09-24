@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sanitizeSettings } from './settings';
+import { pickSavedSettings, sanitizeSettings } from './settings';
 
 const defaults = {
   duration: 2700,
@@ -71,9 +71,30 @@ describe('sanitizeSettings', () => {
     expect(sanitizeSettings({ bellVolume: 0 }, defaults).bellVolume).toBe(0);
   });
 
+  it('only accepts a boolean for keeping the screen awake', () => {
+    const withDefault = { ...defaults, keepScreenAwake: true };
+    expect(sanitizeSettings({ keepScreenAwake: false }, withDefault).keepScreenAwake).toBe(false);
+    expect(sanitizeSettings({ keepScreenAwake: 'no' }, withDefault).keepScreenAwake).toBe(true);
+  });
+
   it('ignores saved keys that are not settings', () => {
     const result = sanitizeSettings({ presetDurations: [1], isAdmin: true }, defaults);
     expect(result.presetDurations).toEqual(defaults.presetDurations);
     expect(result).not.toHaveProperty('isAdmin');
+  });
+});
+
+describe('pickSavedSettings', () => {
+  it('saves every validated setting, and nothing else', () => {
+    const saved = pickSavedSettings({ ...defaults, keepScreenAwake: false, somethingElse: 1 });
+    expect(saved).toEqual({
+      duration: 2700,
+      intervalBellsEnabled: false,
+      intervalDuration: 300,
+      selectedAmbient: null,
+      ambientVolume: 0.5,
+      bellVolume: 0.7,
+      keepScreenAwake: false,
+    });
   });
 });

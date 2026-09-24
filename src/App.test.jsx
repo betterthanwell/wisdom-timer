@@ -194,6 +194,57 @@ describe('App', () => {
     });
   });
 
+  describe('keep screen awake', () => {
+    let wakeLock;
+
+    beforeEach(() => {
+      wakeLock = {
+        request: vi.fn(async () => ({ released: false, release: vi.fn(async () => {}) })),
+      };
+      Object.defineProperty(navigator, 'wakeLock', { value: wakeLock, configurable: true });
+    });
+
+    afterEach(() => {
+      delete navigator.wakeLock;
+    });
+
+    const keepAwakeSwitch = () => screen.getByRole('switch', { name: 'Keep screen awake' });
+
+    it('is on by default, and keeps the screen awake while running', async () => {
+      await renderApp();
+      expect(keepAwakeSwitch().getAttribute('aria-checked')).toBe('true');
+      expect(wakeLock.request).not.toHaveBeenCalled();
+
+      click('Start');
+      await waitFor(() => expect(wakeLock.request).toHaveBeenCalledWith('screen'));
+    });
+
+    it('lets the screen sleep again when paused', async () => {
+      await renderApp();
+      click('Start');
+      await waitFor(() => expect(wakeLock.request).toHaveBeenCalled());
+      const lock = await wakeLock.request.mock.results[0].value;
+
+      click('Pause');
+      await waitFor(() => expect(lock.release).toHaveBeenCalled());
+    });
+
+    it('does nothing when turned off, and remembers that', async () => {
+      await renderApp();
+      fireEvent.click(keepAwakeSwitch());
+      click('Start');
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(wakeLock.request).not.toHaveBeenCalled();
+
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).keepScreenAwake).toBe(false);
+    });
+  });
+
+  it('hides the keep-awake setting where the browser does not support it', async () => {
+    await renderApp();
+    expect(screen.queryByRole('switch', { name: 'Keep screen awake' })).toBe(null);
+  });
+
   describe('keyboard shortcuts', () => {
     it('toggles with Space and resets with R', async () => {
       await renderApp();
