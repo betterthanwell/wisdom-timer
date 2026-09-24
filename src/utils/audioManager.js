@@ -1,12 +1,14 @@
 import { AUDIO_SOURCES } from '../constants/audioSources';
 
-class AudioManager {
+export class AudioManager {
   constructor() {
     this.bells = {
       start: null,
       interval: null,
       end: null,
     };
+    // Bells that are currently ringing, so volume changes reach them too
+    this.ringingBells = new Set();
     this.ambientAudio = null;
     this.currentAmbient = null;
     this.bellVolume = 0.7;
@@ -69,18 +71,22 @@ class AudioManager {
       return;
     }
 
-    try {
-      // Create a new Audio element instead of cloning to ensure volume is applied correctly
-      const bellAudio = new Audio(bell.src);
-      bellAudio.volume = this.bellVolume;
-      await bellAudio.play();
+    // Create a new Audio element instead of cloning to ensure volume is applied correctly
+    const bellAudio = new Audio(bell.src);
+    bellAudio.volume = this.bellVolume;
+    this.ringingBells.add(bellAudio);
 
-      // Clean up after playing
-      bellAudio.addEventListener('ended', () => {
-        bellAudio.src = '';
-        bellAudio.remove();
-      });
+    // Clean up after playing
+    bellAudio.addEventListener('ended', () => {
+      this.ringingBells.delete(bellAudio);
+      bellAudio.src = '';
+      bellAudio.remove();
+    });
+
+    try {
+      await bellAudio.play();
     } catch (error) {
+      this.ringingBells.delete(bellAudio);
       console.error(`Failed to play bell "${type}":`, error);
     }
   }
@@ -204,13 +210,9 @@ class AudioManager {
   // Set bell volume
   setBellVolume(volume) {
     this.bellVolume = Math.max(0, Math.min(1, volume));
-    if (this.isInitialized) {
-      Object.values(this.bells).forEach(audio => {
-        if (audio) {
-          audio.volume = this.bellVolume;
-        }
-      });
-    }
+    this.ringingBells.forEach(audio => {
+      audio.volume = this.bellVolume;
+    });
   }
 
   // Set ambient volume
@@ -230,6 +232,7 @@ class AudioManager {
       this.ambientAudio.pause();
       this.ambientAudio = null;
     }
+    this.ringingBells.clear();
     Object.keys(this.bells).forEach(key => {
       this.bells[key] = null;
     });
