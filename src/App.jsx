@@ -4,6 +4,7 @@ import { TimerProvider } from './context/TimerContext';
 import { useTimerContext } from './context/useTimerContext';
 import { useTimer } from './hooks/useTimer';
 import { useAudio } from './hooks/useAudio';
+import { useSessionCounter } from './hooks/useSessionCounter';
 import { GlassCard } from './components/UI/GlassCard';
 import { Button } from './components/UI/Button';
 import { TimerDisplay } from './components/Timer/TimerDisplay';
@@ -25,21 +26,24 @@ function MeditationTimerApp() {
     setAmbientVolume,
     isInitialized,
   } = useAudio();
+  const { completedToday, startNewDayIfNeeded, recordCompleted } = useSessionCounter();
 
   // Callbacks for timer events
   const handleTimerStart = useCallback(() => {
+    startNewDayIfNeeded();
     // Rings on resume too - that's intended
     playBell('start');
     // Starts the selected sound, or resumes it if it's the one that was paused
     if (state.selectedAmbient) {
       playAmbient(state.selectedAmbient);
     }
-  }, [playBell, playAmbient, state.selectedAmbient]);
+  }, [startNewDayIfNeeded, playBell, playAmbient, state.selectedAmbient]);
 
   const handleTimerComplete = useCallback(() => {
     playBell('end');
     stopAmbient();
-  }, [playBell, stopAmbient]);
+    recordCompleted();
+  }, [playBell, stopAmbient, recordCompleted]);
 
   const handleIntervalBell = useCallback(() => {
     playBell('interval');
@@ -77,6 +81,10 @@ function MeditationTimerApp() {
     resetTimer();
     stopAmbient();
   }, [resetTimer, stopAmbient]);
+
+  // The session you're on today; once one completes, it stays on that number
+  // until Play starts the next
+  const sessionNumber = timer.isComplete ? completedToday : completedToday + 1;
 
   // Duration can only change between sessions, not while running or paused
   const durationLocked = timer.isRunning || timer.isPaused;
@@ -176,6 +184,7 @@ function MeditationTimerApp() {
               isRunning={timer.isRunning}
               isPaused={timer.isPaused}
               isComplete={timer.isComplete}
+              sessionNumber={sessionNumber}
             />
 
             {/* Timer Controls */}

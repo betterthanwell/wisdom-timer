@@ -71,6 +71,58 @@ describe('App', () => {
     });
   });
 
+  describe('after a session completes', () => {
+    // A real 1-second session keeps these tests quick
+    const completeOneSecondSession = async () => {
+      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } });
+      fireEvent.change(screen.getByLabelText('Seconds'), { target: { value: '1' } });
+      click('Start');
+      await screen.findByText('Complete', {}, { timeout: 3000 });
+    };
+
+    it('rings the end bell and stops the ambient sound', async () => {
+      await renderApp();
+      click('Rain');
+      await completeOneSecondSession();
+
+      expect(audioManager.playBell).toHaveBeenCalledWith('end');
+      expect(audioManager.stopAmbient).toHaveBeenCalled();
+    });
+
+    it('starts a new session with Play, without needing Reset', async () => {
+      await renderApp();
+      click('Rain');
+      await completeOneSecondSession();
+      vi.clearAllMocks();
+
+      expect(button('Start').disabled).toBe(false);
+      click('Start');
+
+      expect(screen.getByText('Meditating...')).toBeTruthy();
+      expect(screen.getByText('00:01')).toBeTruthy();
+      expect(startBellCount()).toBe(1);
+      expect(audioManager.playAmbient).toHaveBeenCalledWith('rain');
+    });
+
+    it('counts sessions: Session 1, then Session 2 after completing one', async () => {
+      await renderApp();
+      expect(screen.getByText('Session 1')).toBeTruthy();
+
+      await completeOneSecondSession();
+      expect(screen.getByText('Session 1')).toBeTruthy(); // the one just completed
+
+      click('Start');
+      expect(screen.getByText('Session 2')).toBeTruthy();
+    });
+
+    it('does not count a session that was reset before finishing', async () => {
+      await renderApp();
+      click('Start');
+      click('Reset');
+      expect(screen.getByText('Session 1')).toBeTruthy();
+    });
+  });
+
   describe('while paused', () => {
     beforeEach(async () => {
       await renderApp();

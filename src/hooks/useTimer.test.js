@@ -45,6 +45,26 @@ describe('useTimer', () => {
     expect(onComplete).toHaveBeenCalledTimes(1);
   });
 
+  it('starts a new full session when started after completing', () => {
+    const bell = { interval: 4, callback: vi.fn() };
+    const { result, onStart, onComplete } = renderTimer(10, bell);
+
+    act(() => result.current.start());
+    advanceSeconds(10);
+    expect(result.current.isComplete).toBe(true);
+    expect(bell.callback).toHaveBeenCalledTimes(2); // 0:04, 0:08
+
+    act(() => result.current.start());
+    expect(onStart).toHaveBeenCalledTimes(2);
+    expect(result.current.isComplete).toBe(false);
+    expect(result.current.isRunning).toBe(true);
+    expect(result.current.timeRemaining).toBe(10);
+
+    advanceSeconds(10);
+    expect(bell.callback).toHaveBeenCalledTimes(4); // interval bells ring again
+    expect(onComplete).toHaveBeenCalledTimes(2);
+  });
+
   it('reports paused only between pause and the next start or reset', () => {
     const { result } = renderTimer(60);
     expect(result.current.isPaused).toBe(false);
