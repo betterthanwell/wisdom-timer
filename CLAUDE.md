@@ -73,6 +73,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - **Play after a completed session starts a new full session** (no Reset needed).
 - **"Session N"** shows the session you're on today: completed count + 1, or the just-completed number while "Complete" shows. Memory only; starts over on reload and on a new day. Resets don't count.
 - Start is disabled for a 0:00 duration.
+- **"Ends at HH:MM"** shows under the timer only while running (hidden when paused, since the end moves); locale time format via `formatClockTime()`.
 - **Keep screen awake** (default on): a wake lock is held only while the timer is *running*, not while paused. The toggle is hidden where the Wake Lock API isn't supported.
 - Product direction: functional meditation features only - no streaks, stats, social sharing or similar engagement features.
 
@@ -85,7 +86,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 
 ### Timer (`useTimer`)
 - Time left is computed from `expectedEndTimeRef` and `Date.now()`, never by decrementing, so it doesn't drift.
-- Returns `timeRemaining`, `isRunning`, `isPaused`, `isComplete`, `progress`, `duration`, and `start`, `pause`, `reset`, `updateDuration`.
+- Returns `timeRemaining`, `isRunning`, `isPaused`, `isComplete`, `endsAt` (end timestamp while running, else `null`), `progress`, `duration`, and `start`, `pause`, `reset`, `updateDuration`.
 - A 100ms `setInterval` updates the display. Background tabs throttle it heavily (Chrome: down to once a minute), so the hook also schedules one-off `setTimeout` wake-ups at the end time and at each interval-bell time, and re-checks on `visibilitychange`. A `finished` guard prevents completing twice.
 - `pause()` takes the time left from the clock, not the (possibly stale) displayed value.
 - `start()` after completion begins a new full session.

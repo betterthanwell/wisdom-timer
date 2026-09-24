@@ -123,6 +123,23 @@ describe('App', () => {
     });
   });
 
+  describe('end time', () => {
+    it('shows when the session will end while running, but not when paused or stopped', async () => {
+      await renderApp();
+      expect(screen.queryByText(/^Ends at /)).toBe(null);
+
+      click('Start');
+      expect(screen.getByText(/^Ends at \d{2}:\d{2}/)).toBeTruthy();
+
+      click('Pause');
+      expect(screen.queryByText(/^Ends at /)).toBe(null);
+
+      click('Start');
+      click('Reset');
+      expect(screen.queryByText(/^Ends at /)).toBe(null);
+    });
+  });
+
   describe('while paused', () => {
     beforeEach(async () => {
       await renderApp();

@@ -190,6 +190,7 @@ function MeditationTimerApp() {
               isPaused={timer.isPaused}
               isComplete={timer.isComplete}
               sessionNumber={sessionNumber}
+              endsAt={timer.endsAt}
             />
 
             {/* Timer Controls */}

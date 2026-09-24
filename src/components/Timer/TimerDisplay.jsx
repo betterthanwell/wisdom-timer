@@ -1,7 +1,7 @@
-import { formatTime } from '../../utils/timeFormatter';
+import { formatClockTime, formatTime } from '../../utils/timeFormatter';
 import { CircularProgress } from './CircularProgress';
 
-export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = false, isComplete, sessionNumber = 1 }) => {
+export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = false, isComplete, sessionNumber = 1, endsAt = null }) => {
   const getStatusText = () => {
     if (isComplete) return 'Complete';
     if (isRunning) return 'Meditating...';
@@ -64,6 +64,10 @@ export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = fa
             </div>
           </div>
         </CircularProgress>
+        {/* Keeps its height when empty, so nothing jumps when a session starts */}
+        <div className="h-5 mt-3 text-sm text-white/80 font-medium drop-shadow-md">
+          {endsAt !== null && `Ends at ${formatClockTime(endsAt)}`}
+        </div>
       </div>
     </>
   );

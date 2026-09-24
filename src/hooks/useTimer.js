@@ -8,6 +8,8 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
   const [isComplete, setIsComplete] = useState(false);
   // Started, then paused - the session is still in progress
   const [isPaused, setIsPaused] = useState(false);
+  // When the running session will end (timestamp), or null when not running
+  const [endsAt, setEndsAt] = useState(null);
 
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
@@ -27,6 +29,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     const now = Date.now();
     startTimeRef.current = now;
     expectedEndTimeRef.current = now + (remaining * 1000);
+    setEndsAt(expectedEndTimeRef.current);
     // Count bells already due at this point as rung, so resuming (or enabling
     // interval bells while paused) doesn't immediately ring a catch-up bell
     intervalBellsRungRef.current = countIntervalBellsDue(
@@ -49,6 +52,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     setTimeRemaining(Math.max(0, Math.ceil((expectedEndTimeRef.current - Date.now()) / 1000)));
     setIsRunning(false);
     setIsPaused(true);
+    setEndsAt(null);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -58,6 +62,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
   // Reset the timer
   const reset = useCallback(() => {
     setIsRunning(false);
+    setEndsAt(null);
     setIsPaused(false);
     setIsComplete(false);
     setTimeRemaining(duration);
@@ -107,6 +112,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
         stopTicking();
         setIsRunning(false);
         setIsComplete(true);
+        setEndsAt(null);
 
         if (onComplete) {
           onComplete();
@@ -162,6 +168,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     isRunning,
     isPaused,
     isComplete,
+    endsAt,
     start,
     pause,
     reset,

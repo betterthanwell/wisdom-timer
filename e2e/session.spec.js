@@ -50,6 +50,8 @@ test('a full 45-minute session: start bell, countdown, end bell', async ({ page 
   await page.getByRole('button', { name: 'Start' }).click();
   await expect(page.getByText('Meditating...')).toBeVisible();
   expect(await countSound(page, 'bell-start')).toBe(1);
+  // The frozen clock reads 09:00 at Start
+  await expect(page.getByText(/^Ends at 09:45/)).toBeVisible();
 
   await passMinutes(page, 20);
   await expect(page.getByText('25:00')).toBeVisible();

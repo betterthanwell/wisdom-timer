@@ -12,6 +12,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 - **Any duration** from 0:01 to 99:59 with minute/second inputs; **presets** for 30, 45, 60 and 90 minutes (default 45)
 - **Pause and resume** - the start bell rings again when you resume
 - **Play after a finished session starts the next one** - no need to press Reset
+- **"Ends at 07:45"** under the timer while a session runs (in your device's time format)
 - **Session counter** - "Session 1", "Session 2", … for sessions completed today (kept in memory: it starts over on reload and on a new day)
 - **Keeps the screen awake** while a session runs (on by default, can be turned off), so your phone doesn't lock mid-session - in browsers that support it
 - **Stays on time in background tabs** - the end and interval bells are scheduled directly, so they ring on time even when the browser slows down timers for a hidden tab

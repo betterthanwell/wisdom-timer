@@ -65,6 +65,37 @@ describe('useTimer', () => {
     expect(onComplete).toHaveBeenCalledTimes(2);
   });
 
+  it('reports when the session will end while running, and not otherwise', () => {
+    vi.setSystemTime(new Date(2026, 8, 24, 7, 0, 0));
+    const { result } = renderTimer(600);
+    expect(result.current.endsAt).toBe(null);
+
+    act(() => result.current.start());
+    expect(result.current.endsAt).toBe(new Date(2026, 8, 24, 7, 10, 0).getTime());
+
+    advanceSeconds(120);
+    act(() => result.current.pause());
+    expect(result.current.endsAt).toBe(null);
+
+    // Resuming 5 minutes later moves the end 5 minutes later
+    act(() => {
+      vi.setSystemTime(new Date(2026, 8, 24, 7, 7, 0));
+    });
+    act(() => result.current.start());
+    expect(result.current.endsAt).toBe(new Date(2026, 8, 24, 7, 15, 0).getTime());
+
+    advanceSeconds(480);
+    expect(result.current.isComplete).toBe(true);
+    expect(result.current.endsAt).toBe(null);
+  });
+
+  it('clears the end time on reset', () => {
+    const { result } = renderTimer(600);
+    act(() => result.current.start());
+    act(() => result.current.reset());
+    expect(result.current.endsAt).toBe(null);
+  });
+
   it('reports paused only between pause and the next start or reset', () => {
     const { result } = renderTimer(60);
     expect(result.current.isPaused).toBe(false);
