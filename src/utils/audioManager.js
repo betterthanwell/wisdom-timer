@@ -14,11 +14,23 @@ export class AudioManager {
     this.bellVolume = 0.7;
     this.ambientVolume = 0.5;
     this.isInitialized = false;
+    this.initPromise = null;
     this.fadeInterval = null;
   }
 
-  // Initialize audio elements (call this on user interaction to satisfy browser autoplay policy)
-  async init() {
+  // Load the sounds. Safe to call more than once (React StrictMode mounts
+  // twice in development): later calls share the first load.
+  init() {
+    if (!this.initPromise) {
+      this.initPromise = this.loadSounds().then((success) => {
+        if (!success) this.initPromise = null; // allow a retry
+        return success;
+      });
+    }
+    return this.initPromise;
+  }
+
+  async loadSounds() {
     try {
       // Create and preload bell audio elements FIRST (they're critical and small)
       this.bells.start = new Audio(AUDIO_SOURCES.bells.start);
@@ -241,18 +253,17 @@ export class AudioManager {
     }
   }
 
-  // Cleanup
+  // Stop all sound (on unmount). The loaded sounds are kept, so a remount
+  // (React StrictMode) can use them without loading everything again.
   cleanup() {
     this.clearFade();
+    this.ringingBells.forEach(audio => audio.pause());
+    this.ringingBells.clear();
     if (this.ambientAudio) {
       this.ambientAudio.pause();
-      this.ambientAudio = null;
+      this.ambientAudio.currentTime = 0;
     }
-    this.ringingBells.clear();
-    Object.keys(this.bells).forEach(key => {
-      this.bells[key] = null;
-    });
-    this.isInitialized = false;
+    this.currentAmbient = null;
   }
 }
 

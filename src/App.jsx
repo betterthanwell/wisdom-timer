@@ -267,7 +267,7 @@ function MeditationTimerApp() {
             {/* Audio Initialization Notice */}
             {!isInitialized && (
               <div className="text-xs text-white/60 text-center">
-                Click play to enable audio
+                Loading sounds…
               </div>
             )}
           </div>

@@ -1,6 +1,7 @@
 import { useReducer, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { TimerContext } from './useTimerContext';
+import { sanitizeSettings } from '../utils/settings';
 
 // Action types
 const ActionTypes = {
@@ -52,11 +53,11 @@ const timerReducer = (state, action) => {
 // Provider component
 export const TimerProvider = ({ children }) => {
   const [savedSettings, setSavedSettings] = useLocalStorage('wisdomTimerSettings', {});
-  // Start from saved settings so the first render already reflects them
-  const [state, dispatch] = useReducer(timerReducer, savedSettings, (saved) => ({
-    ...initialState,
-    ...saved,
-  }));
+  // Start from saved settings so the first render already reflects them;
+  // invalid or unknown saved values fall back to the defaults
+  const [state, dispatch] = useReducer(timerReducer, savedSettings, (saved) =>
+    sanitizeSettings(saved, initialState)
+  );
 
   // Save settings to localStorage when state changes
   useEffect(() => {

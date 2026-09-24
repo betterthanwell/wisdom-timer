@@ -56,6 +56,7 @@ wisdom-timer/
 │   ├── utils/
 │   │   ├── audioManager.js     # Singleton audio controller class
 │   │   ├── intervalBells.js    # Pure interval-bell scheduling (countIntervalBellsDue)
+│   │   ├── settings.js         # sanitizeSettings: validates saved settings on load
 │   │   └── timeFormatter.js    # Time formatting utilities
 │   ├── constants/
 │   │   └── audioSources.js     # Audio file paths and metadata
@@ -80,13 +81,14 @@ wisdom-timer/
 ### State Management
 - **TimerContext** (`src/context/TimerContext.jsx`) - Central state using `useReducer` pattern
 - Actions: `setDuration`, `setIntervalBells`, `setIntervalDuration`, `setAmbientSound`, `setBellVolume`, `setAmbientVolume`
-- State persists to localStorage via `useLocalStorage` hook; saved settings seed the reducer's initial state
+- State persists to localStorage via `useLocalStorage` hook; saved settings seed the reducer's initial state after `sanitizeSettings()` drops invalid or unknown values
 
 ### Audio System
 - **AudioManager** (`src/utils/audioManager.js`) - Singleton class managing all audio
 - Each bell plays on a fresh `Audio` element (allows overlap; `cloneNode()` didn't reliably keep volume)
 - Ambient sounds have fade in/out effects (500ms)
-- Browser autoplay policy handled via user interaction initialization
+- Sounds load on mount; `init()` is idempotent (React StrictMode mounts twice in dev) and `cleanup()` only stops playback, keeping loaded sounds
+- "Loading sounds…" shows, and Start stays disabled, until loading finishes
 
 ### Timer Logic
 - **useTimer** hook uses `Date.now()` calculations to prevent drift
@@ -165,7 +167,7 @@ Edit `src/index.css` `@theme` block:
 1. Add to `initialState` in `TimerContext.jsx`
 2. Add action type and reducer case
 3. Add action function
-4. Include in localStorage save/load
+4. Include in localStorage save/load, and add a validator in `src/utils/settings.js`
 5. Create settings component
 
 ## Testing

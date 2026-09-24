@@ -224,6 +224,32 @@ describe('App', () => {
   });
 
   describe('settings validation', () => {
+    it('shows that sounds are loading, with Start disabled until they are ready', async () => {
+      audioManager.init.mockImplementationOnce(() => new Promise(() => {}));
+      render(<App />);
+
+      expect(screen.getByText('Loading sounds…')).toBeTruthy();
+      expect(button('Start').disabled).toBe(true);
+    });
+
+    it('hides the loading notice once sounds are ready', async () => {
+      await renderApp();
+      expect(screen.queryByText('Loading sounds…')).toBe(null);
+    });
+
+    it('ignores invalid saved settings', async () => {
+      localStorage.setItem('wisdomTimerSettings', JSON.stringify({
+        duration: 0,
+        selectedAmbient: 'wind',
+        bellVolume: 7,
+      }));
+      await renderApp();
+
+      expect(screen.getByText('45:00')).toBeTruthy(); // default duration
+      expect(button('None').className).toContain('bg-white/20'); // selected
+      expect(screen.getAllByRole('slider')[0].value).toBe('70'); // default bell volume
+    });
+
     it('cannot start a 0:00 session', async () => {
       await renderApp();
       fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } });
