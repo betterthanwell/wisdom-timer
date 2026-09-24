@@ -2,17 +2,17 @@
 
 ## Project Overview
 
-Wisdom Timer is a modern meditation timer web application built with React 19 and Vite 7. It features ambient sounds, interval bells, a glass-morphism UI with warm gradient backgrounds, and an "enlightenment burst" animation on completion.
+Wisdom Timer is a modern meditation timer web application built with React 19 and Vite 8. It features ambient sounds, interval bells, a glass-morphism UI with warm gradient backgrounds, and an "enlightenment burst" animation on completion.
 
 **Live Demo:** https://wisdomtimer.app/
 
 ## Technology Stack
 
 - **React 19** - Latest React with hooks and Context API
-- **Vite 7** - Build tool and dev server
+- **Vite 8** - Build tool and dev server (Rolldown bundler)
 - **Tailwind CSS v4** - Utility-first CSS with custom theme via `@theme` directive
 - **Lucide React** - Icon library
-- **ESLint 9** - Flat config with React plugins
+- **ESLint 10** - Flat config with React plugins
 
 ## Quick Commands
 
