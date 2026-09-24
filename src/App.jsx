@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { TimerProvider } from './context/TimerContext';
 import { useTimerContext } from './context/useTimerContext';
@@ -6,6 +6,7 @@ import { useTimer } from './hooks/useTimer';
 import { useAudio } from './hooks/useAudio';
 import { useSessionCounter } from './hooks/useSessionCounter';
 import { useWakeLock, isWakeLockSupported } from './hooks/useWakeLock';
+import { useSettleCountdown } from './hooks/useSettleCountdown';
 import { GlassCard } from './components/UI/GlassCard';
 import { Button } from './components/UI/Button';
 import { TimerDisplay } from './components/Timer/TimerDisplay';
@@ -16,6 +17,7 @@ import { IntervalSettings } from './components/Settings/IntervalSettings';
 import { AmbientSoundSelector } from './components/Settings/AmbientSoundSelector';
 import { VolumeControls } from './components/Settings/VolumeControls';
 import { KeepAwakeSetting } from './components/Settings/KeepAwakeSetting';
+import { SettleSetting } from './components/Settings/SettleSetting';
 
 function MeditationTimerApp() {
   const { state, actions } = useTimerContext();
@@ -78,28 +80,45 @@ function MeditationTimerApp() {
   // Handle start/resume (ambient sound is handled by handleTimerStart)
   // Quiet screen: while running, settings are hidden unless asked for
   const [settingsRevealed, setSettingsRevealed] = useState(false);
+
+  // Optional settling-in countdown before a new session's start bell. When it
+  // ends it calls the *latest* startTimer, so changes made meanwhile (e.g.
+  // the ambient sound) are used.
+  const { isSettling, settleRemaining, begin: beginSettling, cancel: cancelSettling } = useSettleCountdown();
+  const startTimerRef = useRef(startTimer);
+  useEffect(() => {
+    startTimerRef.current = startTimer;
+  }, [startTimer]);
+
   const handleStart = useCallback(() => {
     setSettingsRevealed(false); // every start begins quiet
-    startTimer();
-  }, [startTimer]);
+    // Settle in only before a new session - resuming starts right away
+    if (!timer.isPaused && state.settleSeconds > 0) {
+      beginSettling(state.settleSeconds, () => startTimerRef.current());
+    } else {
+      startTimer();
+    }
+  }, [timer.isPaused, state.settleSeconds, beginSettling, startTimer]);
 
   // Handle reset - stop ambient sound
   const handleReset = useCallback(() => {
+    cancelSettling();
     resetTimer();
     stopAmbient();
-  }, [resetTimer, stopAmbient]);
+  }, [cancelSettling, resetTimer, stopAmbient]);
 
   // The session you're on today; once one completes, it stays on that number
   // until Play starts the next
   const sessionNumber = timer.isComplete ? completedToday : completedToday + 1;
 
-  const quiet = timer.isRunning && !settingsRevealed;
+  const inSession = timer.isRunning || isSettling;
+  const quiet = inSession && !settingsRevealed;
 
   // Keep the screen on while a session is running, so the phone doesn't lock
-  useWakeLock(state.keepScreenAwake && timer.isRunning);
+  useWakeLock(state.keepScreenAwake && inSession);
 
   // Duration can only change between sessions, not while running or paused
-  const durationLocked = timer.isRunning || timer.isPaused;
+  const durationLocked = timer.isRunning || timer.isPaused || isSettling;
 
   // Update timer duration when the user picks a new one
   const handleDurationChange = (newDuration) => {
@@ -151,7 +170,9 @@ function MeditationTimerApp() {
 
       if (e.code === 'Space') {
         e.preventDefault();
-        if (timer.isRunning) {
+        if (isSettling) {
+          cancelSettling();
+        } else if (timer.isRunning) {
           handlePause();
         } else {
           handleStart();
@@ -164,7 +185,7 @@ function MeditationTimerApp() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [timer.isRunning, handleStart, handlePause, handleReset]);
+  }, [timer.isRunning, isSettling, cancelSettling, handleStart, handlePause, handleReset]);
 
   return (
     <div
@@ -207,13 +228,16 @@ function MeditationTimerApp() {
               isComplete={timer.isComplete}
               sessionNumber={sessionNumber}
               endsAt={timer.endsAt}
+              settleRemaining={isSettling ? settleRemaining : null}
             />
 
             {/* Timer Controls */}
             <TimerControls
               isRunning={timer.isRunning}
+              isSettling={isSettling}
               onStart={handleStart}
               onPause={handlePause}
+              onCancel={cancelSettling}
               onReset={handleReset}
               disabled={!isInitialized}
               startDisabled={timer.timeRemaining === 0 && !timer.isComplete}
@@ -222,7 +246,7 @@ function MeditationTimerApp() {
         </GlassCard>
 
         {/* While running, settings stay out of the way until asked for */}
-        {timer.isRunning && (
+        {inSession && (
           <div className="flex justify-center !mt-4">
             <button
               type="button"
@@ -270,6 +294,13 @@ function MeditationTimerApp() {
                   disabled={durationLocked}
                 />
               </div>
+
+              {/* Settling-in countdown */}
+              <SettleSetting
+                seconds={state.settleSeconds}
+                onChange={actions.setSettleSeconds}
+                disabled={durationLocked}
+              />
 
               {/* Interval Bells */}
               <IntervalSettings

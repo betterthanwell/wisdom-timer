@@ -77,6 +77,13 @@ describe('sanitizeSettings', () => {
     expect(sanitizeSettings({ keepScreenAwake: 'no' }, withDefault).keepScreenAwake).toBe(true);
   });
 
+  it('only accepts the offered settling-in lengths', () => {
+    const withDefault = { ...defaults, settleSeconds: 0 };
+    expect(sanitizeSettings({ settleSeconds: 30 }, withDefault).settleSeconds).toBe(30);
+    expect(sanitizeSettings({ settleSeconds: 15 }, withDefault).settleSeconds).toBe(0);
+    expect(sanitizeSettings({ settleSeconds: '60' }, withDefault).settleSeconds).toBe(0);
+  });
+
   it('ignores saved keys that are not settings', () => {
     const result = sanitizeSettings({ presetDurations: [1], isAdmin: true }, defaults);
     expect(result.presetDurations).toEqual(defaults.presetDurations);
@@ -86,7 +93,7 @@ describe('sanitizeSettings', () => {
 
 describe('pickSavedSettings', () => {
   it('saves every validated setting, and nothing else', () => {
-    const saved = pickSavedSettings({ ...defaults, keepScreenAwake: false, somethingElse: 1 });
+    const saved = pickSavedSettings({ ...defaults, keepScreenAwake: false, settleSeconds: 20, somethingElse: 1 });
     expect(saved).toEqual({
       duration: 2700,
       intervalBellsEnabled: false,
@@ -95,6 +102,7 @@ describe('pickSavedSettings', () => {
       ambientVolume: 0.5,
       bellVolume: 0.7,
       keepScreenAwake: false,
+      settleSeconds: 20,
     });
   });
 });

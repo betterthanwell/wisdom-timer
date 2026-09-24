@@ -31,13 +31,14 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 │   │   ├── Timer/               # TimerDisplay (time, status, "Session N", burst),
 │   │   │                        # TimerControls (Start/Pause/Reset), CircularProgress
 │   │   ├── Settings/            # PresetButtons, DurationSelector, IntervalSettings,
-│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting
+│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting
 │   │   └── UI/                  # GlassCard, Button, Switch (on/off toggle with accessible name)
 │   ├── hooks/
 │   │   ├── useTimer.js          # Countdown from the clock, pause/resume, interval bells, wake-ups
 │   │   ├── useAudio.js          # React wrapper around the audioManager singleton
 │   │   ├── useSessionCounter.js # Sessions completed today (memory only, resets daily)
 │   │   ├── useWakeLock.js       # Keeps the screen on (Screen Wake Lock API) while active
+│   │   ├── useSettleCountdown.js # Settling-in countdown before a new session
 │   │   └── useLocalStorage.js   # Persisted state
 │   ├── context/
 │   │   ├── TimerContext.jsx     # TimerProvider: settings reducer + saving to localStorage
@@ -75,7 +76,8 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - Start is disabled for a 0:00 duration.
 - **"Ends at HH:MM"** shows under the timer only while running (hidden when paused, since the end moves); locale time format via `formatClockTime()`.
 - **Quiet screen**: while running, the settings card and keyboard hint are hidden and the page dims (`quiet-dim` overlay); "Show settings" (`aria-expanded`) reveals them and lifts the dim for that run. Paused/stopped shows everything; every start begins quiet again.
-- **Keep screen awake** (default on): a wake lock is held only while the timer is *running*, not while paused. The toggle is hidden where the Wake Lock API isn't supported.
+- **Settling in** (`settleSeconds`: 0/10/20/30/60, default 0 = off): only before a *new* session (from Ready or after completion), never on resume. Silent countdown ("Settling in…"), then the normal start. Counts as in-session: quiet screen, wake lock, duration locked. The main button becomes **Cancel**; Cancel, Space and Reset return to Ready. On completion it calls the *latest* `startTimer` via a ref, so changes made while settling (e.g. ambient sound) apply.
+- **Keep screen awake** (default on): a wake lock is held only while the timer is *running* (or settling in), not while paused. The toggle is hidden where the Wake Lock API isn't supported.
 - Product direction: functional meditation features only - no streaks, stats, social sharing or similar engagement features.
 
 ## Architecture

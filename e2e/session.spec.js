@@ -125,6 +125,19 @@ test('quiet screen: settings hide while running and come back on request', async
   await expect(page.getByRole('button', { name: /settings$/ })).toBeHidden();
 });
 
+test('settling in: a silent countdown, then the start bell', async ({ page }) => {
+  await page.getByRole('button', { name: 'Settle in for 20s' }).click();
+  await page.getByRole('button', { name: 'Start' }).click();
+
+  await expect(page.getByText('Settling in…')).toBeVisible();
+  await expect(page.getByText('00:20')).toBeVisible();
+  expect(await countSound(page, 'bell-start')).toBe(0);
+
+  await passSeconds(page, 20);
+  await expect(page.getByText('Meditating...')).toBeVisible();
+  expect(await countSound(page, 'bell-start')).toBe(1);
+});
+
 test('ambient sound starts with the session', async ({ page }) => {
   await page.getByRole('button', { name: 'Rain' }).click();
   await page.getByRole('button', { name: 'Start' }).click();

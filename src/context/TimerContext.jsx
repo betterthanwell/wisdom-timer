@@ -13,6 +13,7 @@ const initialState = {
   ambientVolume: 0.5,
   bellVolume: 0.7,
   keepScreenAwake: true,
+  settleSeconds: 0, // settling-in countdown before the start bell (off)
 };
 
 // Reducer: every setting change is { type: 'SET_SETTING', key, value }
@@ -51,6 +52,7 @@ export const TimerProvider = ({ children }) => {
     setAmbientVolume: (volume) => setSetting('ambientVolume', volume),
     setBellVolume: (volume) => setSetting('bellVolume', volume),
     setKeepScreenAwake: (enabled) => setSetting('keepScreenAwake', enabled),
+    setSettleSeconds: (seconds) => setSetting('settleSeconds', seconds),
   };
 
   return (

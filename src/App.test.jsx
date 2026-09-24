@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 import { audioManager } from './utils/audioManager';
 
@@ -210,6 +210,105 @@ describe('App', () => {
       click('Show settings');
       expect(button('30m').disabled).toBe(true);
       expect(screen.getByLabelText('Minutes').disabled).toBe(true);
+    });
+  });
+
+  describe('settling in before the start bell', () => {
+    // Fake clock that still moves on its own, so sound loading completes
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const passSeconds = (seconds) =>
+      act(() => {
+        vi.advanceTimersByTime(seconds * 1000);
+      });
+
+    const renderWithSettling = async (label = 'Settle in for 10s') => {
+      await renderApp();
+      click(label);
+      vi.clearAllMocks();
+    };
+
+    it('is off by default: Start starts straight away', async () => {
+      await renderApp();
+      expect(button('No settling in').getAttribute('aria-pressed')).toBe('true');
+      click('Start');
+      expect(screen.getByText('Meditating...')).toBeTruthy();
+    });
+
+    it('counts down in silence, then rings the start bell and starts', async () => {
+      await renderWithSettling();
+      click('Rain');
+      vi.clearAllMocks();
+      click('Start');
+
+      expect(screen.getByText('Settling in…')).toBeTruthy();
+      expect(screen.getByText('00:10')).toBeTruthy();
+      expect(startBellCount()).toBe(0);
+      expect(audioManager.playAmbient).not.toHaveBeenCalled();
+
+      passSeconds(10);
+      expect(screen.getByText('Meditating...')).toBeTruthy();
+      expect(screen.getByText('45:00')).toBeTruthy();
+      expect(startBellCount()).toBe(1);
+      expect(audioManager.playAmbient).toHaveBeenCalledWith('rain');
+    });
+
+    it('can be cancelled with Cancel, Space or Reset, without any sound', async () => {
+      await renderWithSettling();
+      for (const cancel of [
+        () => click('Cancel'),
+        () => fireEvent.keyDown(window, { code: 'Space', key: ' ' }),
+        () => click('Reset'),
+      ]) {
+        click('Start');
+        expect(screen.getByText('Settling in…')).toBeTruthy();
+        cancel();
+        expect(screen.getByText('Ready')).toBeTruthy();
+      }
+
+      passSeconds(20);
+      expect(screen.getByText('Ready')).toBeTruthy();
+      expect(audioManager.playBell).not.toHaveBeenCalled();
+    });
+
+    it('does not settle again when resuming after a pause', async () => {
+      await renderWithSettling();
+      click('Start');
+      passSeconds(10);
+      click('Pause');
+
+      click('Start');
+      expect(screen.getByText('Meditating...')).toBeTruthy();
+    });
+
+    it('locks the duration and keeps the screen quiet while settling', async () => {
+      await renderWithSettling();
+      click('Start');
+      expect(screen.queryByRole('heading', { name: 'Settings' })).toBe(null);
+
+      click('Show settings');
+      expect(button('30m').disabled).toBe(true);
+    });
+
+    it('uses an ambient sound chosen while settling', async () => {
+      await renderWithSettling();
+      click('Start');
+      click('Show settings');
+      click('Forest');
+
+      passSeconds(10);
+      expect(audioManager.playAmbient).toHaveBeenCalledWith('forest');
+    });
+
+    it('remembers the choice', async () => {
+      await renderWithSettling('Settle in for 1m');
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).settleSeconds).toBe(60);
     });
   });
 
