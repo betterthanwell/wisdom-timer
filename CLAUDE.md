@@ -133,6 +133,7 @@ Bells preload before ambient sounds (critical for instant playback). The `AudioM
 - `prefers-reduced-motion` media query disables animations
 - Keyboard shortcuts: Space (play/pause), R (reset)
 - Input fields ignore keyboard shortcuts when focused
+- Shortcuts with Cmd/Ctrl/Alt are left to the browser (e.g. Cmd+R reloads)
 
 ## Adding Features
 
@@ -171,6 +172,8 @@ Edit `src/index.css` `@theme` block:
 - Prefer extracting logic into pure functions (like `countIntervalBellsDue`) and unit-testing those
 - Hook tests use `renderHook` with `vi.useFakeTimers()`; advance time in 1-second `act()` steps so React re-renders between ticks (one big `advanceTimersByTime` batches all state updates and skips effects)
 - For bug fixes: write a test that fails on the old code first, then fix
+- Component tests (`src/App.test.jsx`) render `<App />` with `audioManager` replaced by `vi.mock` spies, and find controls by accessible name - keep `aria-label`s on icon-only buttons and unlabeled inputs
+- Vitest globals are off, so Testing Library doesn't auto-clean: call `cleanup()` in `afterEach`
 
 Still manual:
 - Timer accuracy over long durations

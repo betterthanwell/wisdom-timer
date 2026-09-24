@@ -21,6 +21,7 @@ export const DurationSelector = ({ duration, onChange, disabled = false }) => {
           max="99"
           value={minutes}
           onChange={handleMinutesChange}
+          aria-label="Minutes"
           disabled={disabled}
           className="w-20 px-3 py-2 text-center text-xl font-medium bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50"
         />
@@ -36,6 +37,7 @@ export const DurationSelector = ({ duration, onChange, disabled = false }) => {
           max="59"
           value={seconds}
           onChange={handleSecondsChange}
+          aria-label="Seconds"
           disabled={disabled}
           className="w-20 px-3 py-2 text-center text-xl font-medium bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50"
         />

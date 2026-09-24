@@ -6,6 +6,8 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
   const [timeRemaining, setTimeRemaining] = useState(initialDuration);
   const [isRunning, setIsRunning] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  // Started, then paused - the session is still in progress
+  const [isPaused, setIsPaused] = useState(false);
 
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
@@ -17,6 +19,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     if (timeRemaining <= 0) return;
 
     setIsRunning(true);
+    setIsPaused(false);
     setIsComplete(false);
     const now = Date.now();
     startTimeRef.current = now;
@@ -37,6 +40,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
   // Pause the timer
   const pause = useCallback(() => {
     setIsRunning(false);
+    setIsPaused(true);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -46,6 +50,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
   // Reset the timer
   const reset = useCallback(() => {
     setIsRunning(false);
+    setIsPaused(false);
     setIsComplete(false);
     setTimeRemaining(duration);
     intervalBellsRungRef.current = 0;
@@ -121,6 +126,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     duration,
     timeRemaining,
     isRunning,
+    isPaused,
     isComplete,
     start,
     pause,

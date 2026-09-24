@@ -104,8 +104,9 @@ export class AudioManager {
       return;
     }
 
-    // If same sound is already playing, do nothing
-    if (this.currentAmbient === soundId && !this.ambientAudio.paused) {
+    // Same sound: keep playing, or resume from where it was paused
+    if (this.currentAmbient === soundId) {
+      this.resumeAmbient();
       return;
     }
 
@@ -149,7 +150,9 @@ export class AudioManager {
     if (!this.ambientAudio || !this.ambientAudio.paused || !this.currentAmbient) {
       return;
     }
-    this.ambientAudio.play();
+    this.ambientAudio.play().catch((error) => {
+      console.error('Failed to resume ambient sound:', error);
+    });
   }
 
   // Stop ambient sound with fade out

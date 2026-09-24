@@ -1,10 +1,11 @@
 import { formatTime } from '../../utils/timeFormatter';
 import { CircularProgress } from './CircularProgress';
 
-export const TimerDisplay = ({ timeRemaining, progress, isRunning, isComplete }) => {
+export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = false, isComplete }) => {
   const getStatusText = () => {
     if (isComplete) return 'Complete';
     if (isRunning) return 'Meditating...';
+    if (isPaused) return 'Paused';
     return 'Ready';
   };
 
