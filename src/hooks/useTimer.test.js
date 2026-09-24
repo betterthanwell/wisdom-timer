@@ -45,6 +45,25 @@ describe('useTimer', () => {
     expect(onComplete).toHaveBeenCalledTimes(1);
   });
 
+  it('reports paused only between pause and the next start or reset', () => {
+    const { result } = renderTimer(60);
+    expect(result.current.isPaused).toBe(false);
+
+    act(() => result.current.start());
+    expect(result.current.isPaused).toBe(false);
+
+    act(() => result.current.pause());
+    expect(result.current.isPaused).toBe(true);
+    expect(result.current.isRunning).toBe(false);
+
+    act(() => result.current.start());
+    expect(result.current.isPaused).toBe(false);
+
+    act(() => result.current.pause());
+    act(() => result.current.reset());
+    expect(result.current.isPaused).toBe(false);
+  });
+
   describe('interval bells', () => {
     it('rings every interval, but not at the end', () => {
       const bell = { interval: 120, callback: vi.fn() };

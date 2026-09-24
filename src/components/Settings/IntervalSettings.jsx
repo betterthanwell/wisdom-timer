@@ -19,6 +19,9 @@ export const IntervalSettings = ({
         <button
           onClick={() => onToggle(!enabled)}
           disabled={disabled}
+          role="switch"
+          aria-checked={enabled}
+          aria-label="Interval bells"
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
             enabled ? 'bg-white/30' : 'bg-white/10'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
@@ -40,7 +43,8 @@ export const IntervalSettings = ({
               min="1"
               max="30"
               value={intervalMinutes}
-              onChange={(e) => onIntervalChange(Math.max(1, parseInt(e.target.value) || 1) * 60)}
+              onChange={(e) => onIntervalChange(Math.max(1, Math.min(30, parseInt(e.target.value) || 1)) * 60)}
+              aria-label="Interval in minutes"
               disabled={disabled}
               className="w-16 px-2 py-1 text-center bg-white/10 border border-white/20 rounded text-white focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50"
             />

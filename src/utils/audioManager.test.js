@@ -202,6 +202,33 @@ describe('AudioManager', () => {
       expect(manager.currentAmbient).toBe(null);
     });
 
+    it('resumes a paused sound from where it was when asked to play it again', async () => {
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(600);
+      manager.ambientAudio.currentTime = 42;
+      manager.pauseAmbient();
+
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(0);
+      expect(manager.ambientAudio.paused).toBe(false);
+      expect(manager.ambientAudio.currentTime).toBe(42);
+      expect(manager.currentAmbient).toBe('rain');
+    });
+
+    it('switches to a different sound chosen while paused', async () => {
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(600);
+      manager.ambientAudio.currentTime = 42;
+      manager.pauseAmbient();
+
+      manager.playAmbient('ocean');
+      await vi.advanceTimersByTimeAsync(600);
+      expect(manager.ambientAudio.paused).toBe(false);
+      expect(manager.ambientAudio.src).toContain('ocean');
+      expect(manager.ambientAudio.currentTime).toBe(0);
+      expect(manager.currentAmbient).toBe('ocean');
+    });
+
     it('fully stops ambient sound that is paused (reset while paused)', async () => {
       manager.playAmbient('rain');
       await vi.advanceTimersByTimeAsync(600);

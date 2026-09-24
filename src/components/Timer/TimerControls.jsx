@@ -1,7 +1,7 @@
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import { Button } from '../UI/Button';
 
-export const TimerControls = ({ isRunning, onStart, onPause, onReset, disabled = false }) => {
+export const TimerControls = ({ isRunning, onStart, onPause, onReset, disabled = false, startDisabled = false }) => {
   return (
     <div className="flex items-center justify-center gap-4">
       {/* Play/Pause Button */}
@@ -9,7 +9,8 @@ export const TimerControls = ({ isRunning, onStart, onPause, onReset, disabled =
         variant="icon"
         size="icon"
         onClick={isRunning ? onPause : onStart}
-        disabled={disabled}
+        disabled={disabled || (!isRunning && startDisabled)}
+        aria-label={isRunning ? 'Pause' : 'Start'}
         className="w-16 h-16 rounded-full"
       >
         {isRunning ? (
@@ -25,6 +26,7 @@ export const TimerControls = ({ isRunning, onStart, onPause, onReset, disabled =
         size="icon"
         onClick={onReset}
         disabled={disabled}
+        aria-label="Reset"
         className="w-12 h-12 rounded-full"
       >
         <RotateCcw className="w-5 h-5" />

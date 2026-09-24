@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { TimerProvider } from './context/TimerContext';
 import { useTimerContext } from './context/useTimerContext';
@@ -20,30 +20,25 @@ function MeditationTimerApp() {
     playBell,
     playAmbient,
     pauseAmbient,
-    resumeAmbient,
     stopAmbient,
     setBellVolume,
     setAmbientVolume,
     isInitialized,
   } = useAudio();
 
-  // Track if this is the first start (vs resume from pause)
-  const isFirstStartRef = useRef(true);
-
   // Callbacks for timer events
   const handleTimerStart = useCallback(() => {
+    // Rings on resume too - that's intended
     playBell('start');
-    // Only start ambient on first start, not on resume
-    if (isFirstStartRef.current && state.selectedAmbient) {
+    // Starts the selected sound, or resumes it if it's the one that was paused
+    if (state.selectedAmbient) {
       playAmbient(state.selectedAmbient);
     }
-    isFirstStartRef.current = false;
   }, [playBell, playAmbient, state.selectedAmbient]);
 
   const handleTimerComplete = useCallback(() => {
     playBell('end');
     stopAmbient();
-    isFirstStartRef.current = true; // Reset for next session
   }, [playBell, stopAmbient]);
 
   const handleIntervalBell = useCallback(() => {
@@ -74,27 +69,33 @@ function MeditationTimerApp() {
     pauseAmbient();
   }, [pauseTimer, pauseAmbient]);
 
-  // Handle start/resume
-  const handleStart = useCallback(() => {
-    startTimer();
-    // If resuming (not first start), resume ambient
-    if (!isFirstStartRef.current && state.selectedAmbient) {
-      resumeAmbient();
-    }
-  }, [startTimer, resumeAmbient, state.selectedAmbient]);
+  // Handle start/resume (ambient sound is handled by handleTimerStart)
+  const handleStart = startTimer;
 
   // Handle reset - stop ambient sound
   const handleReset = useCallback(() => {
     resetTimer();
     stopAmbient();
-    isFirstStartRef.current = true; // Reset for next session
   }, [resetTimer, stopAmbient]);
+
+  // Duration can only change between sessions, not while running or paused
+  const durationLocked = timer.isRunning || timer.isPaused;
 
   // Update timer duration when the user picks a new one
   const handleDurationChange = (newDuration) => {
+    if (durationLocked) return;
     actions.setDuration(newDuration);
-    if (!timer.isRunning) {
-      updateDuration(newDuration);
+    updateDuration(newDuration);
+  };
+
+  // Ambient sound can change at any time. While running it switches right
+  // away; while paused the new sound starts on resume. None always stops it.
+  const handleAmbientSelect = (soundId) => {
+    actions.setAmbientSound(soundId);
+    if (soundId === null) {
+      stopAmbient();
+    } else if (timer.isRunning) {
+      playAmbient(soundId);
     }
   };
 
@@ -120,6 +121,11 @@ function MeditationTimerApp() {
     const handleKeyPress = (e) => {
       // Ignore if user is typing in an input field
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // Leave browser shortcuts like Cmd/Ctrl+R (reload) alone
+      if (e.metaKey || e.ctrlKey || e.altKey) {
         return;
       }
 
@@ -168,6 +174,7 @@ function MeditationTimerApp() {
               timeRemaining={timer.timeRemaining}
               progress={timer.progress}
               isRunning={timer.isRunning}
+              isPaused={timer.isPaused}
               isComplete={timer.isComplete}
             />
 
@@ -178,6 +185,7 @@ function MeditationTimerApp() {
               onPause={handlePause}
               onReset={handleReset}
               disabled={!isInitialized}
+              startDisabled={timer.timeRemaining === 0 && !timer.isComplete}
             />
           </div>
         </GlassCard>
@@ -200,7 +208,7 @@ function MeditationTimerApp() {
                 presets={state.presetDurations}
                 currentDuration={state.duration}
                 onSelect={handleDurationChange}
-                disabled={timer.isRunning}
+                disabled={durationLocked}
               />
             </div>
 
@@ -212,7 +220,7 @@ function MeditationTimerApp() {
               <DurationSelector
                 duration={state.duration}
                 onChange={handleDurationChange}
-                disabled={timer.isRunning}
+                disabled={durationLocked}
               />
             </div>
 
@@ -228,7 +236,7 @@ function MeditationTimerApp() {
             {/* Ambient Sounds */}
             <AmbientSoundSelector
               selectedSound={state.selectedAmbient}
-              onSoundSelect={actions.setAmbientSound}
+              onSoundSelect={handleAmbientSelect}
               disabled={false}
             />
 
