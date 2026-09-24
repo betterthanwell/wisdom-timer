@@ -168,6 +168,8 @@ Edit `src/index.css` `@theme` block:
 
 ## Testing
 
+**CI:** `.github/workflows/ci.yml` runs `npm ci`, lint, tests and build (Node 24) on every PR and push to `main`.
+
 **Vitest** + **jsdom** + **@testing-library/react**, configured in `vite.config.js` (`test` block).
 
 - Tests live next to the code they test: `foo.js` → `foo.test.js`
