@@ -19,6 +19,8 @@ export class AudioManager {
     this.currentAmbient = null;
     this.bellVolume = 0.7;
     this.ambientVolume = 0.5;
+    // Extra 0-1 multiplier on the ambient volume (gentle ending)
+    this.ambientLevel = 1;
     this.isInitialized = false;
     this.initPromise = null;
     this.fadeInterval = null;
@@ -255,7 +257,7 @@ export class AudioManager {
 
   // Fade in effect
   fadeIn() {
-    this.fade(() => this.ambientVolume);
+    this.fade(() => this.effectiveAmbientVolume());
   }
 
   // Fade out effect
@@ -274,8 +276,25 @@ export class AudioManager {
   // Set ambient volume
   setAmbientVolume(volume) {
     this.ambientVolume = Math.max(0, Math.min(1, volume));
+    this.applyAmbientVolume();
+  }
+
+  // Scale the ambient volume by a 0-1 level (used to fade out gently before
+  // the end bell), independently of the volume slider
+  setAmbientLevel(level) {
+    this.ambientLevel = Math.max(0, Math.min(1, level));
+    this.applyAmbientVolume();
+  }
+
+  effectiveAmbientVolume() {
+    return this.ambientVolume * this.ambientLevel;
+  }
+
+  // Apply the volume straight away, unless a fade is running (the fade-in
+  // reads the target on every step, so it picks the change up itself)
+  applyAmbientVolume() {
     if (this.isInitialized && this.ambientAudio && !this.fadeInterval) {
-      this.ambientAudio.volume = this.ambientVolume;
+      this.ambientAudio.volume = this.effectiveAmbientVolume();
     }
   }
 

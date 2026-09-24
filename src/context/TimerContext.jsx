@@ -18,6 +18,7 @@ const initialState = {
   startStrikes: 1,
   intervalStrikes: 1,
   endStrikes: 1,
+  gentleEnding: false, // fade ambient sound out over the last minute
 };
 
 // Reducer: every setting change is { type: 'SET_SETTING', key, value }
@@ -58,6 +59,7 @@ export const TimerProvider = ({ children }) => {
     setKeepScreenAwake: (enabled) => setSetting('keepScreenAwake', enabled),
     setSettleSeconds: (seconds) => setSetting('settleSeconds', seconds),
     setBellStrikes: (bell, strikes) => setSetting(`${bell}Strikes`, strikes),
+    setGentleEnding: (enabled) => setSetting('gentleEnding', enabled),
   };
 
   return (

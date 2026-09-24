@@ -16,6 +16,7 @@ vi.mock('./utils/audioManager', () => ({
     stopAmbient: vi.fn(async () => {}),
     setBellVolume: vi.fn(),
     setAmbientVolume: vi.fn(),
+    setAmbientLevel: vi.fn(),
   },
 }));
 
@@ -346,6 +347,65 @@ describe('App', () => {
       click('Start');
       click('Reset');
       expect(audioManager.cancelPendingBells).toHaveBeenCalled();
+    });
+  });
+
+  describe('gentle ending', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const passSeconds = (seconds) => {
+      for (let i = 0; i < seconds; i++) {
+        act(() => {
+          vi.advanceTimersByTime(1000);
+        });
+      }
+    };
+    const lastLevel = () => audioManager.setAmbientLevel.mock.calls.at(-1)?.[0];
+
+    const startFiveMinutes = async (gentle) => {
+      await renderApp();
+      if (gentle) fireEvent.click(screen.getByRole('switch', { name: 'Gentle ending' }));
+      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '5' } });
+      click('Start');
+    };
+
+    it('is off by default: the ambient sound stays at full level', async () => {
+      await startFiveMinutes(false);
+      click('Show settings');
+      expect(screen.getByRole('switch', { name: 'Gentle ending' }).getAttribute('aria-checked')).toBe('false');
+      passSeconds(270);
+      expect(lastLevel()).toBe(1);
+    });
+
+    it('fades the ambient sound out over the last minute', async () => {
+      await startFiveMinutes(true);
+      passSeconds(200); // 1:40 left
+      expect(lastLevel()).toBe(1);
+
+      passSeconds(70); // 0:30 left
+      expect(lastLevel()).toBe(0.5);
+
+      passSeconds(29); // 0:01 left
+      expect(lastLevel()).toBeCloseTo(1 / 60);
+    });
+
+    it('goes back to full level when reset', async () => {
+      await startFiveMinutes(true);
+      passSeconds(270);
+      click('Show settings');
+      click('Reset');
+      expect(lastLevel()).toBe(1);
+    });
+
+    it('remembers the choice', async () => {
+      await startFiveMinutes(true);
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).gentleEnding).toBe(true);
     });
   });
 

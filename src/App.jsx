@@ -7,6 +7,7 @@ import { useAudio } from './hooks/useAudio';
 import { useSessionCounter } from './hooks/useSessionCounter';
 import { useWakeLock, isWakeLockSupported } from './hooks/useWakeLock';
 import { useSettleCountdown } from './hooks/useSettleCountdown';
+import { gentleEndingLevel } from './utils/gentleEnding';
 import { GlassCard } from './components/UI/GlassCard';
 import { Button } from './components/UI/Button';
 import { TimerDisplay } from './components/Timer/TimerDisplay';
@@ -19,6 +20,7 @@ import { VolumeControls } from './components/Settings/VolumeControls';
 import { KeepAwakeSetting } from './components/Settings/KeepAwakeSetting';
 import { SettleSetting } from './components/Settings/SettleSetting';
 import { BellPatternSettings } from './components/Settings/BellPatternSettings';
+import { GentleEndingSetting } from './components/Settings/GentleEndingSetting';
 
 function MeditationTimerApp() {
   const { state, actions } = useTimerContext();
@@ -30,6 +32,7 @@ function MeditationTimerApp() {
     stopAmbient,
     setBellVolume,
     setAmbientVolume,
+    setAmbientLevel,
     isInitialized,
   } = useAudio();
   const { completedToday, startNewDayIfNeeded, recordCompleted } = useSessionCounter();
@@ -116,6 +119,14 @@ function MeditationTimerApp() {
 
   const inSession = timer.isRunning || isSettling;
   const quiet = inSession && !settingsRevealed;
+
+  // Gentle ending: fade the ambient sound out over the last minute, so the
+  // end bell arrives into silence. Full level whenever it doesn't apply.
+  const ambientLevel =
+    state.gentleEnding && timer.isRunning ? gentleEndingLevel(timer.timeRemaining, timer.duration) : 1;
+  useEffect(() => {
+    setAmbientLevel(ambientLevel);
+  }, [ambientLevel, setAmbientLevel]);
 
   // Keep the screen on while a session is running, so the phone doesn't lock
   useWakeLock(state.keepScreenAwake && inSession);
@@ -325,6 +336,12 @@ function MeditationTimerApp() {
                 selectedSound={state.selectedAmbient}
                 onSoundSelect={handleAmbientSelect}
                 disabled={false}
+              />
+
+              {/* Gentle ending */}
+              <GentleEndingSetting
+                enabled={state.gentleEnding}
+                onToggle={actions.setGentleEnding}
               />
 
               {/* Volume Controls */}

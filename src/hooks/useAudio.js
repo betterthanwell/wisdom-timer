@@ -69,6 +69,11 @@ export const useAudio = () => {
     audioManager.setBellVolume(volume);
   }, []);
 
+  // Scale the ambient volume by a 0-1 level (gentle ending)
+  const setAmbientLevel = useCallback((level) => {
+    audioManager.setAmbientLevel(level);
+  }, []);
+
   // Set ambient volume (0.0 to 1.0)
   const setAmbientVolume = useCallback((volume) => {
     audioManager.setAmbientVolume(volume);
@@ -86,5 +91,6 @@ export const useAudio = () => {
     stopAmbient,
     setBellVolume,
     setAmbientVolume,
+    setAmbientLevel,
   };
 };

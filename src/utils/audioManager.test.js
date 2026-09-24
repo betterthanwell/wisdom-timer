@@ -222,6 +222,30 @@ describe('AudioManager', () => {
       expect(manager.ambientAudio.volume).toBe(0.2);
     });
 
+    it('scales the ambient volume by a level (gentle ending)', async () => {
+      manager.setAmbientVolume(0.8);
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(600);
+
+      manager.setAmbientLevel(0.5);
+      expect(manager.ambientAudio.volume).toBeCloseTo(0.4);
+
+      // Moving the volume slider during the fade still works
+      manager.setAmbientVolume(0.6);
+      expect(manager.ambientAudio.volume).toBeCloseTo(0.3);
+
+      manager.setAmbientLevel(1);
+      expect(manager.ambientAudio.volume).toBeCloseTo(0.6);
+    });
+
+    it('fades in to the scaled volume', async () => {
+      manager.setAmbientVolume(0.8);
+      manager.setAmbientLevel(0.25);
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(600);
+      expect(manager.ambientAudio.volume).toBeCloseTo(0.2);
+    });
+
     it('fades in over about 500ms', async () => {
       manager.setAmbientVolume(0.5);
       manager.playAmbient('rain');
