@@ -44,30 +44,31 @@ export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = fa
         </>
       )}
 
-      <div className="flex flex-col items-center justify-center">
-        <CircularProgress progress={isSettling ? 0 : progress} size={280} strokeWidth={10} isRunning={isRunning}>
-          <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center">
+        <CircularProgress
+          progress={isSettling ? 0 : progress}
+          strokeWidth={8}
+          isRunning={isRunning}
+          className="w-[min(16rem,68vw)] sm:w-72"
+        >
+          <div className="flex flex-col items-center" style={{ textShadow: '0 1px 3px rgba(120, 53, 15, 0.35)' }}>
             <div
-              className={`text-6xl md:text-7xl font-bold text-white transition-all duration-300 ${
+              className={`text-5xl sm:text-6xl font-semibold tabular-nums tracking-tight text-white ${
                 isRunning ? 'animate-pulse-slow' : ''
               }`}
-              style={{
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.4), 0 0 30px rgba(255, 255, 255, 0.2)',
-                WebkitTextStroke: '1px rgba(0, 0, 0, 0.1)'
-              }}
             >
               {formatTime(isSettling ? settleRemaining : timeRemaining)}
             </div>
-            <div className="text-sm md:text-base text-white/90 mt-2 font-semibold drop-shadow-md">
+            <div className="mt-1 text-sm font-semibold text-white">
               {getStatusText()}
             </div>
-            <div className="text-xs md:text-sm text-white/70 mt-1 font-medium drop-shadow-md">
+            <div className="text-xs font-medium text-white/85">
               Session {sessionNumber}
             </div>
           </div>
         </CircularProgress>
         {/* Keeps its height when empty, so nothing jumps when a session starts */}
-        <div className="h-5 mt-3 text-sm text-white/80 font-medium drop-shadow-md">
+        <div className="h-5 mt-2 text-sm font-medium text-white/85">
           {endsAt !== null && `Ends at ${formatClockTime(endsAt)}`}
         </div>
       </div>

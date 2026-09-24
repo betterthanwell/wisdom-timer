@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Settings as SettingsIcon } from 'lucide-react';
+import { Clock, Settings as SettingsIcon } from 'lucide-react';
 import { TimerProvider } from './context/TimerContext';
 import { useTimerContext } from './context/useTimerContext';
 import { useTimer } from './hooks/useTimer';
@@ -9,7 +9,7 @@ import { useWakeLock, isWakeLockSupported } from './hooks/useWakeLock';
 import { useSettleCountdown } from './hooks/useSettleCountdown';
 import { gentleEndingLevel } from './utils/gentleEnding';
 import { GlassCard } from './components/UI/GlassCard';
-import { Button } from './components/UI/Button';
+import { SettingLabel } from './components/UI/SettingLabel';
 import { TimerDisplay } from './components/Timer/TimerDisplay';
 import { TimerControls } from './components/Timer/TimerControls';
 import { PresetButtons } from './components/Settings/PresetButtons';
@@ -25,6 +25,11 @@ import { OpenEndedSetting } from './components/Settings/OpenEndedSetting';
 
 // Open-ended sitting counts up, as a countdown from 24 hours
 const OPEN_ENDED_SECONDS = 24 * 60 * 60;
+
+// A group of settings in the settings card (groups are divided by lines)
+const SECTION = 'space-y-4 py-5 first:pt-0 last:pb-0';
+// A keyboard key in the shortcut hint
+const KEY = 'px-1.5 py-0.5 rounded-md border border-white/30 bg-white/15 font-sans text-[11px] text-white';
 
 function MeditationTimerApp() {
   const { state, actions } = useTimerContext();
@@ -216,7 +221,7 @@ function MeditationTimerApp() {
 
   return (
     <div
-      className={`min-h-screen flex items-center justify-center p-4 transition-all duration-[3000ms] ease-in-out ${
+      className={`min-h-dvh flex justify-center px-4 py-6 sm:py-12 transition-colors duration-[3000ms] ease-in-out ${
         showBrightBg
           ? 'bg-gradient-to-br from-[#FFFBEB] via-[#FEF3C7] to-[#FDE047]'
           : 'bg-gradient-to-br from-[#FDE68A] to-[#F97316]'
@@ -231,184 +236,162 @@ function MeditationTimerApp() {
         }`}
       />
 
-      <div className="w-full max-w-2xl space-y-6">
-        {/* Logo */}
+      <div className="relative w-full max-w-md sm:max-w-xl space-y-4">
         <h1
-          className="text-4xl md:text-5xl font-bold text-white text-center"
-          style={{
-            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.4), 0 0 30px rgba(255, 255, 255, 0.2)',
-            WebkitTextStroke: '1px rgba(0, 0, 0, 0.1)'
-          }}
+          className="text-3xl sm:text-5xl font-bold tracking-tight text-white text-center"
+          style={{ textShadow: '0 1px 3px rgba(120, 53, 15, 0.3), 0 0 24px rgba(255, 255, 255, 0.35)' }}
         >
           {showBrightBg ? 'Wisdom Time!' : 'Wisdom Timer'}
         </h1>
 
         {/* Main Timer Card */}
-        <GlassCard strong className="p-8 md:p-12 !mt-2">
-          <div className="space-y-8">
-            {/* Timer Display */}
-            <TimerDisplay
-              timeRemaining={displaySeconds}
-              progress={state.openEnded ? 0 : timer.progress}
-              isRunning={timer.isRunning}
-              isPaused={timer.isPaused}
-              isComplete={timer.isComplete}
-              sessionNumber={sessionNumber}
-              endsAt={state.openEnded ? null : timer.endsAt}
-              settleRemaining={isSettling ? settleRemaining : null}
-            />
-
-            {/* Timer Controls */}
-            <TimerControls
-              isRunning={timer.isRunning}
-              isSettling={isSettling}
-              onStart={handleStart}
-              onPause={handlePause}
-              onCancel={cancelSettling}
-              onFinish={finishTimer}
-              showFinish={state.openEnded && (timer.isRunning || timer.isPaused)}
-              onReset={handleReset}
-              disabled={!isInitialized}
-              startDisabled={timer.timeRemaining === 0 && !timer.isComplete}
-            />
-          </div>
+        <GlassCard strong className="px-5 py-6 sm:p-10 space-y-3">
+          <TimerDisplay
+            timeRemaining={displaySeconds}
+            progress={state.openEnded ? 0 : timer.progress}
+            isRunning={timer.isRunning}
+            isPaused={timer.isPaused}
+            isComplete={timer.isComplete}
+            sessionNumber={sessionNumber}
+            endsAt={state.openEnded ? null : timer.endsAt}
+            settleRemaining={isSettling ? settleRemaining : null}
+          />
+          <TimerControls
+            isRunning={timer.isRunning}
+            isSettling={isSettling}
+            onStart={handleStart}
+            onPause={handlePause}
+            onCancel={cancelSettling}
+            onFinish={finishTimer}
+            showFinish={state.openEnded && (timer.isRunning || timer.isPaused)}
+            onReset={handleReset}
+            disabled={!isInitialized}
+            startDisabled={timer.timeRemaining === 0 && !timer.isComplete}
+          />
         </GlassCard>
 
         {/* While running, settings stay out of the way until asked for */}
         {inSession && (
-          <div className="flex justify-center !mt-4">
+          <div className="flex justify-center">
             <button
               type="button"
               onClick={() => setSettingsRevealed((revealed) => !revealed)}
               aria-expanded={settingsRevealed}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors"
             >
-              <SettingsIcon className="w-4 h-4" />
+              <SettingsIcon className="w-4 h-4" aria-hidden="true" />
               {settingsRevealed ? 'Hide settings' : 'Show settings'}
             </button>
           </div>
         )}
 
-        {/* Settings Card */}
+        {/* Settings Card, in groups: duration, bells, sound, screen */}
         {!quiet && (
-          <GlassCard className="p-6 !mt-6">
-            <div className="space-y-6">
-              {/* Settings Header */}
-              <div className="flex items-center gap-2 text-white">
-                <SettingsIcon className="w-5 h-5" />
-                <h2 className="text-lg font-semibold">Settings</h2>
-              </div>
+          <GlassCard className="px-5 py-5 sm:p-6">
+            <div className="flex items-center gap-2 text-white">
+              <SettingsIcon className="w-5 h-5" aria-hidden="true" />
+              <h2 className="text-lg font-semibold">Settings</h2>
+            </div>
 
-              {/* Open-ended sitting */}
-              <OpenEndedSetting
-                enabled={state.openEnded}
-                onToggle={handleOpenEndedChange}
-                disabled={durationLocked}
-              />
-
-              {/* Preset Buttons */}
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">
-                  Quick Select
-                </label>
-                <PresetButtons
-                  presets={state.presetDurations}
-                  currentDuration={state.duration}
-                  onSelect={handleDurationChange}
-                  disabled={durationLocked || state.openEnded}
+            <div className="mt-4 divide-y divide-white/15">
+              <section className={SECTION}>
+                <OpenEndedSetting
+                  enabled={state.openEnded}
+                  onToggle={handleOpenEndedChange}
+                  disabled={durationLocked}
                 />
-              </div>
-
-              {/* Custom Duration */}
-              <div>
-                <label className="block text-sm font-medium text-white/80 mb-3">
-                  Custom Duration
-                </label>
-                <DurationSelector
-                  duration={state.duration}
-                  onChange={handleDurationChange}
-                  disabled={durationLocked || state.openEnded}
+                <div className="space-y-3">
+                  <SettingLabel icon={Clock}>Duration</SettingLabel>
+                  <PresetButtons
+                    presets={state.presetDurations}
+                    currentDuration={state.duration}
+                    onSelect={handleDurationChange}
+                    disabled={durationLocked || state.openEnded}
+                  />
+                  <DurationSelector
+                    duration={state.duration}
+                    onChange={handleDurationChange}
+                    disabled={durationLocked || state.openEnded}
+                  />
+                </div>
+                <SettleSetting
+                  seconds={state.settleSeconds}
+                  onChange={actions.setSettleSeconds}
+                  disabled={durationLocked}
                 />
-              </div>
+              </section>
 
-              {/* Settling-in countdown */}
-              <SettleSetting
-                seconds={state.settleSeconds}
-                onChange={actions.setSettleSeconds}
-                disabled={durationLocked}
-              />
+              <section className={SECTION}>
+                <IntervalSettings
+                  enabled={state.intervalBellsEnabled}
+                  intervalDuration={state.intervalDuration}
+                  intervalStart={state.intervalStart}
+                  onToggle={actions.setIntervalBells}
+                  onIntervalChange={actions.setIntervalDuration}
+                  onStartChange={actions.setIntervalStart}
+                  disabled={timer.isRunning}
+                />
+                {/* How many times each bell rings (choices behind a switch;
+                    saved choices apply either way) */}
+                <BellPatternSettings
+                  strikes={{ start: state.startStrikes, interval: state.intervalStrikes, end: state.endStrikes }}
+                  onChange={actions.setBellStrikes}
+                  shown={state.showBellStrikes}
+                  onShownChange={actions.setShowBellStrikes}
+                />
+              </section>
 
-              {/* Interval woodblock */}
-              <IntervalSettings
-                enabled={state.intervalBellsEnabled}
-                intervalDuration={state.intervalDuration}
-                intervalStart={state.intervalStart}
-                onToggle={actions.setIntervalBells}
-                onIntervalChange={actions.setIntervalDuration}
-                onStartChange={actions.setIntervalStart}
-                disabled={timer.isRunning}
-              />
-
-              {/* How many times each bell rings (choices behind a switch;
-                  saved choices apply either way) */}
-              <BellPatternSettings
-                strikes={{ start: state.startStrikes, interval: state.intervalStrikes, end: state.endStrikes }}
-                onChange={actions.setBellStrikes}
-                shown={state.showBellStrikes}
-                onShownChange={actions.setShowBellStrikes}
-              />
-
-              {/* Ambient Sounds */}
-              <AmbientSoundSelector
-                selectedSound={state.selectedAmbient}
-                onSoundSelect={handleAmbientSelect}
-                disabled={false}
-              />
-
-              {/* Gentle ending */}
-              <GentleEndingSetting
-                enabled={state.gentleEnding}
-                onToggle={actions.setGentleEnding}
-              />
-
-              {/* Volume Controls */}
-              <VolumeControls
-                bellVolume={state.bellVolume}
-                ambientVolume={state.ambientVolume}
-                onBellVolumeChange={(vol) => {
-                  actions.setBellVolume(vol);
-                  setBellVolume(vol);
-                }}
-                onAmbientVolumeChange={(vol) => {
-                  actions.setAmbientVolume(vol);
-                  setAmbientVolume(vol);
-                }}
-                disabled={false}
-              />
+              <section className={SECTION}>
+                <AmbientSoundSelector
+                  selectedSound={state.selectedAmbient}
+                  onSoundSelect={handleAmbientSelect}
+                />
+                <GentleEndingSetting
+                  enabled={state.gentleEnding}
+                  onToggle={actions.setGentleEnding}
+                />
+                <VolumeControls
+                  bellVolume={state.bellVolume}
+                  ambientVolume={state.ambientVolume}
+                  onBellVolumeChange={(vol) => {
+                    actions.setBellVolume(vol);
+                    setBellVolume(vol);
+                  }}
+                  onAmbientVolumeChange={(vol) => {
+                    actions.setAmbientVolume(vol);
+                    setAmbientVolume(vol);
+                  }}
+                />
+              </section>
 
               {/* Keep screen awake (only where the browser supports it) */}
               {isWakeLockSupported() && (
-                <KeepAwakeSetting
-                  enabled={state.keepScreenAwake}
-                  onToggle={actions.setKeepScreenAwake}
-                />
-              )}
-
-              {/* Audio Initialization Notice */}
-              {!isInitialized && (
-                <div className="text-xs text-white/60 text-center">
-                  Loading sounds…
-                </div>
+                <section className={SECTION}>
+                  <KeepAwakeSetting
+                    enabled={state.keepScreenAwake}
+                    onToggle={actions.setKeepScreenAwake}
+                  />
+                </section>
               )}
             </div>
+
+            {!isInitialized && (
+              <p className="mt-4 text-xs text-white/70 text-center">Loading sounds…</p>
+            )}
           </GlassCard>
         )}
 
-        {/* Footer */}
+        {/* Keyboard shortcuts - only where there's likely a keyboard (a
+            mouse or trackpad as the main pointer), not on touch screens */}
         {!quiet && (
-          <div className="text-center text-white/60 text-sm">
-            <p>Press space to play/pause • R to reset</p>
-          </div>
+          <p
+            data-testid="keyboard-hint"
+            className="hidden pointer-fine:flex items-center justify-center gap-1.5 text-xs text-white/75"
+          >
+            <kbd className={KEY}>Space</kbd> start / pause
+            <span aria-hidden="true" className="mx-1">·</span>
+            <kbd className={KEY}>R</kbd> reset
+          </p>
         )}
       </div>
     </div>

@@ -3,16 +3,17 @@ export const Button = ({
   onClick,
   variant = 'primary',
   size = 'md',
+  round = false,
   className = '',
   disabled = false,
   ...props
 }) => {
-  const baseClasses = 'flex items-center justify-center rounded-xl font-medium transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseClasses = 'flex items-center justify-center font-medium transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variants = {
     primary: 'bg-white/20 hover:bg-white/30 text-white border border-white/30',
     secondary: 'bg-white/10 hover:bg-white/20 text-white border border-white/20',
-    icon: 'bg-white/15 hover:bg-white/25 text-white border border-white/25 hover:scale-110 active:scale-100',
+    icon: 'bg-white/15 hover:bg-white/25 text-white border border-white/25',
   };
 
   const sizes = {
@@ -22,11 +23,15 @@ export const Button = ({
     icon: 'p-3',
   };
 
+  // One rounding class only: two conflicting ones (rounded-xl + rounded-full)
+  // resolve by stylesheet order, not by the order they're written in
+  const shape = round ? 'rounded-full' : 'rounded-xl';
+
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`${baseClasses} ${shape} ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
       {children}

@@ -1,3 +1,6 @@
+const inputClassName =
+  'w-14 px-1 py-1.5 text-center text-lg font-medium tabular-nums bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50';
+
 export const DurationSelector = ({ duration, onChange, disabled = false }) => {
   const minutes = Math.floor(duration / 60);
   const seconds = duration % 60;
@@ -13,36 +16,32 @@ export const DurationSelector = ({ duration, onChange, disabled = false }) => {
   };
 
   return (
-    <div className="flex items-center justify-center gap-2">
-      <div className="flex flex-col items-center">
-        <input
-          type="number"
-          min="0"
-          max="99"
-          value={minutes}
-          onChange={handleMinutesChange}
-          aria-label="Minutes"
-          disabled={disabled}
-          className="w-20 px-3 py-2 text-center text-xl font-medium bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50"
-        />
-        <span className="text-xs text-white/60 mt-1">minutes</span>
-      </div>
-
-      <span className="text-2xl text-white/70 mb-5">:</span>
-
-      <div className="flex flex-col items-center">
-        <input
-          type="number"
-          min="0"
-          max="59"
-          value={seconds}
-          onChange={handleSecondsChange}
-          aria-label="Seconds"
-          disabled={disabled}
-          className="w-20 px-3 py-2 text-center text-xl font-medium bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50"
-        />
-        <span className="text-xs text-white/60 mt-1">seconds</span>
-      </div>
+    <div className="flex items-center justify-center gap-2 text-sm text-white/70">
+      <span>Custom</span>
+      <input
+        type="number"
+        inputMode="numeric"
+        min="0"
+        max="99"
+        value={minutes}
+        onChange={handleMinutesChange}
+        aria-label="Minutes"
+        disabled={disabled}
+        className={inputClassName}
+      />
+      <span>min</span>
+      <input
+        type="number"
+        inputMode="numeric"
+        min="0"
+        max="59"
+        value={seconds}
+        onChange={handleSecondsChange}
+        aria-label="Seconds"
+        disabled={disabled}
+        className={inputClassName}
+      />
+      <span>sec</span>
     </div>
   );
 };

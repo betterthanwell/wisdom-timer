@@ -26,7 +26,8 @@ export const TimerControls = ({
         onClick={onClick}
         disabled={disabled || (label === 'Start' && startDisabled)}
         aria-label={label}
-        className="w-16 h-16 rounded-full"
+        round
+        className="w-16 h-16"
       >
         {isSettling ? (
           <X className="w-7 h-7" />
@@ -45,7 +46,8 @@ export const TimerControls = ({
           onClick={onFinish}
           disabled={disabled}
           aria-label="Finish"
-          className="w-12 h-12 rounded-full"
+          round
+          className="w-12 h-12"
         >
           <Flag className="w-5 h-5" />
         </Button>
@@ -58,7 +60,8 @@ export const TimerControls = ({
         onClick={onReset}
         disabled={disabled}
         aria-label="Reset"
-        className="w-12 h-12 rounded-full"
+        round
+        className="w-12 h-12"
       >
         <RotateCcw className="w-5 h-5" />
       </Button>

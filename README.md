@@ -41,7 +41,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 - **Enlightenment burst** - a 9-second light animation in three waves, and the title briefly reads "Wisdom Time!"
 
 ### Everything else
-- **Keyboard shortcuts** - Space to start/pause, R to reset (browser shortcuts like Cmd/Ctrl+R are left alone, and typing in a field never triggers them)
+- **Keyboard shortcuts** - Space to start/pause, R to reset (browser shortcuts like Cmd/Ctrl+R are left alone, and typing in a field never triggers them); the hint is shown only with a mouse or trackpad, not on touch screens
 - **Settings are remembered** in the browser (localStorage) and checked when loaded, so old or damaged saved values fall back to the defaults
 - **Accessible** - labelled controls for screen readers, and animations are switched off when your system asks for reduced motion
 - **Responsive** - works on phones, tablets and desktops
@@ -104,7 +104,7 @@ src/
 │   ├── Timer/                  # TimerDisplay, TimerControls, CircularProgress
 │   ├── Settings/               # PresetButtons, DurationSelector, IntervalSettings,
 │   │                           # AmbientSoundSelector, VolumeControls
-│   └── UI/                     # GlassCard, Button
+│   └── UI/                     # GlassCard, Button, Switch, SettingLabel, ChoiceButton
 ├── hooks/
 │   ├── useTimer.js             # Countdown from the clock, pause/resume, bells, background wake-ups
 │   ├── useAudio.js             # React wrapper around the audio manager
@@ -151,7 +151,7 @@ presetDurations: [1800, 2700, 3600, 5400],  // 30, 45, 60, 90 minutes
 ```
 
 ### Background colors
-The gradients are Tailwind classes in `src/App.jsx`: `from-[#FDE68A] to-[#F97316]` normally, and a brighter gradient after a session completes. (The `--color-gradient-*` variables in `src/index.css` aren't currently used.)
+The gradients are Tailwind classes in `src/App.jsx`: `from-[#FDE68A] to-[#F97316]` normally, and a brighter gradient after a session completes.
 
 ### Adding an ambient sound
 1. Put the file in `public/audio/ambient/`.

@@ -32,7 +32,8 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 │   │   │                        # TimerControls (Start/Pause|Cancel/Finish/Reset), CircularProgress
 │   │   ├── Settings/            # PresetButtons, DurationSelector, IntervalSettings,
 │   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings, GentleEndingSetting, OpenEndedSetting
-│   │   └── UI/                  # GlassCard, Button, Switch (on/off toggle with accessible name)
+│   │   └── UI/                  # GlassCard, Button (`round` for circles), Switch (on/off toggle with accessible name),
+│   │                            # SettingLabel (icon + setting name), ChoiceButton (option with aria-pressed)
 │   ├── hooks/
 │   │   ├── useTimer.js          # Countdown from the clock, pause/resume, interval bells, wake-ups
 │   │   ├── useAudio.js          # React wrapper around the audioManager singleton
@@ -122,13 +123,17 @@ The owner works out the desired behavior by live-testing, so these can change - 
 ### Accessibility
 - `prefers-reduced-motion` disables animations.
 - Icon-only buttons and unlabeled inputs have `aria-label`s (Start/Pause/Reset, Minutes, Seconds, "Interval in minutes", "Starting after, in minutes"); the "Interval woodblock" toggle is `role="switch"` with `aria-checked`. Tests rely on these names.
-- Keyboard: Space start/pause, R reset. Ignored while typing in inputs, and when Cmd/Ctrl/Alt is held (browser shortcuts like Cmd+R stay working).
+- Keyboard: Space start/pause, R reset. Ignored while typing in inputs, and when Cmd/Ctrl/Alt is held (browser shortcuts like Cmd+R stay working). The hint under the settings (`data-testid="keyboard-hint"`) only shows where the main pointer is fine (`pointer-fine:` - mouse/trackpad), not on touch screens.
+- Volume sliders are named "Bells volume" / "Sound volume"; choice buttons (settle time, strikes, presets, ambient sound) expose selection with `aria-pressed`.
 
 ## Code Conventions
 
 - Components PascalCase `.jsx`; hooks `useX.js`; utils/constants camelCase.
 - Functional components, props destructured in the signature, named exports (except `App`).
 - Tailwind utility classes; custom CSS only in `index.css` (glass cards, keyframes). Inline styles for complex values (shadows, radial gradients).
+- **Base CSS goes in `@layer base`.** Tailwind 4 puts utilities in cascade layers, and unlayered CSS beats any layer: a bare `* { padding: 0 }` once silently wiped out every `p-*`/`m-*`/`space-y-*` in the app. Tailwind's preflight already resets margins and box-sizing.
+- Give a button one rounding class (`Button`'s `round` prop): conflicting ones like `rounded-xl rounded-full` resolve by stylesheet order, not class order.
+- Settings rows: `SettingLabel` for the heading, `Switch` for on/off, `ChoiceButton` for options. The settings card is grouped into `<section>`s (duration, bells, sound, screen) divided by lines.
 - Global settings via context actions; local UI state with `useState`; refs for values that mustn't re-render.
 - Handlers passed to `useTimer` or used in effects are wrapped in `useCallback` - `useTimer`'s timer effect depends on `onComplete`, so an unstable callback would restart it every render.
 - Lint must stay at zero errors and zero warnings (react-hooks rules include `set-state-in-effect` and exhaustive deps).
@@ -145,7 +150,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 2. Update `AUDIO_SOURCES.bells`, and the `bells` object in `AudioManager` if it's a new bell type.
 
 ### Background colors
-The gradients are Tailwind arbitrary-value classes in `App.jsx` (`from-[#FDE68A] to-[#F97316]`, and a brighter one after completion). The `--color-gradient-*` variables in `index.css`'s `@theme` block are currently unused.
+The gradients are Tailwind arbitrary-value classes in `App.jsx` (`from-[#FDE68A] to-[#F97316]`, and a brighter one after completion).
 
 ### New setting
 1. Add the default to `initialState` in `TimerContext.jsx`, and an action function that calls `setSetting('key', value)`.
