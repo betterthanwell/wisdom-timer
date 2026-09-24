@@ -328,7 +328,7 @@ describe('App', () => {
 
     it('offers the bell strikes section even with interval bells off, choices tucked away', async () => {
       await renderApp();
-      expect(screen.getByRole('switch', { name: 'Interval bells' }).getAttribute('aria-checked')).toBe('false');
+      expect(screen.getByRole('switch', { name: 'Interval woodblock' }).getAttribute('aria-checked')).toBe('false');
       expect(screen.getByText('Bell strikes')).toBeTruthy();
       expect(strikesSwitch().getAttribute('aria-checked')).toBe('false');
       expect(screen.queryByRole('button', { name: 'Start bell: 1 strike' })).toBe(null);
@@ -493,13 +493,32 @@ describe('App', () => {
 
     it('keeps ringing interval bells', async () => {
       await startOpenEnded();
-      fireEvent.click(screen.getByRole('switch', { name: 'Interval bells' }));
+      fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
       fireEvent.change(screen.getByLabelText('Interval in minutes'), { target: { value: '1' } });
+      fireEvent.change(screen.getByLabelText('Starting after, in minutes'), { target: { value: '1' } });
       click('Start');
       passSeconds(180);
 
       const intervalBells = audioManager.playBell.mock.calls.filter(([type]) => type === 'interval');
       expect(intervalBells).toHaveLength(3);
+    });
+
+    it('hits the woodblock first after the starting time, then every interval', async () => {
+      await startOpenEnded();
+      fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
+      fireEvent.change(screen.getByLabelText('Interval in minutes'), { target: { value: '2' } });
+      fireEvent.change(screen.getByLabelText('Starting after, in minutes'), { target: { value: '1' } });
+      click('Start');
+      const woodblocks = () => audioManager.playBell.mock.calls.filter(([type]) => type === 'interval').length;
+
+      passSeconds(59);
+      expect(woodblocks()).toBe(0);
+      passSeconds(1);
+      expect(woodblocks()).toBe(1); // 1:00
+      passSeconds(119);
+      expect(woodblocks()).toBe(1);
+      passSeconds(1);
+      expect(woodblocks()).toBe(2); // 3:00
     });
 
     it('Finish rings the end bell, completes the session and keeps the time sat', async () => {
@@ -696,9 +715,33 @@ describe('App', () => {
       expect(button('Start').disabled).toBe(true);
     });
 
+    it('offers the woodblock every 10 minutes, starting after 5, by default', async () => {
+      await renderApp();
+      expect(screen.getByText('Interval Woodblock')).toBeTruthy();
+      fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
+
+      expect(screen.getByText(/Hit the woodblock every/)).toBeTruthy();
+      expect(screen.getByLabelText('Interval in minutes').value).toBe('10');
+      expect(screen.getByText(/Starting after/)).toBeTruthy();
+      expect(screen.getByLabelText('Starting after, in minutes').value).toBe('5');
+    });
+
+    it('keeps the starting time between 1 and 60 minutes, and remembers it', async () => {
+      await renderApp();
+      fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
+      const start = screen.getByLabelText('Starting after, in minutes');
+
+      fireEvent.change(start, { target: { value: '99' } });
+      expect(start.value).toBe('60');
+      fireEvent.change(start, { target: { value: '0' } });
+      expect(start.value).toBe('1');
+      fireEvent.change(start, { target: { value: '20' } });
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).intervalStart).toBe(1200);
+    });
+
     it('caps the interval at 30 minutes', async () => {
       await renderApp();
-      fireEvent.click(screen.getByRole('switch', { name: 'Interval bells' }));
+      fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
       const interval = screen.getByLabelText('Interval in minutes');
 
       fireEvent.change(interval, { target: { value: '99' } });

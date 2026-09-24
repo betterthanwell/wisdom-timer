@@ -11,6 +11,7 @@ const validators = {
   duration: (value) => isWholeNumber(value, 1, 99 * 60 + 59),
   intervalBellsEnabled: (value) => typeof value === 'boolean',
   intervalDuration: (value) => isWholeNumber(value, 60, 30 * 60) && value % 60 === 0,
+  intervalStart: (value) => isWholeNumber(value, 60, 60 * 60) && value % 60 === 0,
   selectedAmbient: (value) => value === null || Object.hasOwn(AUDIO_SOURCES.ambient, value),
   ambientVolume: isVolume,
   bellVolume: isVolume,

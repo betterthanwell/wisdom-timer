@@ -70,6 +70,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - **Start bell rings on every start, including resume** after a pause.
 - **Duration (presets + custom) is locked while running and while paused**, greyed out; Reset unlocks it.
 - **Interval bell settings**: locked while running, usable while paused (left open for now).
+- **Interval woodblock** (the UI's name for interval bells): "Hit the woodblock every N minutes" (`intervalDuration`, 1-30 min, default 10) and "Starting after N minutes" (`intervalStart`, 1-60 min, default 5) - the first knock comes at the start time, then every interval (default: 5, 15, 25 …). Code and settings keys still say "interval bell".
 - **Volume sliders** are always usable.
 - **Ambient sound choice** is always usable: *None* stops the sound immediately; another sound switches right away while running, or starts on resume while paused.
 - **Play after a completed session starts a new full session** (no Reset needed).
@@ -87,7 +88,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 ## Architecture
 
 ### State
-- **TimerContext** - `useReducer` for settings: `duration`, `presetDurations`, `intervalBellsEnabled`, `intervalDuration`, `selectedAmbient`, `ambientVolume`, `bellVolume`, `keepScreenAwake`. One generic `SET_SETTING` action (`{ key, value }`); named action functions (`setDuration`, `setKeepScreenAwake`, …) wrap it.
+- **TimerContext** - `useReducer` for settings: `duration`, `presetDurations`, `intervalBellsEnabled`, `intervalDuration`, `intervalStart`, `selectedAmbient`, `ambientVolume`, `bellVolume`, `keepScreenAwake`. One generic `SET_SETTING` action (`{ key, value }`); named action functions (`setDuration`, `setKeepScreenAwake`, …) wrap it.
 - Saved settings (`localStorage` key `wisdomTimerSettings`) seed the reducer's initial state through `sanitizeSettings()`, which keeps only valid values for known keys and uses defaults otherwise. Saving uses `pickSavedSettings()`: **every setting with a validator in `utils/settings.js` is saved, and nothing else.**
 - Session state (running, paused, complete, time left) lives in `useTimer`, not the context.
 
@@ -98,7 +99,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - `pause()` takes the time left from the clock, not the (possibly stale) displayed value.
 - `start()` after completion begins a new full session. `finish()` completes a running or paused session early (open-ended sitting).
 - Background wake-ups are only scheduled up to 6 hours ahead (`WAKE_UP_HORIZON_MS`), so a 24 h open-ended session with 1-minute bells doesn't create ~1,400 timeouts.
-- Interval bells: `countIntervalBellsDue(elapsed, interval, duration)` says how many bells are due (never at the end); the hook rings when the count goes up, so skipped ticks ring once. `start()` counts already-due bells as rung, so resuming doesn't ring a catch-up bell.
+- Interval bells: `useTimer`'s 4th argument is `{ interval, firstAt, callback }` or `null`. `countIntervalBellsDue(elapsed, interval, duration, firstAt)` says how many bells are due - first at `firstAt` (default: one interval), then every `interval`, never at the end; the hook rings when the count goes up, so skipped ticks ring once. `start()` counts already-due bells as rung, so resuming doesn't ring a catch-up bell.
 
 ### Audio (`audioManager`)
 - Singleton `AudioManager`; the class is also exported so tests can create isolated instances.
@@ -120,7 +121,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 
 ### Accessibility
 - `prefers-reduced-motion` disables animations.
-- Icon-only buttons and unlabeled inputs have `aria-label`s (Start/Pause/Reset, Minutes, Seconds, "Interval in minutes"); the interval toggle is `role="switch"` with `aria-checked`. Tests rely on these names.
+- Icon-only buttons and unlabeled inputs have `aria-label`s (Start/Pause/Reset, Minutes, Seconds, "Interval in minutes", "Starting after, in minutes"); the "Interval woodblock" toggle is `role="switch"` with `aria-checked`. Tests rely on these names.
 - Keyboard: Space start/pause, R reset. Ignored while typing in inputs, and when Cmd/Ctrl/Alt is held (browser shortcuts like Cmd+R stay working).
 
 ## Code Conventions

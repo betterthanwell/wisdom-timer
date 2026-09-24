@@ -8,7 +8,8 @@ const initialState = {
   duration: 2700, // 45 minutes default
   presetDurations: [1800, 2700, 3600, 5400], // 30, 45, 60, 90 minutes
   intervalBellsEnabled: false,
-  intervalDuration: 300, // 5 minutes
+  intervalDuration: 600, // 10 minutes
+  intervalStart: 300, // first woodblock after 5 minutes
   selectedAmbient: null,
   ambientVolume: 0.5,
   bellVolume: 0.7,
@@ -55,6 +56,7 @@ export const TimerProvider = ({ children }) => {
     setDuration: (duration) => setSetting('duration', duration),
     setIntervalBells: (enabled) => setSetting('intervalBellsEnabled', enabled),
     setIntervalDuration: (duration) => setSetting('intervalDuration', duration),
+    setIntervalStart: (seconds) => setSetting('intervalStart', seconds),
     setAmbientSound: (sound) => setSetting('selectedAmbient', sound),
     setAmbientVolume: (volume) => setSetting('ambientVolume', volume),
     setBellVolume: (volume) => setSetting('bellVolume', volume),

@@ -6,6 +6,7 @@ const defaults = {
   presetDurations: [1800, 2700, 3600, 5400],
   intervalBellsEnabled: false,
   intervalDuration: 300,
+  intervalStart: 300,
   selectedAmbient: null,
   ambientVolume: 0.5,
   bellVolume: 0.7,
@@ -53,6 +54,14 @@ describe('sanitizeSettings', () => {
     expect(sanitizeSettings({ intervalDuration: 30 }, defaults).intervalDuration).toBe(300);
     expect(sanitizeSettings({ intervalDuration: 1860 }, defaults).intervalDuration).toBe(300);
     expect(sanitizeSettings({ intervalDuration: 90 }, defaults).intervalDuration).toBe(300);
+  });
+
+  it('only accepts a whole-minute first woodblock time from 1 to 60 minutes', () => {
+    expect(sanitizeSettings({ intervalStart: 60 }, defaults).intervalStart).toBe(60);
+    expect(sanitizeSettings({ intervalStart: 3600 }, defaults).intervalStart).toBe(3600);
+    expect(sanitizeSettings({ intervalStart: 0 }, defaults).intervalStart).toBe(300);
+    expect(sanitizeSettings({ intervalStart: 3660 }, defaults).intervalStart).toBe(300);
+    expect(sanitizeSettings({ intervalStart: 90 }, defaults).intervalStart).toBe(300);
   });
 
   it('only accepts a boolean for interval bells', () => {
@@ -106,6 +115,7 @@ describe('pickSavedSettings', () => {
       duration: 2700,
       intervalBellsEnabled: false,
       intervalDuration: 300,
+      intervalStart: 300,
       selectedAmbient: null,
       ambientVolume: 0.5,
       bellVolume: 0.7,

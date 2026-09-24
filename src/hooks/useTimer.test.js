@@ -208,6 +208,17 @@ describe('useTimer', () => {
       expect(bell.callback).toHaveBeenCalledTimes(4); // 2, 4, 6, 8 min
     });
 
+    it('still rings the first bell on time when it comes before one interval', () => {
+      const bell = { interval: 300, firstAt: 60, callback: vi.fn() };
+      const { result } = renderTimer(600, bell);
+      act(() => result.current.start());
+
+      advanceSeconds(60);
+      expect(bell.callback).toHaveBeenCalledTimes(1); // 1 min
+      advanceSeconds(300);
+      expect(bell.callback).toHaveBeenCalledTimes(2); // 6 min
+    });
+
     it('keeps the schedule after pause and resume', () => {
       const { result, onComplete } = renderTimer(300);
       act(() => result.current.start());
@@ -263,6 +274,43 @@ describe('useTimer', () => {
       // 4:00, 6:00, 8:00 - and at 10:00 only the end bell
       expect(bell.callback).toHaveBeenCalledTimes(4);
       expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('rings first after firstAt, then every interval', () => {
+      const bell = { interval: 120, firstAt: 60, callback: vi.fn() };
+      const { result } = renderTimer(600, bell);
+
+      act(() => result.current.start());
+
+      advanceSeconds(59);
+      expect(bell.callback).not.toHaveBeenCalled();
+      advanceSeconds(1);
+      expect(bell.callback).toHaveBeenCalledTimes(1); // 1:00
+
+      advanceSeconds(119);
+      expect(bell.callback).toHaveBeenCalledTimes(1);
+      advanceSeconds(1);
+      expect(bell.callback).toHaveBeenCalledTimes(2); // 3:00
+
+      advanceSeconds(420);
+      expect(bell.callback).toHaveBeenCalledTimes(5); // 5:00, 7:00, 9:00
+    });
+
+    it('does not ring a catch-up bell when the first bell time is moved earlier while paused', () => {
+      const { result, rerender } = renderTimer(600, { interval: 300, firstAt: 300, callback: vi.fn() });
+
+      act(() => result.current.start());
+      advanceSeconds(150);
+      act(() => result.current.pause());
+
+      const bell = { interval: 300, firstAt: 60, callback: vi.fn() };
+      rerender({ bell });
+      act(() => result.current.start());
+      advanceSeconds(1);
+      expect(bell.callback).not.toHaveBeenCalled();
+
+      advanceSeconds(209); // 6:00 elapsed
+      expect(bell.callback).toHaveBeenCalledTimes(1);
     });
 
     it('keeps ringing on schedule after pause and resume', () => {
