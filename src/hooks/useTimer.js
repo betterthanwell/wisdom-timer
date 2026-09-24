@@ -42,13 +42,18 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
 
   // Pause the timer
   const pause = useCallback(() => {
+    if (!isRunning) return;
+
+    // Take the time left from the clock, not the last displayed value, which
+    // can be stale if ticks were throttled
+    setTimeRemaining(Math.max(0, Math.ceil((expectedEndTimeRef.current - Date.now()) / 1000)));
     setIsRunning(false);
     setIsPaused(true);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-  }, []);
+  }, [isRunning]);
 
   // Reset the timer
   const reset = useCallback(() => {
@@ -74,35 +79,61 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
   }, [isRunning]);
 
   // Main timer effect
+  const intervalSeconds = onIntervalBell?.interval;
   useEffect(() => {
-    if (isRunning) {
-      intervalRef.current = setInterval(() => {
-        const now = Date.now();
-        const remaining = Math.max(0, Math.ceil((expectedEndTimeRef.current - now) / 1000));
+    if (!isRunning) return;
 
-        setTimeRemaining(remaining);
+    let finished = false;
+    const wakeUps = [];
 
-        // Check for completion
-        if (remaining === 0) {
-          setIsRunning(false);
-          setIsComplete(true);
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
+    const stopTicking = () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      wakeUps.forEach(clearTimeout);
+      document.removeEventListener('visibilitychange', tick);
+    };
 
-          if (onComplete) {
-            onComplete();
-          }
+    function tick() {
+      if (finished) return;
+      const remaining = Math.max(0, Math.ceil((expectedEndTimeRef.current - Date.now()) / 1000));
+
+      setTimeRemaining(remaining);
+
+      // Check for completion
+      if (remaining === 0) {
+        finished = true;
+        stopTicking();
+        setIsRunning(false);
+        setIsComplete(true);
+
+        if (onComplete) {
+          onComplete();
         }
-      }, 100); // 100ms for smooth updates
-
-      return () => {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-      };
+      }
     }
-  }, [isRunning, onComplete]);
+
+    intervalRef.current = setInterval(tick, 100); // 100ms for smooth updates
+
+    // Background tabs throttle repeating timers hard (Chrome: down to once a
+    // minute), but one-off timers much less. So also wake up exactly at the
+    // end and at each interval bell, and whenever the tab becomes visible.
+    const wakeAt = (time) => {
+      wakeUps.push(setTimeout(tick, Math.max(0, time - Date.now())));
+    };
+    const endTime = expectedEndTimeRef.current;
+    wakeAt(endTime);
+    if (intervalSeconds > 0) {
+      for (let elapsed = intervalSeconds; elapsed < duration; elapsed += intervalSeconds) {
+        const bellTime = endTime - (duration - elapsed) * 1000;
+        if (bellTime > Date.now()) wakeAt(bellTime);
+      }
+    }
+    document.addEventListener('visibilitychange', tick);
+
+    return stopTicking;
+  }, [isRunning, onComplete, duration, intervalSeconds]);
 
   // Interval bell checker
   useEffect(() => {

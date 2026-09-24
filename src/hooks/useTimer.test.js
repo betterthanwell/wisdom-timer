@@ -84,6 +84,80 @@ describe('useTimer', () => {
     expect(result.current.isPaused).toBe(false);
   });
 
+  describe('in a background tab (repeating timer throttled)', () => {
+    // Worst case: the 100ms ticking interval never fires at all. The timer
+    // must still finish, and ring interval bells, on time.
+    beforeEach(() => {
+      vi.spyOn(globalThis, 'setInterval').mockImplementation(() => 0);
+    });
+
+    afterEach(() => {
+      vi.mocked(globalThis.setInterval).mockRestore();
+    });
+
+    it('still completes on time', () => {
+      const { result, onComplete } = renderTimer(600);
+      act(() => result.current.start());
+
+      advanceSeconds(599);
+      expect(onComplete).not.toHaveBeenCalled();
+
+      advanceSeconds(1);
+      expect(onComplete).toHaveBeenCalledTimes(1);
+      expect(result.current.isComplete).toBe(true);
+      expect(result.current.timeRemaining).toBe(0);
+    });
+
+    it('still rings interval bells on time', () => {
+      const bell = { interval: 120, callback: vi.fn() };
+      const { result } = renderTimer(600, bell);
+      act(() => result.current.start());
+
+      advanceSeconds(120);
+      expect(bell.callback).toHaveBeenCalledTimes(1);
+      advanceSeconds(360);
+      expect(bell.callback).toHaveBeenCalledTimes(4); // 2, 4, 6, 8 min
+    });
+
+    it('keeps the schedule after pause and resume', () => {
+      const { result, onComplete } = renderTimer(300);
+      act(() => result.current.start());
+      advanceSeconds(100);
+      act(() => result.current.pause());
+      advanceSeconds(1000); // paused time doesn't count
+      act(() => result.current.start());
+
+      advanceSeconds(199);
+      expect(onComplete).not.toHaveBeenCalled();
+      advanceSeconds(1);
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('updates the display as soon as the tab becomes visible again', () => {
+      const { result } = renderTimer(600);
+      act(() => result.current.start());
+
+      act(() => {
+        vi.setSystemTime(Date.now() + 250_000);
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      expect(result.current.timeRemaining).toBe(350);
+    });
+
+    it('completes only once, however many wake-ups fire', () => {
+      const bell = { interval: 60, callback: vi.fn() };
+      const { result, onComplete } = renderTimer(120, bell);
+      act(() => result.current.start());
+
+      act(() => {
+        vi.setSystemTime(Date.now() + 500_000);
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      advanceSeconds(200);
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('interval bells', () => {
     it('rings every interval, but not at the end', () => {
       const bell = { interval: 120, callback: vi.fn() };
