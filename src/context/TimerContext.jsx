@@ -1,7 +1,6 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
+import { useReducer, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-
-const TimerContext = createContext();
+import { TimerContext } from './useTimerContext';
 
 // Action types
 const ActionTypes = {
@@ -11,7 +10,6 @@ const ActionTypes = {
   SET_AMBIENT_SOUND: 'SET_AMBIENT_SOUND',
   SET_AMBIENT_VOLUME: 'SET_AMBIENT_VOLUME',
   SET_BELL_VOLUME: 'SET_BELL_VOLUME',
-  LOAD_SETTINGS: 'LOAD_SETTINGS',
 };
 
 // Initial state
@@ -46,9 +44,6 @@ const timerReducer = (state, action) => {
     case ActionTypes.SET_BELL_VOLUME:
       return { ...state, bellVolume: action.payload };
 
-    case ActionTypes.LOAD_SETTINGS:
-      return { ...state, ...action.payload };
-
     default:
       return state;
   }
@@ -56,15 +51,12 @@ const timerReducer = (state, action) => {
 
 // Provider component
 export const TimerProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(timerReducer, initialState);
   const [savedSettings, setSavedSettings] = useLocalStorage('wisdomTimerSettings', {});
-
-  // Load settings from localStorage on mount
-  useEffect(() => {
-    if (Object.keys(savedSettings).length > 0) {
-      dispatch({ type: ActionTypes.LOAD_SETTINGS, payload: savedSettings });
-    }
-  }, []);
+  // Start from saved settings so the first render already reflects them
+  const [state, dispatch] = useReducer(timerReducer, savedSettings, (saved) => ({
+    ...initialState,
+    ...saved,
+  }));
 
   // Save settings to localStorage when state changes
   useEffect(() => {
@@ -101,13 +93,4 @@ export const TimerProvider = ({ children }) => {
       {children}
     </TimerContext.Provider>
   );
-};
-
-// Custom hook to use the timer context
-export const useTimerContext = () => {
-  const context = useContext(TimerContext);
-  if (!context) {
-    throw new Error('useTimerContext must be used within a TimerProvider');
-  }
-  return context;
 };

@@ -1,23 +1,14 @@
-import { useState, useEffect } from 'react';
-
 export const DurationSelector = ({ duration, onChange, disabled = false }) => {
-  const [minutes, setMinutes] = useState(Math.floor(duration / 60));
-  const [seconds, setSeconds] = useState(duration % 60);
-
-  useEffect(() => {
-    setMinutes(Math.floor(duration / 60));
-    setSeconds(duration % 60);
-  }, [duration]);
+  const minutes = Math.floor(duration / 60);
+  const seconds = duration % 60;
 
   const handleMinutesChange = (e) => {
     const value = Math.max(0, Math.min(99, parseInt(e.target.value) || 0));
-    setMinutes(value);
     onChange(value * 60 + seconds);
   };
 
   const handleSecondsChange = (e) => {
     const value = Math.max(0, Math.min(59, parseInt(e.target.value) || 0));
-    setSeconds(value);
     onChange(minutes * 60 + value);
   };
 
