@@ -118,12 +118,20 @@ export class AudioManager {
       // Set new source and play
       this.ambientAudio.src = sound.path;
       this.ambientAudio.volume = 0;
-      await this.ambientAudio.play();
       this.currentAmbient = soundId;
+      await this.ambientAudio.play();
+
+      // Stopped or switched while play() was pending - don't fade back in
+      if (this.currentAmbient !== soundId) {
+        return;
+      }
 
       // Fade in
       this.fadeIn();
     } catch (error) {
+      if (this.currentAmbient === soundId) {
+        this.currentAmbient = null;
+      }
       console.error(`Failed to play ambient sound "${soundId}":`, error);
     }
   }
@@ -146,65 +154,72 @@ export class AudioManager {
 
   // Stop ambient sound with fade out
   async stopAmbient() {
-    if (!this.ambientAudio || this.ambientAudio.paused) {
+    if (!this.ambientAudio || !this.currentAmbient) {
+      return;
+    }
+
+    // No longer the current sound from here on, so a pending playAmbient()
+    // won't fade it back in and resumeAmbient() won't restart it
+    this.currentAmbient = null;
+
+    const finishStop = () => {
+      this.ambientAudio.pause();
+      this.ambientAudio.currentTime = 0;
+    };
+
+    // Already paused (e.g. reset while paused): nothing to fade out
+    if (this.ambientAudio.paused) {
+      this.clearFade();
+      finishStop();
       return;
     }
 
     return new Promise((resolve) => {
       this.fadeOut(() => {
-        this.ambientAudio.pause();
-        this.ambientAudio.currentTime = 0;
-        this.currentAmbient = null;
+        finishStop();
         resolve();
       });
     });
   }
 
-  // Fade in effect
-  fadeIn() {
-    if (this.fadeInterval) {
-      clearInterval(this.fadeInterval);
-    }
+  // Fade the ambient volume towards getTarget() over 500ms in 20 steps.
+  // Always finishes after the last step, even if the browser ignores volume
+  // changes (iOS Safari). The target is read on every step, so volume
+  // changes made during a fade are applied.
+  fade(getTarget, onDone) {
+    this.clearFade();
 
-    const targetVolume = this.ambientVolume;
-    const step = targetVolume / 20; // 20 steps
-    const interval = 500 / 20; // 500ms total
+    const steps = 20;
+    const from = this.ambientAudio.volume;
+    let step = 0;
 
     this.fadeInterval = setInterval(() => {
-      if (this.ambientAudio.volume < targetVolume) {
-        this.ambientAudio.volume = Math.min(
-          this.ambientAudio.volume + step,
-          targetVolume
-        );
-      } else {
-        clearInterval(this.fadeInterval);
-        this.fadeInterval = null;
+      step++;
+      const target = getTarget();
+      this.ambientAudio.volume = step >= steps ? target : from + (target - from) * (step / steps);
+
+      if (step >= steps) {
+        this.clearFade();
+        if (onDone) onDone();
       }
-    }, interval);
+    }, 500 / steps);
+  }
+
+  clearFade() {
+    if (this.fadeInterval) {
+      clearInterval(this.fadeInterval);
+      this.fadeInterval = null;
+    }
+  }
+
+  // Fade in effect
+  fadeIn() {
+    this.fade(() => this.ambientVolume);
   }
 
   // Fade out effect
   fadeOut(callback) {
-    if (this.fadeInterval) {
-      clearInterval(this.fadeInterval);
-    }
-
-    const step = this.ambientAudio.volume / 20; // 20 steps
-    const interval = 500 / 20; // 500ms total
-
-    this.fadeInterval = setInterval(() => {
-      if (this.ambientAudio.volume > 0.01) {
-        this.ambientAudio.volume = Math.max(
-          this.ambientAudio.volume - step,
-          0
-        );
-      } else {
-        this.ambientAudio.volume = 0;
-        clearInterval(this.fadeInterval);
-        this.fadeInterval = null;
-        if (callback) callback();
-      }
-    }, interval);
+    this.fade(() => 0, callback);
   }
 
   // Set bell volume
@@ -225,9 +240,7 @@ export class AudioManager {
 
   // Cleanup
   cleanup() {
-    if (this.fadeInterval) {
-      clearInterval(this.fadeInterval);
-    }
+    this.clearFade();
     if (this.ambientAudio) {
       this.ambientAudio.pause();
       this.ambientAudio = null;
