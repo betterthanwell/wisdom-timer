@@ -41,15 +41,17 @@ test.beforeEach(async ({ page }) => {
   // time keeps flowing on top, and slow CI machines see e.g. 08:59 for 09:00.
   // Jumping ahead also lets sound loading's 2s fallback timeouts fire.
   await page.clock.pauseAt(new Date(START.getTime() + 60 * 60 * 1000));
-  await expect(page.getByRole('button', { name: 'Start' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
 });
 
 test('a full 45-minute session: start bell, countdown, end bell', async ({ page }) => {
   await expect(page.getByText('45:00')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Start' }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect(page.getByText('Meditating...')).toBeVisible();
   expect(await countSound(page, 'bell-start')).toBe(1);
+  // The frozen clock reads 09:00 at Start
+  await expect(page.getByText(/^Ends at 09:45/)).toBeVisible();
 
   await passMinutes(page, 20);
   await expect(page.getByText('25:00')).toBeVisible();
@@ -65,7 +67,7 @@ test('interval bells ring during the session, but not at the end', async ({ page
   await page.getByLabel('Interval in minutes').fill('5');
   await setDuration(page, 15);
 
-  await page.getByRole('button', { name: 'Start' }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   await passMinutes(page, 15);
 
   await expect(page.getByText('Complete')).toBeVisible();
@@ -75,7 +77,7 @@ test('interval bells ring during the session, but not at the end', async ({ page
 
 test('pausing holds the time; resuming rings the start bell and finishes on schedule', async ({ page }) => {
   await setDuration(page, 10);
-  await page.getByRole('button', { name: 'Start' }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   await passMinutes(page, 1);
 
   await page.getByRole('button', { name: 'Pause' }).click();
@@ -88,7 +90,7 @@ test('pausing holds the time; resuming rings the start bell and finishes on sche
   await expect(page.getByLabel('Minutes', { exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: '30m' })).toBeDisabled();
 
-  await page.getByRole('button', { name: 'Start' }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   expect(await countSound(page, 'bell-start')).toBe(2);
 
   await passMinutes(page, 9);
@@ -99,19 +101,71 @@ test('Play after a finished session starts session 2', async ({ page }) => {
   await setDuration(page, 1);
   await expect(page.getByText('Session 1')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Start' }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   await passMinutes(page, 1);
   await expect(page.getByText('Complete')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Start' }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect(page.getByText('Meditating...')).toBeVisible();
   await expect(page.getByText('Session 2')).toBeVisible();
   await expect(page.getByText('01:00')).toBeVisible();
 });
 
+test('quiet screen: settings hide while running and come back on request', async ({ page }) => {
+  const settingsHeading = page.getByRole('heading', { name: 'Settings' });
+  await expect(settingsHeading).toBeVisible();
+
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(settingsHeading).toBeHidden();
+
+  await page.getByRole('button', { name: 'Show settings' }).click();
+  await expect(settingsHeading).toBeVisible();
+
+  await page.getByRole('button', { name: 'Pause' }).click();
+  await expect(page.getByRole('button', { name: /settings$/ })).toBeHidden();
+});
+
+test('settling in: a silent countdown, then the start bell', async ({ page }) => {
+  await page.getByRole('button', { name: 'Settle in for 20s' }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+
+  await expect(page.getByText('Settling in…')).toBeVisible();
+  await expect(page.getByText('00:20')).toBeVisible();
+  expect(await countSound(page, 'bell-start')).toBe(0);
+
+  await passSeconds(page, 20);
+  await expect(page.getByText('Meditating...')).toBeVisible();
+  expect(await countSound(page, 'bell-start')).toBe(1);
+});
+
+test('bell patterns: three strikes to begin, five seconds apart', async ({ page }) => {
+  await page.getByRole('button', { name: 'Start bell: 3 strikes' }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  expect(await countSound(page, 'bell-start')).toBe(1);
+
+  await page.clock.runFor(5_000);
+  expect(await countSound(page, 'bell-start')).toBe(2);
+  await page.clock.runFor(5_000);
+  expect(await countSound(page, 'bell-start')).toBe(3);
+});
+
+test('open-ended sitting: counts up until Finish', async ({ page }) => {
+  await page.getByRole('switch', { name: 'Open-ended sitting' }).click();
+  await expect(page.getByText('00:00')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await passMinutes(page, 20);
+  await expect(page.getByText('20:00')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Finish' }).click();
+  await expect(page.getByText('Complete')).toBeVisible();
+  await expect(page.getByText('20:00')).toBeVisible();
+  expect(await countSound(page, 'bell-end')).toBe(1);
+});
+
 test('ambient sound starts with the session', async ({ page }) => {
   await page.getByRole('button', { name: 'Rain' }).click();
-  await page.getByRole('button', { name: 'Start' }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
   await passSeconds(page, 1);
 
   expect(await countSound(page, 'ambient/rain')).toBe(1);

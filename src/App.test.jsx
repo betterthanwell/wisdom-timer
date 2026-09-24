@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 import { audioManager } from './utils/audioManager';
 
@@ -9,12 +9,14 @@ vi.mock('./utils/audioManager', () => ({
     init: vi.fn(async () => true),
     cleanup: vi.fn(),
     playBell: vi.fn(async () => {}),
+    cancelPendingBells: vi.fn(),
     playAmbient: vi.fn(async () => {}),
     pauseAmbient: vi.fn(),
     resumeAmbient: vi.fn(),
     stopAmbient: vi.fn(async () => {}),
     setBellVolume: vi.fn(),
     setAmbientVolume: vi.fn(),
+    setAmbientLevel: vi.fn(),
   },
 }));
 
@@ -85,7 +87,7 @@ describe('App', () => {
       click('Rain');
       await completeOneSecondSession();
 
-      expect(audioManager.playBell).toHaveBeenCalledWith('end');
+      expect(audioManager.playBell).toHaveBeenCalledWith('end', 1);
       expect(audioManager.stopAmbient).toHaveBeenCalled();
     });
 
@@ -120,6 +122,23 @@ describe('App', () => {
       click('Start');
       click('Reset');
       expect(screen.getByText('Session 1')).toBeTruthy();
+    });
+  });
+
+  describe('end time', () => {
+    it('shows when the session will end while running, but not when paused or stopped', async () => {
+      await renderApp();
+      expect(screen.queryByText(/^Ends at /)).toBe(null);
+
+      click('Start');
+      expect(screen.getByText(/^Ends at \d{2}:\d{2}/)).toBeTruthy();
+
+      click('Pause');
+      expect(screen.queryByText(/^Ends at /)).toBe(null);
+
+      click('Start');
+      click('Reset');
+      expect(screen.queryByText(/^Ends at /)).toBe(null);
     });
   });
 
@@ -179,6 +198,7 @@ describe('App', () => {
       click('Start');
       vi.clearAllMocks();
 
+      click('Show settings');
       click('Ocean Waves');
       expect(audioManager.playAmbient).toHaveBeenCalledWith('ocean');
 
@@ -189,8 +209,340 @@ describe('App', () => {
     it('locks the duration settings', async () => {
       await renderApp();
       click('Start');
+      click('Show settings');
       expect(button('30m').disabled).toBe(true);
       expect(screen.getByLabelText('Minutes').disabled).toBe(true);
+    });
+  });
+
+  describe('settling in before the start bell', () => {
+    // Fake clock that still moves on its own, so sound loading completes
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const passSeconds = (seconds) =>
+      act(() => {
+        vi.advanceTimersByTime(seconds * 1000);
+      });
+
+    const renderWithSettling = async (label = 'Settle in for 10s') => {
+      await renderApp();
+      click(label);
+      vi.clearAllMocks();
+    };
+
+    it('is off by default: Start starts straight away', async () => {
+      await renderApp();
+      expect(button('No settling in').getAttribute('aria-pressed')).toBe('true');
+      click('Start');
+      expect(screen.getByText('Meditating...')).toBeTruthy();
+    });
+
+    it('counts down in silence, then rings the start bell and starts', async () => {
+      await renderWithSettling();
+      click('Rain');
+      vi.clearAllMocks();
+      click('Start');
+
+      expect(screen.getByText('Settling in…')).toBeTruthy();
+      expect(screen.getByText('00:10')).toBeTruthy();
+      expect(startBellCount()).toBe(0);
+      expect(audioManager.playAmbient).not.toHaveBeenCalled();
+
+      passSeconds(10);
+      expect(screen.getByText('Meditating...')).toBeTruthy();
+      expect(screen.getByText('45:00')).toBeTruthy();
+      expect(startBellCount()).toBe(1);
+      expect(audioManager.playAmbient).toHaveBeenCalledWith('rain');
+    });
+
+    it('can be cancelled with Cancel, Space or Reset, without any sound', async () => {
+      await renderWithSettling();
+      for (const cancel of [
+        () => click('Cancel'),
+        () => fireEvent.keyDown(window, { code: 'Space', key: ' ' }),
+        () => click('Reset'),
+      ]) {
+        click('Start');
+        expect(screen.getByText('Settling in…')).toBeTruthy();
+        cancel();
+        expect(screen.getByText('Ready')).toBeTruthy();
+      }
+
+      passSeconds(20);
+      expect(screen.getByText('Ready')).toBeTruthy();
+      expect(audioManager.playBell).not.toHaveBeenCalled();
+    });
+
+    it('does not settle again when resuming after a pause', async () => {
+      await renderWithSettling();
+      click('Start');
+      passSeconds(10);
+      click('Pause');
+
+      click('Start');
+      expect(screen.getByText('Meditating...')).toBeTruthy();
+    });
+
+    it('locks the duration and keeps the screen quiet while settling', async () => {
+      await renderWithSettling();
+      click('Start');
+      expect(screen.queryByRole('heading', { name: 'Settings' })).toBe(null);
+
+      click('Show settings');
+      expect(button('30m').disabled).toBe(true);
+    });
+
+    it('uses an ambient sound chosen while settling', async () => {
+      await renderWithSettling();
+      click('Start');
+      click('Show settings');
+      click('Forest');
+
+      passSeconds(10);
+      expect(audioManager.playAmbient).toHaveBeenCalledWith('forest');
+    });
+
+    it('remembers the choice', async () => {
+      await renderWithSettling('Settle in for 1m');
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).settleSeconds).toBe(60);
+    });
+  });
+
+  describe('bell patterns', () => {
+    it('rings each bell once by default', async () => {
+      await renderApp();
+      expect(button('End bell: 1 strike').getAttribute('aria-pressed')).toBe('true');
+      click('Start');
+      expect(audioManager.playBell).toHaveBeenCalledWith('start', 1);
+    });
+
+    it('rings the start bell as many times as chosen, and remembers it', async () => {
+      await renderApp();
+      click('Start bell: 3 strikes');
+      click('Start');
+
+      expect(audioManager.playBell).toHaveBeenCalledWith('start', 3);
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).startStrikes).toBe(3);
+    });
+
+    it('uses the chosen end bell pattern when a session completes', async () => {
+      await renderApp();
+      click('End bell: 2 strikes');
+      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } });
+      fireEvent.change(screen.getByLabelText('Seconds'), { target: { value: '1' } });
+      click('Start');
+      await screen.findByText('Complete', {}, { timeout: 3000 });
+
+      expect(audioManager.playBell).toHaveBeenCalledWith('end', 2);
+    });
+
+    it('cancels strikes that have not rung yet on reset', async () => {
+      await renderApp();
+      click('Start');
+      click('Reset');
+      expect(audioManager.cancelPendingBells).toHaveBeenCalled();
+    });
+  });
+
+  describe('gentle ending', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const passSeconds = (seconds) => {
+      for (let i = 0; i < seconds; i++) {
+        act(() => {
+          vi.advanceTimersByTime(1000);
+        });
+      }
+    };
+    const lastLevel = () => audioManager.setAmbientLevel.mock.calls.at(-1)?.[0];
+
+    const startFiveMinutes = async (gentle) => {
+      await renderApp();
+      if (gentle) fireEvent.click(screen.getByRole('switch', { name: 'Gentle ending' }));
+      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '5' } });
+      click('Start');
+    };
+
+    it('is off by default: the ambient sound stays at full level', async () => {
+      await startFiveMinutes(false);
+      click('Show settings');
+      expect(screen.getByRole('switch', { name: 'Gentle ending' }).getAttribute('aria-checked')).toBe('false');
+      passSeconds(270);
+      expect(lastLevel()).toBe(1);
+    });
+
+    it('fades the ambient sound out over the last minute', async () => {
+      await startFiveMinutes(true);
+      passSeconds(200); // 1:40 left
+      expect(lastLevel()).toBe(1);
+
+      passSeconds(70); // 0:30 left
+      expect(lastLevel()).toBe(0.5);
+
+      passSeconds(29); // 0:01 left
+      expect(lastLevel()).toBeCloseTo(1 / 60);
+    });
+
+    it('goes back to full level when reset', async () => {
+      await startFiveMinutes(true);
+      passSeconds(270);
+      click('Show settings');
+      click('Reset');
+      expect(lastLevel()).toBe(1);
+    });
+
+    it('remembers the choice', async () => {
+      await startFiveMinutes(true);
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).gentleEnding).toBe(true);
+    });
+  });
+
+  describe('open-ended sitting', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const passSeconds = (seconds) => {
+      for (let i = 0; i < seconds; i++) {
+        act(() => {
+          vi.advanceTimersByTime(1000);
+        });
+      }
+    };
+    const openEndedSwitch = () => screen.getByRole('switch', { name: 'Open-ended sitting' });
+
+    const startOpenEnded = async () => {
+      await renderApp();
+      fireEvent.click(openEndedSwitch());
+      vi.clearAllMocks();
+    };
+
+    it('is off by default', async () => {
+      await renderApp();
+      expect(openEndedSwitch().getAttribute('aria-checked')).toBe('false');
+      expect(screen.queryByRole('button', { name: 'Finish' })).toBe(null);
+    });
+
+    it('greys out the duration settings and starts from 00:00', async () => {
+      await startOpenEnded();
+      expect(button('45m').disabled).toBe(true);
+      expect(screen.getByLabelText('Minutes').disabled).toBe(true);
+      expect(screen.getByText('00:00')).toBeTruthy();
+      expect(screen.getByText('Counts up until you press Finish.')).toBeTruthy();
+    });
+
+    it('counts up, with no end time', async () => {
+      await startOpenEnded();
+      click('Start');
+      passSeconds(75);
+
+      expect(screen.getByText('01:15')).toBeTruthy();
+      expect(screen.queryByText(/^Ends at /)).toBe(null);
+    });
+
+    it('keeps ringing interval bells', async () => {
+      await startOpenEnded();
+      fireEvent.click(screen.getByRole('switch', { name: 'Interval bells' }));
+      fireEvent.change(screen.getByLabelText('Interval in minutes'), { target: { value: '1' } });
+      click('Start');
+      passSeconds(180);
+
+      const intervalBells = audioManager.playBell.mock.calls.filter(([type]) => type === 'interval');
+      expect(intervalBells).toHaveLength(3);
+    });
+
+    it('Finish rings the end bell, completes the session and keeps the time sat', async () => {
+      await startOpenEnded();
+      click('Rain');
+      click('Start');
+      passSeconds(90);
+
+      click('Finish');
+      expect(audioManager.playBell).toHaveBeenCalledWith('end', 1);
+      expect(audioManager.stopAmbient).toHaveBeenCalled();
+      expect(screen.getByText('Complete')).toBeTruthy();
+      expect(screen.getByText('01:30')).toBeTruthy();
+      expect(screen.getByText('Session 1')).toBeTruthy();
+
+      click('Start');
+      expect(screen.getByText('00:00')).toBeTruthy();
+      expect(screen.getByText('Session 2')).toBeTruthy();
+    });
+
+    it('can also finish while paused', async () => {
+      await startOpenEnded();
+      click('Start');
+      passSeconds(30);
+      click('Pause');
+      click('Finish');
+      expect(screen.getByText('Complete')).toBeTruthy();
+    });
+
+    it('goes back to the chosen duration when turned off, and remembers the choice', async () => {
+      await startOpenEnded();
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).openEnded).toBe(true);
+
+      fireEvent.click(openEndedSwitch());
+      expect(screen.getByText('45:00')).toBeTruthy();
+    });
+  });
+
+  describe('quiet screen while sitting', () => {
+    const settingsVisible = () => screen.queryByRole('heading', { name: 'Settings' }) !== null;
+    const dimmed = () => screen.getByTestId('quiet-dim').className.includes('opacity-100');
+
+    it('hides the settings and keyboard hint, and dims the page, while running', async () => {
+      await renderApp();
+      expect(settingsVisible()).toBe(true);
+      expect(dimmed()).toBe(false);
+
+      click('Start');
+      expect(settingsVisible()).toBe(false);
+      expect(screen.queryByText(/Press space/)).toBe(null);
+      expect(dimmed()).toBe(true);
+    });
+
+    it('brings the settings back on request, and hides them again', async () => {
+      await renderApp();
+      click('Start');
+
+      click('Show settings');
+      expect(settingsVisible()).toBe(true);
+      expect(button('Hide settings').getAttribute('aria-expanded')).toBe('true');
+      expect(dimmed()).toBe(false);
+
+      click('Hide settings');
+      expect(settingsVisible()).toBe(false);
+      expect(dimmed()).toBe(true);
+    });
+
+    it('shows everything again when paused, and is quiet again on the next start', async () => {
+      await renderApp();
+      click('Start');
+      click('Show settings');
+      click('Pause');
+      expect(settingsVisible()).toBe(true);
+      expect(screen.queryByRole('button', { name: /settings$/ })).toBe(null);
+      expect(dimmed()).toBe(false);
+
+      click('Start');
+      expect(settingsVisible()).toBe(false);
     });
   });
 

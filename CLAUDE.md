@@ -29,15 +29,16 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 │   ├── index.css                # Global styles, .glass-card(-strong), keyframes, reduced motion
 │   ├── components/
 │   │   ├── Timer/               # TimerDisplay (time, status, "Session N", burst),
-│   │   │                        # TimerControls (Start/Pause/Reset), CircularProgress
+│   │   │                        # TimerControls (Start/Pause|Cancel/Finish/Reset), CircularProgress
 │   │   ├── Settings/            # PresetButtons, DurationSelector, IntervalSettings,
-│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting
+│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings, GentleEndingSetting, OpenEndedSetting
 │   │   └── UI/                  # GlassCard, Button, Switch (on/off toggle with accessible name)
 │   ├── hooks/
 │   │   ├── useTimer.js          # Countdown from the clock, pause/resume, interval bells, wake-ups
 │   │   ├── useAudio.js          # React wrapper around the audioManager singleton
 │   │   ├── useSessionCounter.js # Sessions completed today (memory only, resets daily)
 │   │   ├── useWakeLock.js       # Keeps the screen on (Screen Wake Lock API) while active
+│   │   ├── useSettleCountdown.js # Settling-in countdown before a new session
 │   │   └── useLocalStorage.js   # Persisted state
 │   ├── context/
 │   │   ├── TimerContext.jsx     # TimerProvider: settings reducer + saving to localStorage
@@ -45,6 +46,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 │   ├── utils/
 │   │   ├── audioManager.js      # AudioManager class + singleton: bells, ambient, fades, volume
 │   │   ├── intervalBells.js     # countIntervalBellsDue() - pure bell scheduling
+│   │   ├── gentleEnding.js      # gentleEndingLevel() - ambient level over the last minute
 │   │   ├── settings.js          # sanitizeSettings() - validates saved settings
 │   │   └── timeFormatter.js     # formatTime (MM:SS) etc.
 │   └── constants/
@@ -73,7 +75,13 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - **Play after a completed session starts a new full session** (no Reset needed).
 - **"Session N"** shows the session you're on today: completed count + 1, or the just-completed number while "Complete" shows. Memory only; starts over on reload and on a new day. Resets don't count.
 - Start is disabled for a 0:00 duration.
-- **Keep screen awake** (default on): a wake lock is held only while the timer is *running*, not while paused. The toggle is hidden where the Wake Lock API isn't supported.
+- **"Ends at HH:MM"** shows under the timer only while running (hidden when paused, since the end moves); locale time format via `formatClockTime()`.
+- **Quiet screen**: while running, the settings card and keyboard hint are hidden and the page dims (`quiet-dim` overlay); "Show settings" (`aria-expanded`) reveals them and lifts the dim for that run. Paused/stopped shows everything; every start begins quiet again.
+- **Settling in** (`settleSeconds`: 0/10/20/30/60, default 0 = off): only before a *new* session (from Ready or after completion), never on resume. Silent countdown ("Settling in…"), then the normal start. Counts as in-session: quiet screen, wake lock, duration locked. The main button becomes **Cancel**; Cancel, Space and Reset return to Ready. On completion it calls the *latest* `startTimer` via a ref, so changes made while settling (e.g. ambient sound) apply.
+- **Bell patterns**: `startStrikes`, `intervalStrikes`, `endStrikes` (1-3, default 1). Strikes are 5 s apart for start/end bowls, 2 s for the interval woodblock (`BELL_STRIKE_SPACING_MS`). Reset cancels strikes not yet rung; pause doesn't.
+- **Gentle ending** (`gentleEnding`, default off): while running, the ambient level follows `gentleEndingLevel()` - full until the last minute (or the last half of sessions under 2 min), then linearly to 0. Applied as `audioManager.setAmbientLevel()`, a multiplier separate from the volume slider; back to 1 whenever it doesn't apply.
+- **Open-ended sitting** (`openEnded`, default off): the timer runs as a countdown from 24 h (`OPEN_ENDED_SECONDS` in `App.jsx`) but displays the time sat (counting up); no progress ring, "Ends at" or gentle ending. **Finish** (`useTimer.finish()`) completes early - end bell, burst, session counted - and keeps the time sat on screen; Play then starts from 00:00. Presets/custom duration are greyed out while it's on; the switch itself is locked during a session.
+- **Keep screen awake** (default on): a wake lock is held only while the timer is *running* (or settling in), not while paused. The toggle is hidden where the Wake Lock API isn't supported.
 - Product direction: functional meditation features only - no streaks, stats, social sharing or similar engagement features.
 
 ## Architecture
@@ -85,10 +93,11 @@ The owner works out the desired behavior by live-testing, so these can change - 
 
 ### Timer (`useTimer`)
 - Time left is computed from `expectedEndTimeRef` and `Date.now()`, never by decrementing, so it doesn't drift.
-- Returns `timeRemaining`, `isRunning`, `isPaused`, `isComplete`, `progress`, `duration`, and `start`, `pause`, `reset`, `updateDuration`.
+- Returns `timeRemaining`, `isRunning`, `isPaused`, `isComplete`, `endsAt` (end timestamp while running, else `null`), `progress`, `duration`, and `start`, `pause`, `reset`, `updateDuration`.
 - A 100ms `setInterval` updates the display. Background tabs throttle it heavily (Chrome: down to once a minute), so the hook also schedules one-off `setTimeout` wake-ups at the end time and at each interval-bell time, and re-checks on `visibilitychange`. A `finished` guard prevents completing twice.
 - `pause()` takes the time left from the clock, not the (possibly stale) displayed value.
-- `start()` after completion begins a new full session.
+- `start()` after completion begins a new full session. `finish()` completes a running or paused session early (open-ended sitting).
+- Background wake-ups are only scheduled up to 6 hours ahead (`WAKE_UP_HORIZON_MS`), so a 24 h open-ended session with 1-minute bells doesn't create ~1,400 timeouts.
 - Interval bells: `countIntervalBellsDue(elapsed, interval, duration)` says how many bells are due (never at the end); the hook rings when the count goes up, so skipped ticks ring once. `start()` counts already-due bells as rung, so resuming doesn't ring a catch-up bell.
 
 ### Audio (`audioManager`)
@@ -97,7 +106,8 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - Each bell plays on a fresh `Audio` element (overlap allowed; `cloneNode()` didn't reliably keep volume). Ringing bells are tracked in `ringingBells`, so bell volume changes reach bells that are still ringing.
 - Ambient: one looping element. `fade()` runs a fixed 20 steps over 500ms and always finishes, even where the browser ignores `volume` (iOS); the fade-in reads the target volume every step.
 - `playAmbient(id)`: resumes if `id` is the current (paused) sound, otherwise switches. `currentAmbient` is set before `play()` and cleared as soon as a stop begins, so stopping while starting stays stopped.
-- `cleanup()` stops all playback but keeps loaded sounds.
+- `playBell(type, strikes)` rings now and schedules later strikes (`pendingStrikes`); `cancelPendingBells()` drops the ones not yet rung. Each strike reads the current bell volume.
+- `cleanup()` stops all playback (and pending strikes) but keeps loaded sounds.
 - Sound files: bells are AAC in an MP4 container despite the `.mp3` names (browsers sniff content). Ambient files are long real recordings (10-36 min).
 
 ### Known platform limits
@@ -152,6 +162,7 @@ The gradients are Tailwind arbitrary-value classes in `App.jsx` (`from-[#FDE68A]
 - Vitest globals are off, so Testing Library doesn't auto-clean: call `cleanup()` in `afterEach`.
 - **Playwright** (`e2e/`): the production build in Chromium, WebKit and an iPhone 15 profile. First time: `npx playwright install chromium webkit`.
   - The page clock is faked **and frozen** (`clock.install()` then `clock.pauseAt()`); an unfrozen fake clock keeps flowing in real time, which made a test flaky on slow CI. Advance with `clock.fastForward` in 1-minute jumps; `runFor` fires every 100ms tick and is far too slow for long sessions.
+  - Playwright matches accessible names as **substrings** by default (Testing Library matches whole names): use `exact: true` for short names like `Start` ("Start bell: 3 strikes" also contains it).
   - Sounds are recorded, not heard: an init script wraps `HTMLMediaElement.prototype.play` and pushes file paths to `window.__sounds`.
 - **CI**: `ci.yml` (npm ci, lint, test, build) and `e2e.yml` (Playwright, report uploaded on failure), both on Node 24, on every PR and push to `main`.
 - **Bug fixes are test-first**: write a test, confirm it fails on the old code, then fix. When a new test passes immediately, check it against the old code before trusting it.

@@ -1,8 +1,10 @@
-import { formatTime } from '../../utils/timeFormatter';
+import { formatClockTime, formatTime } from '../../utils/timeFormatter';
 import { CircularProgress } from './CircularProgress';
 
-export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = false, isComplete, sessionNumber = 1 }) => {
+export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = false, isComplete, sessionNumber = 1, endsAt = null, settleRemaining = null }) => {
+  const isSettling = settleRemaining !== null;
   const getStatusText = () => {
+    if (isSettling) return 'Settling in…';
     if (isComplete) return 'Complete';
     if (isRunning) return 'Meditating...';
     if (isPaused) return 'Paused';
@@ -43,7 +45,7 @@ export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = fa
       )}
 
       <div className="flex flex-col items-center justify-center">
-        <CircularProgress progress={progress} size={280} strokeWidth={10} isRunning={isRunning}>
+        <CircularProgress progress={isSettling ? 0 : progress} size={280} strokeWidth={10} isRunning={isRunning}>
           <div className="flex flex-col items-center">
             <div
               className={`text-6xl md:text-7xl font-bold text-white transition-all duration-300 ${
@@ -54,7 +56,7 @@ export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = fa
                 WebkitTextStroke: '1px rgba(0, 0, 0, 0.1)'
               }}
             >
-              {formatTime(timeRemaining)}
+              {formatTime(isSettling ? settleRemaining : timeRemaining)}
             </div>
             <div className="text-sm md:text-base text-white/90 mt-2 font-semibold drop-shadow-md">
               {getStatusText()}
@@ -64,6 +66,10 @@ export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = fa
             </div>
           </div>
         </CircularProgress>
+        {/* Keeps its height when empty, so nothing jumps when a session starts */}
+        <div className="h-5 mt-3 text-sm text-white/80 font-medium drop-shadow-md">
+          {endsAt !== null && `Ends at ${formatClockTime(endsAt)}`}
+        </div>
       </div>
     </>
   );

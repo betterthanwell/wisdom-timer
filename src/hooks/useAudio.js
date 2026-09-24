@@ -21,12 +21,12 @@ export const useAudio = () => {
   }, []);
 
   // Play a bell sound
-  const playBell = useCallback(async (type) => {
+  const playBell = useCallback(async (type, strikes = 1) => {
     if (!isInitialized) {
       console.warn('Audio not initialized yet');
       return;
     }
-    await audioManager.playBell(type);
+    await audioManager.playBell(type, strikes);
   }, [isInitialized]);
 
   // Play ambient sound
@@ -59,9 +59,19 @@ export const useAudio = () => {
     setIsPlaying(false);
   }, []);
 
+  // Stop strikes of a bell pattern that haven't rung yet
+  const cancelPendingBells = useCallback(() => {
+    audioManager.cancelPendingBells();
+  }, []);
+
   // Set bell volume (0.0 to 1.0)
   const setBellVolume = useCallback((volume) => {
     audioManager.setBellVolume(volume);
+  }, []);
+
+  // Scale the ambient volume by a 0-1 level (gentle ending)
+  const setAmbientLevel = useCallback((level) => {
+    audioManager.setAmbientLevel(level);
   }, []);
 
   // Set ambient volume (0.0 to 1.0)
@@ -74,11 +84,13 @@ export const useAudio = () => {
     isPlaying,
     currentAmbient,
     playBell,
+    cancelPendingBells,
     playAmbient,
     pauseAmbient,
     resumeAmbient,
     stopAmbient,
     setBellVolume,
     setAmbientVolume,
+    setAmbientLevel,
   };
 };

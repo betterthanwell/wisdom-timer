@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { countIntervalBellsDue } from '../utils/intervalBells';
 
+// Background wake-ups are scheduled this far ahead at most (open-ended
+// sessions last up to 24 h; the visible 100ms ticks cover the rest)
+const WAKE_UP_HORIZON_MS = 6 * 60 * 60 * 1000;
+
 export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) => {
   const [duration, setDuration] = useState(initialDuration);
   const [timeRemaining, setTimeRemaining] = useState(initialDuration);
@@ -8,6 +12,8 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
   const [isComplete, setIsComplete] = useState(false);
   // Started, then paused - the session is still in progress
   const [isPaused, setIsPaused] = useState(false);
+  // When the running session will end (timestamp), or null when not running
+  const [endsAt, setEndsAt] = useState(null);
 
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
@@ -27,6 +33,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     const now = Date.now();
     startTimeRef.current = now;
     expectedEndTimeRef.current = now + (remaining * 1000);
+    setEndsAt(expectedEndTimeRef.current);
     // Count bells already due at this point as rung, so resuming (or enabling
     // interval bells while paused) doesn't immediately ring a catch-up bell
     intervalBellsRungRef.current = countIntervalBellsDue(
@@ -49,15 +56,39 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     setTimeRemaining(Math.max(0, Math.ceil((expectedEndTimeRef.current - Date.now()) / 1000)));
     setIsRunning(false);
     setIsPaused(true);
+    setEndsAt(null);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
   }, [isRunning]);
 
+  // Finish now (open-ended sitting): complete the session early, keeping
+  // the time sat
+  const finish = useCallback(() => {
+    if (!isRunning && !isPaused) return;
+
+    if (isRunning) {
+      setTimeRemaining(Math.max(0, Math.ceil((expectedEndTimeRef.current - Date.now()) / 1000)));
+    }
+    setIsRunning(false);
+    setIsPaused(false);
+    setIsComplete(true);
+    setEndsAt(null);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (onComplete) {
+      onComplete();
+    }
+  }, [isRunning, isPaused, onComplete]);
+
   // Reset the timer
   const reset = useCallback(() => {
     setIsRunning(false);
+    setEndsAt(null);
     setIsPaused(false);
     setIsComplete(false);
     setTimeRemaining(duration);
@@ -107,6 +138,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
         stopTicking();
         setIsRunning(false);
         setIsComplete(true);
+        setEndsAt(null);
 
         if (onComplete) {
           onComplete();
@@ -127,6 +159,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     if (intervalSeconds > 0) {
       for (let elapsed = intervalSeconds; elapsed < duration; elapsed += intervalSeconds) {
         const bellTime = endTime - (duration - elapsed) * 1000;
+        if (bellTime - Date.now() > WAKE_UP_HORIZON_MS) break;
         if (bellTime > Date.now()) wakeAt(bellTime);
       }
     }
@@ -162,8 +195,10 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     isRunning,
     isPaused,
     isComplete,
+    endsAt,
     start,
     pause,
+    finish,
     reset,
     updateDuration,
     progress: duration > 0 ? ((duration - timeRemaining) / duration) * 100 : 0,

@@ -1,5 +1,8 @@
 import { AUDIO_SOURCES } from '../constants/audioSources';
 
+// Settling-in countdown choices, in seconds (0 = off)
+export const SETTLE_SECONDS = [0, 10, 20, 30, 60];
+
 const isWholeNumber = (value, min, max) => Number.isInteger(value) && value >= min && value <= max;
 const isVolume = (value) => typeof value === 'number' && value >= 0 && value <= 1;
 
@@ -12,6 +15,12 @@ const validators = {
   ambientVolume: isVolume,
   bellVolume: isVolume,
   keepScreenAwake: (value) => typeof value === 'boolean',
+  settleSeconds: (value) => SETTLE_SECONDS.includes(value),
+  startStrikes: (value) => isWholeNumber(value, 1, 3),
+  intervalStrikes: (value) => isWholeNumber(value, 1, 3),
+  endStrikes: (value) => isWholeNumber(value, 1, 3),
+  gentleEnding: (value) => typeof value === 'boolean',
+  openEnded: (value) => typeof value === 'boolean',
 };
 
 // The settings that are saved: exactly those with a validator

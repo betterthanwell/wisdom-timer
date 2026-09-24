@@ -10,8 +10,12 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 
 ### Timer
 - **Any duration** from 0:01 to 99:59 with minute/second inputs; **presets** for 30, 45, 60 and 90 minutes (default 45)
+- **Settling in** (optional) - a silent 10 s to 1 min countdown before the start bell of a new session, so you can put the phone down and get comfortable; Cancel, Space or Reset stop it
+- **Open-ended sitting** (optional) - count up from 00:00 with no set end; interval bells keep ringing, and **Finish** rings the end bell and completes the session
 - **Pause and resume** - the start bell rings again when you resume
 - **Play after a finished session starts the next one** - no need to press Reset
+- **"Ends at 07:45"** under the timer while a session runs (in your device's time format)
+- **Quiet screen while sitting** - while the timer runs, the settings and hints are hidden and the page dims slightly; "Show settings" brings them back
 - **Session counter** - "Session 1", "Session 2", … for sessions completed today (kept in memory: it starts over on reload and on a new day)
 - **Keeps the screen awake** while a session runs (on by default, can be turned off), so your phone doesn't lock mid-session - in browsers that support it
 - **Stays on time in background tabs** - the end and interval bells are scheduled directly, so they ring on time even when the browser slows down timers for a hidden tab
@@ -21,14 +25,16 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 - **Interval bells** - a short woodblock knock every 1-30 minutes (optional); never at the very end, which belongs to the end bell
 - **End bell** - resonant "gling" (~35 s)
 - **Ambient sounds** - rain, ocean waves or forest, looping, with a 0.5 s fade in and out
+- **Bell patterns** - each bell (start, interval, end) can ring 1, 2 or 3 times, e.g. three strikes to begin and end; bowls 5 s apart, woodblock knocks 2 s apart
+- **Gentle ending** (optional) - the ambient sound fades out over the last minute, so the end bell arrives into silence
 - **Separate volume sliders** for bells and ambient sound; changes apply immediately, including to a bell that is still ringing
 
 ### While a session is in progress
 | | Running | Paused |
 |---|---|---|
-| Duration (presets and custom) | Locked | Locked - Reset unlocks it |
-| Ambient sound choice | Switches right away | *None* stops it; another sound starts on resume |
-| Volume sliders | Usable | Usable |
+| Duration (presets, custom, open-ended) | Locked | Locked - Reset unlocks it |
+| Ambient sound choice | Switches right away (via "Show settings") | *None* stops it; another sound starts on resume |
+| Volume sliders | Usable (via "Show settings") | Usable |
 | Interval bell settings | Locked | Usable |
 
 ### Completion
