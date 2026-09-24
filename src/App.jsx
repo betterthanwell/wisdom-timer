@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
-import { TimerProvider, useTimerContext } from './context/TimerContext';
+import { TimerProvider } from './context/TimerContext';
+import { useTimerContext } from './context/useTimerContext';
 import { useTimer } from './hooks/useTimer';
 import { useAudio } from './hooks/useAudio';
 import { GlassCard } from './components/UI/GlassCard';
@@ -29,50 +30,25 @@ function MeditationTimerApp() {
   // Track if this is the first start (vs resume from pause)
   const isFirstStartRef = useRef(true);
 
-  // Track bright background state after completion
-  const [showBrightBg, setShowBrightBg] = useState(false);
-
   // Callbacks for timer events
-  const handleTimerStart = () => {
+  const handleTimerStart = useCallback(() => {
     playBell('start');
     // Only start ambient on first start, not on resume
     if (isFirstStartRef.current && state.selectedAmbient) {
       playAmbient(state.selectedAmbient);
     }
     isFirstStartRef.current = false;
-  };
+  }, [playBell, playAmbient, state.selectedAmbient]);
 
-  const handleTimerComplete = () => {
+  const handleTimerComplete = useCallback(() => {
     playBell('end');
     stopAmbient();
     isFirstStartRef.current = true; // Reset for next session
-  };
+  }, [playBell, stopAmbient]);
 
-  const handleIntervalBell = () => {
+  const handleIntervalBell = useCallback(() => {
     playBell('interval');
-  };
-
-  // Handle pause - pause ambient sound
-  const handlePause = () => {
-    timer.pause();
-    pauseAmbient();
-  };
-
-  // Handle start/resume
-  const handleStart = () => {
-    timer.start();
-    // If resuming (not first start), resume ambient
-    if (!isFirstStartRef.current && state.selectedAmbient) {
-      resumeAmbient();
-    }
-  };
-
-  // Handle reset - stop ambient sound
-  const handleReset = () => {
-    timer.reset();
-    stopAmbient();
-    isFirstStartRef.current = true; // Reset for next session
-  };
+  }, [playBell]);
 
   // Initialize audio volumes
   useEffect(() => {
@@ -90,30 +66,53 @@ function MeditationTimerApp() {
       ? { interval: state.intervalDuration, callback: handleIntervalBell }
       : null
   );
+  const { start: startTimer, pause: pauseTimer, reset: resetTimer, updateDuration } = timer;
 
-  // Update timer duration when context changes
-  useEffect(() => {
+  // Handle pause - pause ambient sound
+  const handlePause = useCallback(() => {
+    pauseTimer();
+    pauseAmbient();
+  }, [pauseTimer, pauseAmbient]);
+
+  // Handle start/resume
+  const handleStart = useCallback(() => {
+    startTimer();
+    // If resuming (not first start), resume ambient
+    if (!isFirstStartRef.current && state.selectedAmbient) {
+      resumeAmbient();
+    }
+  }, [startTimer, resumeAmbient, state.selectedAmbient]);
+
+  // Handle reset - stop ambient sound
+  const handleReset = useCallback(() => {
+    resetTimer();
+    stopAmbient();
+    isFirstStartRef.current = true; // Reset for next session
+  }, [resetTimer, stopAmbient]);
+
+  // Update timer duration when the user picks a new one
+  const handleDurationChange = (newDuration) => {
+    actions.setDuration(newDuration);
     if (!timer.isRunning) {
-      timer.updateDuration(state.duration);
+      updateDuration(newDuration);
     }
-  }, [state.duration]);
+  };
 
-  // Manage bright background after completion
+  // Bright background after completion, fading back once the 9-second burst ends
+  const [brightBgFaded, setBrightBgFaded] = useState(false);
+  const showBrightBg = timer.isComplete && !brightBgFaded;
+
   useEffect(() => {
-    if (timer.isComplete) {
-      // Show bright background during/after burst
-      setShowBrightBg(true);
+    if (!timer.isComplete) return;
 
-      // Fade back to original after 9-second burst completes
-      const fadeBackTimeout = setTimeout(() => {
-        setShowBrightBg(false);
-      }, 9000); // Match enlightenment burst duration
+    const fadeBackTimeout = setTimeout(() => {
+      setBrightBgFaded(true);
+    }, 9000); // Match enlightenment burst duration
 
-      return () => clearTimeout(fadeBackTimeout);
-    } else {
-      // Reset immediately when timer restarts
-      setShowBrightBg(false);
-    }
+    return () => {
+      clearTimeout(fadeBackTimeout);
+      setBrightBgFaded(false); // Reset for next completion
+    };
   }, [timer.isComplete]);
 
   // Keyboard shortcuts
@@ -200,7 +199,7 @@ function MeditationTimerApp() {
               <PresetButtons
                 presets={state.presetDurations}
                 currentDuration={state.duration}
-                onSelect={actions.setDuration}
+                onSelect={handleDurationChange}
                 disabled={timer.isRunning}
               />
             </div>
@@ -212,7 +211,7 @@ function MeditationTimerApp() {
               </label>
               <DurationSelector
                 duration={state.duration}
-                onChange={actions.setDuration}
+                onChange={handleDurationChange}
                 disabled={timer.isRunning}
               />
             </div>

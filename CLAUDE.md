@@ -48,7 +48,8 @@ wisdom-timer/
 │   │   ├── useAudio.js         # Audio playback React hook
 │   │   └── useLocalStorage.js  # LocalStorage persistence hook
 │   ├── context/
-│   │   └── TimerContext.jsx    # Global state with useReducer
+│   │   ├── TimerContext.jsx    # Global state with useReducer (TimerProvider)
+│   │   └── useTimerContext.js  # Context object + useTimerContext hook
 │   ├── utils/
 │   │   ├── audioManager.js     # Singleton audio controller class
 │   │   └── timeFormatter.js    # Time formatting utilities
@@ -75,11 +76,11 @@ wisdom-timer/
 ### State Management
 - **TimerContext** (`src/context/TimerContext.jsx`) - Central state using `useReducer` pattern
 - Actions: `setDuration`, `setIntervalBells`, `setIntervalDuration`, `setAmbientSound`, `setBellVolume`, `setAmbientVolume`
-- State persists to localStorage via `useLocalStorage` hook
+- State persists to localStorage via `useLocalStorage` hook; saved settings seed the reducer's initial state
 
 ### Audio System
 - **AudioManager** (`src/utils/audioManager.js`) - Singleton class managing all audio
-- Bells are cloned for overlapping playback
+- Each bell plays on a fresh `Audio` element (allows overlap; `cloneNode()` didn't reliably keep volume)
 - Ambient sounds have fade in/out effects (500ms)
 - Browser autoplay policy handled via user interaction initialization
 
