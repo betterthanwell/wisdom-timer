@@ -31,12 +31,13 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 │   │   ├── Timer/               # TimerDisplay (time, status, "Session N", burst),
 │   │   │                        # TimerControls (Start/Pause/Reset), CircularProgress
 │   │   ├── Settings/            # PresetButtons, DurationSelector, IntervalSettings,
-│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls
-│   │   └── UI/                  # GlassCard, Button
+│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting
+│   │   └── UI/                  # GlassCard, Button, Switch (on/off toggle with accessible name)
 │   ├── hooks/
 │   │   ├── useTimer.js          # Countdown from the clock, pause/resume, interval bells, wake-ups
 │   │   ├── useAudio.js          # React wrapper around the audioManager singleton
 │   │   ├── useSessionCounter.js # Sessions completed today (memory only, resets daily)
+│   │   ├── useWakeLock.js       # Keeps the screen on (Screen Wake Lock API) while active
 │   │   └── useLocalStorage.js   # Persisted state
 │   ├── context/
 │   │   ├── TimerContext.jsx     # TimerProvider: settings reducer + saving to localStorage
@@ -72,13 +73,14 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - **Play after a completed session starts a new full session** (no Reset needed).
 - **"Session N"** shows the session you're on today: completed count + 1, or the just-completed number while "Complete" shows. Memory only; starts over on reload and on a new day. Resets don't count.
 - Start is disabled for a 0:00 duration.
+- **Keep screen awake** (default on): a wake lock is held only while the timer is *running*, not while paused. The toggle is hidden where the Wake Lock API isn't supported.
 - Product direction: functional meditation features only - no streaks, stats, social sharing or similar engagement features.
 
 ## Architecture
 
 ### State
-- **TimerContext** - `useReducer` for settings: `duration`, `presetDurations`, `intervalBellsEnabled`, `intervalDuration`, `selectedAmbient`, `ambientVolume`, `bellVolume`. Actions: `setDuration`, `setIntervalBells`, `setIntervalDuration`, `setAmbientSound`, `setBellVolume`, `setAmbientVolume`.
-- Saved settings (`localStorage` key `wisdomTimerSettings`) seed the reducer's initial state through `sanitizeSettings()`, which keeps only valid values for known keys and uses defaults otherwise.
+- **TimerContext** - `useReducer` for settings: `duration`, `presetDurations`, `intervalBellsEnabled`, `intervalDuration`, `selectedAmbient`, `ambientVolume`, `bellVolume`, `keepScreenAwake`. One generic `SET_SETTING` action (`{ key, value }`); named action functions (`setDuration`, `setKeepScreenAwake`, …) wrap it.
+- Saved settings (`localStorage` key `wisdomTimerSettings`) seed the reducer's initial state through `sanitizeSettings()`, which keeps only valid values for known keys and uses defaults otherwise. Saving uses `pickSavedSettings()`: **every setting with a validator in `utils/settings.js` is saved, and nothing else.**
 - Session state (running, paused, complete, time left) lives in `useTimer`, not the context.
 
 ### Timer (`useTimer`)
@@ -135,11 +137,9 @@ The owner works out the desired behavior by live-testing, so these can change - 
 The gradients are Tailwind arbitrary-value classes in `App.jsx` (`from-[#FDE68A] to-[#F97316]`, and a brighter one after completion). The `--color-gradient-*` variables in `index.css`'s `@theme` block are currently unused.
 
 ### New setting
-1. Add to `initialState` in `TimerContext.jsx`.
-2. Add an action type, reducer case and action function.
-3. Add it to the object saved in the save effect.
-4. Add a validator in `src/utils/settings.js` (unvalidated keys are dropped on load).
-5. Create the settings component (with an accessible name) and wire it in `App.jsx`.
+1. Add the default to `initialState` in `TimerContext.jsx`, and an action function that calls `setSetting('key', value)`.
+2. Add a validator in `src/utils/settings.js` - that alone makes it saved and restored (unvalidated keys are neither).
+3. Create the settings component (with an accessible name; use `UI/Switch` for on/off) and wire it in `App.jsx`.
 
 ## Testing
 

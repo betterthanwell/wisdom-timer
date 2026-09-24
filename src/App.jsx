@@ -5,6 +5,7 @@ import { useTimerContext } from './context/useTimerContext';
 import { useTimer } from './hooks/useTimer';
 import { useAudio } from './hooks/useAudio';
 import { useSessionCounter } from './hooks/useSessionCounter';
+import { useWakeLock, isWakeLockSupported } from './hooks/useWakeLock';
 import { GlassCard } from './components/UI/GlassCard';
 import { Button } from './components/UI/Button';
 import { TimerDisplay } from './components/Timer/TimerDisplay';
@@ -14,6 +15,7 @@ import { DurationSelector } from './components/Settings/DurationSelector';
 import { IntervalSettings } from './components/Settings/IntervalSettings';
 import { AmbientSoundSelector } from './components/Settings/AmbientSoundSelector';
 import { VolumeControls } from './components/Settings/VolumeControls';
+import { KeepAwakeSetting } from './components/Settings/KeepAwakeSetting';
 
 function MeditationTimerApp() {
   const { state, actions } = useTimerContext();
@@ -85,6 +87,9 @@ function MeditationTimerApp() {
   // The session you're on today; once one completes, it stays on that number
   // until Play starts the next
   const sessionNumber = timer.isComplete ? completedToday : completedToday + 1;
+
+  // Keep the screen on while a session is running, so the phone doesn't lock
+  useWakeLock(state.keepScreenAwake && timer.isRunning);
 
   // Duration can only change between sessions, not while running or paused
   const durationLocked = timer.isRunning || timer.isPaused;
@@ -263,6 +268,14 @@ function MeditationTimerApp() {
               }}
               disabled={false}
             />
+
+            {/* Keep screen awake (only where the browser supports it) */}
+            {isWakeLockSupported() && (
+              <KeepAwakeSetting
+                enabled={state.keepScreenAwake}
+                onToggle={actions.setKeepScreenAwake}
+              />
+            )}
 
             {/* Audio Initialization Notice */}
             {!isInitialized && (

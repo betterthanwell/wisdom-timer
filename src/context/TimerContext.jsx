@@ -1,19 +1,9 @@
 import { useReducer, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { TimerContext } from './useTimerContext';
-import { sanitizeSettings } from '../utils/settings';
+import { pickSavedSettings, sanitizeSettings } from '../utils/settings';
 
-// Action types
-const ActionTypes = {
-  SET_DURATION: 'SET_DURATION',
-  SET_INTERVAL_BELLS: 'SET_INTERVAL_BELLS',
-  SET_INTERVAL_DURATION: 'SET_INTERVAL_DURATION',
-  SET_AMBIENT_SOUND: 'SET_AMBIENT_SOUND',
-  SET_AMBIENT_VOLUME: 'SET_AMBIENT_VOLUME',
-  SET_BELL_VOLUME: 'SET_BELL_VOLUME',
-};
-
-// Initial state
+// Default settings
 const initialState = {
   duration: 2700, // 45 minutes default
   presetDurations: [1800, 2700, 3600, 5400], // 30, 45, 60, 90 minutes
@@ -22,28 +12,14 @@ const initialState = {
   selectedAmbient: null,
   ambientVolume: 0.5,
   bellVolume: 0.7,
+  keepScreenAwake: true,
 };
 
-// Reducer
+// Reducer: every setting change is { type: 'SET_SETTING', key, value }
 const timerReducer = (state, action) => {
   switch (action.type) {
-    case ActionTypes.SET_DURATION:
-      return { ...state, duration: action.payload };
-
-    case ActionTypes.SET_INTERVAL_BELLS:
-      return { ...state, intervalBellsEnabled: action.payload };
-
-    case ActionTypes.SET_INTERVAL_DURATION:
-      return { ...state, intervalDuration: action.payload };
-
-    case ActionTypes.SET_AMBIENT_SOUND:
-      return { ...state, selectedAmbient: action.payload };
-
-    case ActionTypes.SET_AMBIENT_VOLUME:
-      return { ...state, ambientVolume: action.payload };
-
-    case ActionTypes.SET_BELL_VOLUME:
-      return { ...state, bellVolume: action.payload };
+    case 'SET_SETTING':
+      return { ...state, [action.key]: action.value };
 
     default:
       return state;
@@ -59,34 +35,22 @@ export const TimerProvider = ({ children }) => {
     sanitizeSettings(saved, initialState)
   );
 
-  // Save settings to localStorage when state changes
+  // Save settings to localStorage when they change (every setting that has
+  // a validator in utils/settings.js is saved)
   useEffect(() => {
-    setSavedSettings({
-      duration: state.duration,
-      intervalBellsEnabled: state.intervalBellsEnabled,
-      intervalDuration: state.intervalDuration,
-      selectedAmbient: state.selectedAmbient,
-      ambientVolume: state.ambientVolume,
-      bellVolume: state.bellVolume,
-    });
-  }, [
-    state.duration,
-    state.intervalBellsEnabled,
-    state.intervalDuration,
-    state.selectedAmbient,
-    state.ambientVolume,
-    state.bellVolume,
-    setSavedSettings,
-  ]);
+    setSavedSettings(pickSavedSettings(state));
+  }, [state, setSavedSettings]);
 
   // Actions
+  const setSetting = (key, value) => dispatch({ type: 'SET_SETTING', key, value });
   const actions = {
-    setDuration: (duration) => dispatch({ type: ActionTypes.SET_DURATION, payload: duration }),
-    setIntervalBells: (enabled) => dispatch({ type: ActionTypes.SET_INTERVAL_BELLS, payload: enabled }),
-    setIntervalDuration: (duration) => dispatch({ type: ActionTypes.SET_INTERVAL_DURATION, payload: duration }),
-    setAmbientSound: (sound) => dispatch({ type: ActionTypes.SET_AMBIENT_SOUND, payload: sound }),
-    setAmbientVolume: (volume) => dispatch({ type: ActionTypes.SET_AMBIENT_VOLUME, payload: volume }),
-    setBellVolume: (volume) => dispatch({ type: ActionTypes.SET_BELL_VOLUME, payload: volume }),
+    setDuration: (duration) => setSetting('duration', duration),
+    setIntervalBells: (enabled) => setSetting('intervalBellsEnabled', enabled),
+    setIntervalDuration: (duration) => setSetting('intervalDuration', duration),
+    setAmbientSound: (sound) => setSetting('selectedAmbient', sound),
+    setAmbientVolume: (volume) => setSetting('ambientVolume', volume),
+    setBellVolume: (volume) => setSetting('bellVolume', volume),
+    setKeepScreenAwake: (enabled) => setSetting('keepScreenAwake', enabled),
   };
 
   return (

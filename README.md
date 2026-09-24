@@ -13,6 +13,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 - **Pause and resume** - the start bell rings again when you resume
 - **Play after a finished session starts the next one** - no need to press Reset
 - **Session counter** - "Session 1", "Session 2", … for sessions completed today (kept in memory: it starts over on reload and on a new day)
+- **Keeps the screen awake** while a session runs (on by default, can be turned off), so your phone doesn't lock mid-session - in browsers that support it
 - **Stays on time in background tabs** - the end and interval bells are scheduled directly, so they ring on time even when the browser slows down timers for a hidden tab
 
 ### Sound
@@ -42,7 +43,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 
 ## ⚠️ Known limitations
 
-- **iPhone with the screen locked:** iOS pauses web pages when the phone locks, so bells can't ring until you unlock it. Keeping the screen on avoids this.
+- **iPhone with the screen locked:** iOS pauses web pages when the phone locks, so bells can't ring until you unlock it. "Keep screen awake" (on by default) prevents the automatic lock; locking the phone yourself still pauses the page.
 - **iPhone volume sliders:** iOS Safari has historically ignored volume set by web pages, so the sliders may have no effect there (the ambient sound still stops properly). Fixing both needs the Web Audio API and is planned.
 
 ## 🚀 Getting Started
@@ -102,6 +103,7 @@ src/
 │   ├── useTimer.js             # Countdown from the clock, pause/resume, bells, background wake-ups
 │   ├── useAudio.js             # React wrapper around the audio manager
 │   ├── useSessionCounter.js    # Sessions completed today
+│   ├── useWakeLock.js          # Keeps the screen on during a session
 │   └── useLocalStorage.js      # Persisted state
 ├── context/
 │   ├── TimerContext.jsx        # Settings state (reducer) + saving
