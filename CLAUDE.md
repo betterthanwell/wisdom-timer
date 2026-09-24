@@ -24,6 +24,7 @@ npm run preview      # Preview production build
 npm run lint         # Run ESLint
 npm test             # Run tests once (Vitest)
 npm run test:watch   # Run tests in watch mode
+npm run test:e2e     # Playwright end-to-end tests (builds, then Chromium/WebKit/mobile Safari)
 ```
 
 ## Project Structure
@@ -176,6 +177,12 @@ Edit `src/index.css` `@theme` block:
 - For bug fixes: write a test that fails on the old code first, then fix
 - Component tests (`src/App.test.jsx`) render `<App />` with `audioManager` replaced by `vi.mock` spies, and find controls by accessible name - keep `aria-label`s on icon-only buttons and unlabeled inputs
 - Vitest globals are off, so Testing Library doesn't auto-clean: call `cleanup()` in `afterEach`
+
+**End-to-end (Playwright):** `e2e/*.spec.js`, configured in `playwright.config.js`. Runs the production build (`vite preview` on port 4173) in Chromium, WebKit and an iPhone profile; CI runs it via `.github/workflows/e2e.yml`.
+- First time locally: `npx playwright install chromium webkit`
+- The page clock is faked (`page.clock.install()`); advance time with `clock.fastForward` in 1-minute jumps - `runFor` fires every 100ms tick and makes long sessions very slow
+- Sounds are recorded, not heard: an init script wraps `HTMLMediaElement.prototype.play` and pushes each file path to `window.__sounds`
+- Vitest only picks up `src/**/*.test.{js,jsx}`, so the two suites don't mix
 
 Still manual:
 - Timer accuracy over long durations

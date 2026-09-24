@@ -7,5 +7,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
+    // Playwright's end-to-end tests in e2e/ run separately (npm run test:e2e)
+    include: ['src/**/*.test.{js,jsx}'],
   },
 })
