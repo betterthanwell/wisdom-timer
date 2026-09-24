@@ -76,7 +76,12 @@ function MeditationTimerApp() {
   }, [pauseTimer, pauseAmbient]);
 
   // Handle start/resume (ambient sound is handled by handleTimerStart)
-  const handleStart = startTimer;
+  // Quiet screen: while running, settings are hidden unless asked for
+  const [settingsRevealed, setSettingsRevealed] = useState(false);
+  const handleStart = useCallback(() => {
+    setSettingsRevealed(false); // every start begins quiet
+    startTimer();
+  }, [startTimer]);
 
   // Handle reset - stop ambient sound
   const handleReset = useCallback(() => {
@@ -87,6 +92,8 @@ function MeditationTimerApp() {
   // The session you're on today; once one completes, it stays on that number
   // until Play starts the next
   const sessionNumber = timer.isComplete ? completedToday : completedToday + 1;
+
+  const quiet = timer.isRunning && !settingsRevealed;
 
   // Keep the screen on while a session is running, so the phone doesn't lock
   useWakeLock(state.keepScreenAwake && timer.isRunning);
@@ -167,6 +174,15 @@ function MeditationTimerApp() {
           : 'bg-gradient-to-br from-[#FDE68A] to-[#F97316]'
       }`}
     >
+      {/* Dims the page while sitting (clicks pass through) */}
+      <div
+        data-testid="quiet-dim"
+        aria-hidden="true"
+        className={`fixed inset-0 bg-black/25 pointer-events-none transition-opacity duration-[2000ms] ${
+          quiet ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+
       <div className="w-full max-w-2xl space-y-6">
         {/* Logo */}
         <h1
@@ -205,92 +221,111 @@ function MeditationTimerApp() {
           </div>
         </GlassCard>
 
-        {/* Settings Card */}
-        <GlassCard className="p-6 !mt-6">
-          <div className="space-y-6">
-            {/* Settings Header */}
-            <div className="flex items-center gap-2 text-white">
-              <SettingsIcon className="w-5 h-5" />
-              <h2 className="text-lg font-semibold">Settings</h2>
-            </div>
-
-            {/* Preset Buttons */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">
-                Quick Select
-              </label>
-              <PresetButtons
-                presets={state.presetDurations}
-                currentDuration={state.duration}
-                onSelect={handleDurationChange}
-                disabled={durationLocked}
-              />
-            </div>
-
-            {/* Custom Duration */}
-            <div>
-              <label className="block text-sm font-medium text-white/80 mb-3">
-                Custom Duration
-              </label>
-              <DurationSelector
-                duration={state.duration}
-                onChange={handleDurationChange}
-                disabled={durationLocked}
-              />
-            </div>
-
-            {/* Interval Bells */}
-            <IntervalSettings
-              enabled={state.intervalBellsEnabled}
-              intervalDuration={state.intervalDuration}
-              onToggle={actions.setIntervalBells}
-              onIntervalChange={actions.setIntervalDuration}
-              disabled={timer.isRunning}
-            />
-
-            {/* Ambient Sounds */}
-            <AmbientSoundSelector
-              selectedSound={state.selectedAmbient}
-              onSoundSelect={handleAmbientSelect}
-              disabled={false}
-            />
-
-            {/* Volume Controls */}
-            <VolumeControls
-              bellVolume={state.bellVolume}
-              ambientVolume={state.ambientVolume}
-              onBellVolumeChange={(vol) => {
-                actions.setBellVolume(vol);
-                setBellVolume(vol);
-              }}
-              onAmbientVolumeChange={(vol) => {
-                actions.setAmbientVolume(vol);
-                setAmbientVolume(vol);
-              }}
-              disabled={false}
-            />
-
-            {/* Keep screen awake (only where the browser supports it) */}
-            {isWakeLockSupported() && (
-              <KeepAwakeSetting
-                enabled={state.keepScreenAwake}
-                onToggle={actions.setKeepScreenAwake}
-              />
-            )}
-
-            {/* Audio Initialization Notice */}
-            {!isInitialized && (
-              <div className="text-xs text-white/60 text-center">
-                Loading sounds…
-              </div>
-            )}
+        {/* While running, settings stay out of the way until asked for */}
+        {timer.isRunning && (
+          <div className="flex justify-center !mt-4">
+            <button
+              type="button"
+              onClick={() => setSettingsRevealed((revealed) => !revealed)}
+              aria-expanded={settingsRevealed}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <SettingsIcon className="w-4 h-4" />
+              {settingsRevealed ? 'Hide settings' : 'Show settings'}
+            </button>
           </div>
-        </GlassCard>
+        )}
+
+        {/* Settings Card */}
+        {!quiet && (
+          <GlassCard className="p-6 !mt-6">
+            <div className="space-y-6">
+              {/* Settings Header */}
+              <div className="flex items-center gap-2 text-white">
+                <SettingsIcon className="w-5 h-5" />
+                <h2 className="text-lg font-semibold">Settings</h2>
+              </div>
+
+              {/* Preset Buttons */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-2">
+                  Quick Select
+                </label>
+                <PresetButtons
+                  presets={state.presetDurations}
+                  currentDuration={state.duration}
+                  onSelect={handleDurationChange}
+                  disabled={durationLocked}
+                />
+              </div>
+
+              {/* Custom Duration */}
+              <div>
+                <label className="block text-sm font-medium text-white/80 mb-3">
+                  Custom Duration
+                </label>
+                <DurationSelector
+                  duration={state.duration}
+                  onChange={handleDurationChange}
+                  disabled={durationLocked}
+                />
+              </div>
+
+              {/* Interval Bells */}
+              <IntervalSettings
+                enabled={state.intervalBellsEnabled}
+                intervalDuration={state.intervalDuration}
+                onToggle={actions.setIntervalBells}
+                onIntervalChange={actions.setIntervalDuration}
+                disabled={timer.isRunning}
+              />
+
+              {/* Ambient Sounds */}
+              <AmbientSoundSelector
+                selectedSound={state.selectedAmbient}
+                onSoundSelect={handleAmbientSelect}
+                disabled={false}
+              />
+
+              {/* Volume Controls */}
+              <VolumeControls
+                bellVolume={state.bellVolume}
+                ambientVolume={state.ambientVolume}
+                onBellVolumeChange={(vol) => {
+                  actions.setBellVolume(vol);
+                  setBellVolume(vol);
+                }}
+                onAmbientVolumeChange={(vol) => {
+                  actions.setAmbientVolume(vol);
+                  setAmbientVolume(vol);
+                }}
+                disabled={false}
+              />
+
+              {/* Keep screen awake (only where the browser supports it) */}
+              {isWakeLockSupported() && (
+                <KeepAwakeSetting
+                  enabled={state.keepScreenAwake}
+                  onToggle={actions.setKeepScreenAwake}
+                />
+              )}
+
+              {/* Audio Initialization Notice */}
+              {!isInitialized && (
+                <div className="text-xs text-white/60 text-center">
+                  Loading sounds…
+                </div>
+              )}
+            </div>
+          </GlassCard>
+        )}
 
         {/* Footer */}
-        <div className="text-center text-white/60 text-sm">
-          <p>Press space to play/pause • R to reset</p>
-        </div>
+        {!quiet && (
+          <div className="text-center text-white/60 text-sm">
+            <p>Press space to play/pause • R to reset</p>
+          </div>
+        )}
       </div>
     </div>
   );

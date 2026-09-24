@@ -74,6 +74,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - **"Session N"** shows the session you're on today: completed count + 1, or the just-completed number while "Complete" shows. Memory only; starts over on reload and on a new day. Resets don't count.
 - Start is disabled for a 0:00 duration.
 - **"Ends at HH:MM"** shows under the timer only while running (hidden when paused, since the end moves); locale time format via `formatClockTime()`.
+- **Quiet screen**: while running, the settings card and keyboard hint are hidden and the page dims (`quiet-dim` overlay); "Show settings" (`aria-expanded`) reveals them and lifts the dim for that run. Paused/stopped shows everything; every start begins quiet again.
 - **Keep screen awake** (default on): a wake lock is held only while the timer is *running*, not while paused. The toggle is hidden where the Wake Lock API isn't supported.
 - Product direction: functional meditation features only - no streaks, stats, social sharing or similar engagement features.
 

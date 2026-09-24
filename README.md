@@ -13,6 +13,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 - **Pause and resume** - the start bell rings again when you resume
 - **Play after a finished session starts the next one** - no need to press Reset
 - **"Ends at 07:45"** under the timer while a session runs (in your device's time format)
+- **Quiet screen while sitting** - while the timer runs, the settings and hints are hidden and the page dims slightly; "Show settings" brings them back
 - **Session counter** - "Session 1", "Session 2", … for sessions completed today (kept in memory: it starts over on reload and on a new day)
 - **Keeps the screen awake** while a session runs (on by default, can be turned off), so your phone doesn't lock mid-session - in browsers that support it
 - **Stays on time in background tabs** - the end and interval bells are scheduled directly, so they ring on time even when the browser slows down timers for a hidden tab
@@ -28,8 +29,8 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 | | Running | Paused |
 |---|---|---|
 | Duration (presets and custom) | Locked | Locked - Reset unlocks it |
-| Ambient sound choice | Switches right away | *None* stops it; another sound starts on resume |
-| Volume sliders | Usable | Usable |
+| Ambient sound choice | Switches right away (via "Show settings") | *None* stops it; another sound starts on resume |
+| Volume sliders | Usable (via "Show settings") | Usable |
 | Interval bell settings | Locked | Usable |
 
 ### Completion

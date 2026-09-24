@@ -196,6 +196,7 @@ describe('App', () => {
       click('Start');
       vi.clearAllMocks();
 
+      click('Show settings');
       click('Ocean Waves');
       expect(audioManager.playAmbient).toHaveBeenCalledWith('ocean');
 
@@ -206,8 +207,52 @@ describe('App', () => {
     it('locks the duration settings', async () => {
       await renderApp();
       click('Start');
+      click('Show settings');
       expect(button('30m').disabled).toBe(true);
       expect(screen.getByLabelText('Minutes').disabled).toBe(true);
+    });
+  });
+
+  describe('quiet screen while sitting', () => {
+    const settingsVisible = () => screen.queryByRole('heading', { name: 'Settings' }) !== null;
+    const dimmed = () => screen.getByTestId('quiet-dim').className.includes('opacity-100');
+
+    it('hides the settings and keyboard hint, and dims the page, while running', async () => {
+      await renderApp();
+      expect(settingsVisible()).toBe(true);
+      expect(dimmed()).toBe(false);
+
+      click('Start');
+      expect(settingsVisible()).toBe(false);
+      expect(screen.queryByText(/Press space/)).toBe(null);
+      expect(dimmed()).toBe(true);
+    });
+
+    it('brings the settings back on request, and hides them again', async () => {
+      await renderApp();
+      click('Start');
+
+      click('Show settings');
+      expect(settingsVisible()).toBe(true);
+      expect(button('Hide settings').getAttribute('aria-expanded')).toBe('true');
+      expect(dimmed()).toBe(false);
+
+      click('Hide settings');
+      expect(settingsVisible()).toBe(false);
+      expect(dimmed()).toBe(true);
+    });
+
+    it('shows everything again when paused, and is quiet again on the next start', async () => {
+      await renderApp();
+      click('Start');
+      click('Show settings');
+      click('Pause');
+      expect(settingsVisible()).toBe(true);
+      expect(screen.queryByRole('button', { name: /settings$/ })).toBe(null);
+      expect(dimmed()).toBe(false);
+
+      click('Start');
+      expect(settingsVisible()).toBe(false);
     });
   });
 

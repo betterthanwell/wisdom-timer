@@ -111,6 +111,20 @@ test('Play after a finished session starts session 2', async ({ page }) => {
   await expect(page.getByText('01:00')).toBeVisible();
 });
 
+test('quiet screen: settings hide while running and come back on request', async ({ page }) => {
+  const settingsHeading = page.getByRole('heading', { name: 'Settings' });
+  await expect(settingsHeading).toBeVisible();
+
+  await page.getByRole('button', { name: 'Start' }).click();
+  await expect(settingsHeading).toBeHidden();
+
+  await page.getByRole('button', { name: 'Show settings' }).click();
+  await expect(settingsHeading).toBeVisible();
+
+  await page.getByRole('button', { name: 'Pause' }).click();
+  await expect(page.getByRole('button', { name: /settings$/ })).toBeHidden();
+});
+
 test('ambient sound starts with the session', async ({ page }) => {
   await page.getByRole('button', { name: 'Rain' }).click();
   await page.getByRole('button', { name: 'Start' }).click();
