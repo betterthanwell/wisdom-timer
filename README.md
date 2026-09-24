@@ -75,7 +75,7 @@ public/
 ## 🛠️ Tech Stack
 
 - **React 19** - UI library with latest features
-- **Vite 7** - Lightning-fast build tool
+- **Vite 8** - Lightning-fast build tool
 - **Tailwind CSS v4** - Utility-first CSS with custom theme
 - **Lucide React** - Beautiful, consistent icons
 - **Context API + Reducer** - State management
