@@ -27,8 +27,6 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 │   ├── App.test.jsx             # Component tests: whole app, audioManager mocked
 │   ├── main.jsx                 # Entry point (StrictMode)
 │   ├── index.css                # Global styles, .glass-card(-strong), keyframes, reduced motion
-│   ├── App.css                  # Empty and not imported (template leftover)
-│   ├── assets/react.svg         # Not used (template leftover)
 │   ├── components/
 │   │   ├── Timer/               # TimerDisplay (time, status, "Session N", burst),
 │   │   │                        # TimerControls (Start/Pause/Reset), CircularProgress
@@ -58,7 +56,8 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 ├── vite.config.js               # Vite + Vitest config
 ├── playwright.config.js         # Playwright config (vite preview on :4173)
 ├── eslint.config.js             # Flat config; Node globals for Playwright files
-└── postcss.config.js            # @tailwindcss/postcss
+├── postcss.config.js            # @tailwindcss/postcss
+└── LICENSE                      # MIT
 ```
 
 ## Session Behavior (decided by the owner)

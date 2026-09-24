@@ -162,7 +162,7 @@ The gradients are Tailwind classes in `src/App.jsx`: `from-[#FDE68A] to-[#F97316
 
 ## 📝 License
 
-MIT License - feel free to use this project for personal or commercial purposes.
+[MIT](LICENSE) - feel free to use this project for personal or commercial purposes.
 
 ## 🙏 Audio Attribution
 
