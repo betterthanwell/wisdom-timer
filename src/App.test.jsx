@@ -565,10 +565,11 @@ describe('App', () => {
       await renderApp();
       expect(settingsVisible()).toBe(true);
       expect(dimmed()).toBe(false);
+      expect(screen.getByTestId('keyboard-hint')).toBeTruthy();
 
       click('Start');
       expect(settingsVisible()).toBe(false);
-      expect(screen.queryByText(/Press space/)).toBe(null);
+      expect(screen.queryByTestId('keyboard-hint')).toBe(null);
       expect(dimmed()).toBe(true);
     });
 
@@ -703,7 +704,7 @@ describe('App', () => {
       await renderApp();
 
       expect(screen.getByText('45:00')).toBeTruthy(); // default duration
-      expect(button('None').className).toContain('bg-white/20'); // selected
+      expect(button('None').getAttribute('aria-pressed')).toBe('true'); // selected
       expect(screen.getAllByRole('slider')[0].value).toBe('70'); // default bell volume
     });
 

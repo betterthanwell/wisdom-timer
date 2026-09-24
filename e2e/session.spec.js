@@ -194,3 +194,13 @@ test('settings survive a reload', async ({ page }) => {
   await page.clock.runFor(2500); // sound loading fallback timeouts
   await expect(page.getByText('30:00')).toBeVisible();
 });
+
+test('the keyboard hint shows with a mouse or trackpad, not on a touch screen', async ({ page, isMobile }) => {
+  const hint = page.getByTestId('keyboard-hint');
+  if (isMobile) {
+    await expect(hint).toBeHidden();
+  } else {
+    await expect(hint).toBeVisible();
+    await expect(hint).toHaveText(/Space\s*start \/ pause\s*·\s*R\s*reset/);
+  }
+});
