@@ -31,12 +31,16 @@ const setDuration = async (page, minutes, seconds = 0) => {
   await page.getByLabel('Seconds', { exact: true }).fill(String(seconds));
 };
 
+const START = new Date('2026-09-24T08:00:00');
+
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(recordSounds);
-  await page.clock.install();
+  await page.clock.install({ time: START });
   await page.goto('/');
-  // Sound loading waits up to 2s per bell before giving up - let that pass
-  await page.clock.runFor(2500);
+  // Freeze the clock so time only moves when a test moves it - otherwise real
+  // time keeps flowing on top, and slow CI machines see e.g. 08:59 for 09:00.
+  // Jumping ahead also lets sound loading's 2s fallback timeouts fire.
+  await page.clock.pauseAt(new Date(START.getTime() + 60 * 60 * 1000));
   await expect(page.getByRole('button', { name: 'Start' })).toBeEnabled();
 });
 
@@ -130,6 +134,6 @@ test('settings survive a reload', async ({ page }) => {
   await expect(page.getByText('30:00')).toBeVisible();
 
   await page.reload();
-  await page.clock.runFor(2500);
+  await page.clock.runFor(2500); // sound loading fallback timeouts
   await expect(page.getByText('30:00')).toBeVisible();
 });

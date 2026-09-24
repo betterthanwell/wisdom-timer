@@ -180,7 +180,7 @@ Edit `src/index.css` `@theme` block:
 
 **End-to-end (Playwright):** `e2e/*.spec.js`, configured in `playwright.config.js`. Runs the production build (`vite preview` on port 4173) in Chromium, WebKit and an iPhone profile; CI runs it via `.github/workflows/e2e.yml`.
 - First time locally: `npx playwright install chromium webkit`
-- The page clock is faked (`page.clock.install()`); advance time with `clock.fastForward` in 1-minute jumps - `runFor` fires every 100ms tick and makes long sessions very slow
+- The page clock is faked and frozen (`clock.install()` then `clock.pauseAt()`), so time only moves when a test moves it - an unfrozen fake clock still flows in real time, which made a test flaky on slow CI. Advance with `clock.fastForward` in 1-minute jumps; `runFor` fires every 100ms tick and makes long sessions very slow
 - Sounds are recorded, not heard: an init script wraps `HTMLMediaElement.prototype.play` and pushes each file path to `window.__sounds`
 - Vitest only picks up `src/**/*.test.{js,jsx}`, so the two suites don't mix
 
