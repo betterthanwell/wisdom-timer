@@ -21,6 +21,7 @@ const validators = {
   endStrikes: (value) => isWholeNumber(value, 1, 3),
   gentleEnding: (value) => typeof value === 'boolean',
   openEnded: (value) => typeof value === 'boolean',
+  showBellStrikes: (value) => typeof value === 'boolean',
 };
 
 // The settings that are saved: exactly those with a validator

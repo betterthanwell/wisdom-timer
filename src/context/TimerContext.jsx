@@ -20,6 +20,7 @@ const initialState = {
   endStrikes: 1,
   gentleEnding: false, // fade ambient sound out over the last minute
   openEnded: false, // count up until Finish instead of counting down
+  showBellStrikes: false, // bell strike choices tucked away (UI only)
 };
 
 // Reducer: every setting change is { type: 'SET_SETTING', key, value }
@@ -62,6 +63,7 @@ export const TimerProvider = ({ children }) => {
     setBellStrikes: (bell, strikes) => setSetting(`${bell}Strikes`, strikes),
     setGentleEnding: (enabled) => setSetting('gentleEnding', enabled),
     setOpenEnded: (enabled) => setSetting('openEnded', enabled),
+    setShowBellStrikes: (shown) => setSetting('showBellStrikes', shown),
   };
 
   return (
