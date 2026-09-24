@@ -347,16 +347,14 @@ function MeditationTimerApp() {
                 disabled={timer.isRunning}
               />
 
-              {/* How many times each bell rings - only offered with interval
-                  bells on; saved choices apply either way */}
-              {state.intervalBellsEnabled && (
-                <BellPatternSettings
-                  strikes={{ start: state.startStrikes, interval: state.intervalStrikes, end: state.endStrikes }}
-                  onChange={actions.setBellStrikes}
-                  shown={state.showBellStrikes}
-                  onShownChange={actions.setShowBellStrikes}
-                />
-              )}
+              {/* How many times each bell rings (choices behind a switch;
+                  saved choices apply either way) */}
+              <BellPatternSettings
+                strikes={{ start: state.startStrikes, interval: state.intervalStrikes, end: state.endStrikes }}
+                onChange={actions.setBellStrikes}
+                shown={state.showBellStrikes}
+                onShownChange={actions.setShowBellStrikes}
+              />
 
               {/* Ambient Sounds */}
               <AmbientSoundSelector

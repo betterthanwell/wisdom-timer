@@ -315,14 +315,10 @@ describe('App', () => {
   });
 
   describe('bell patterns', () => {
-    const intervalSwitch = () => screen.getByRole('switch', { name: 'Interval bells' });
-    const strikesSwitch = () => screen.queryByRole('switch', { name: 'Show bell strikes' });
+    const strikesSwitch = () => screen.getByRole('switch', { name: 'Show bell strikes' });
 
-    // Bell strike choices live behind interval bells + the show switch
-    const showStrikes = () => {
-      fireEvent.click(intervalSwitch());
-      fireEvent.click(strikesSwitch());
-    };
+    // Bell strike choices live behind the show switch
+    const showStrikes = () => fireEvent.click(strikesSwitch());
 
     it('rings each bell once by default', async () => {
       await renderApp();
@@ -330,17 +326,10 @@ describe('App', () => {
       expect(audioManager.playBell).toHaveBeenCalledWith('start', 1);
     });
 
-    it('hides the whole bell strikes section while interval bells are off', async () => {
+    it('offers the bell strikes section even with interval bells off, choices tucked away', async () => {
       await renderApp();
-      expect(strikesSwitch()).toBe(null);
-      expect(screen.queryByText('Bell strikes')).toBe(null);
-      expect(screen.queryByRole('button', { name: 'Start bell: 1 strike' })).toBe(null);
-    });
-
-    it('shows the section with interval bells on, but keeps the choices tucked away by default', async () => {
-      await renderApp();
-      fireEvent.click(intervalSwitch());
-
+      expect(screen.getByRole('switch', { name: 'Interval bells' }).getAttribute('aria-checked')).toBe('false');
+      expect(screen.getByText('Bell strikes')).toBeTruthy();
       expect(strikesSwitch().getAttribute('aria-checked')).toBe('false');
       expect(screen.queryByRole('button', { name: 'Start bell: 1 strike' })).toBe(null);
     });
@@ -370,7 +359,7 @@ describe('App', () => {
       await renderApp();
       showStrikes();
       click('Start bell: 2 strikes');
-      fireEvent.click(intervalSwitch()); // interval bells off: section gone
+      fireEvent.click(strikesSwitch()); // choices tucked away
       click('Start');
 
       expect(audioManager.playBell).toHaveBeenCalledWith('start', 2);

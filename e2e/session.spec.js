@@ -139,9 +139,7 @@ test('settling in: a silent countdown, then the start bell', async ({ page }) =>
 });
 
 test('bell patterns: three strikes to begin, five seconds apart', async ({ page }) => {
-  // The strike choices are offered with interval bells on, behind a switch
-  await expect(page.getByRole('switch', { name: 'Show bell strikes' })).toBeHidden();
-  await page.getByRole('switch', { name: 'Interval bells' }).click();
+  // The strike choices are tucked away behind a switch
   await page.getByRole('switch', { name: 'Show bell strikes' }).click();
   await page.getByRole('button', { name: 'Start bell: 3 strikes' }).click();
   await page.getByRole('button', { name: 'Start', exact: true }).click();
