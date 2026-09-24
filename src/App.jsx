@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { TimerProvider, useTimerContext } from './context/TimerContext';
 import { useTimer } from './hooks/useTimer';
@@ -32,25 +32,47 @@ function MeditationTimerApp() {
   // Track bright background state after completion
   const [showBrightBg, setShowBrightBg] = useState(false);
 
-  // Callbacks for timer events - memoized to prevent timer re-initialization
-  const handleTimerStart = useCallback(() => {
+  // Callbacks for timer events
+  const handleTimerStart = () => {
     playBell('start');
     // Only start ambient on first start, not on resume
     if (isFirstStartRef.current && state.selectedAmbient) {
       playAmbient(state.selectedAmbient);
     }
     isFirstStartRef.current = false;
-  }, [playBell, playAmbient, state.selectedAmbient]);
+  };
 
-  const handleTimerComplete = useCallback(() => {
+  const handleTimerComplete = () => {
     playBell('end');
     stopAmbient();
     isFirstStartRef.current = true; // Reset for next session
-  }, [playBell, stopAmbient]);
+  };
 
-  const handleIntervalBell = useCallback(() => {
+  const handleIntervalBell = () => {
     playBell('interval');
-  }, [playBell]);
+  };
+
+  // Handle pause - pause ambient sound
+  const handlePause = () => {
+    timer.pause();
+    pauseAmbient();
+  };
+
+  // Handle start/resume
+  const handleStart = () => {
+    timer.start();
+    // If resuming (not first start), resume ambient
+    if (!isFirstStartRef.current && state.selectedAmbient) {
+      resumeAmbient();
+    }
+  };
+
+  // Handle reset - stop ambient sound
+  const handleReset = () => {
+    timer.reset();
+    stopAmbient();
+    isFirstStartRef.current = true; // Reset for next session
+  };
 
   // Initialize audio volumes
   useEffect(() => {
@@ -69,51 +91,17 @@ function MeditationTimerApp() {
       : null
   );
 
-  // Handle pause - pause ambient sound
-  const handlePause = useCallback(() => {
-    timer.pause();
-    pauseAmbient();
-  }, [timer, pauseAmbient]);
-
-  // Handle start/resume
-  const handleStart = useCallback(() => {
-    timer.start();
-    // If resuming (not first start), resume ambient
-    if (!isFirstStartRef.current && state.selectedAmbient) {
-      resumeAmbient();
-    }
-  }, [timer, resumeAmbient, state.selectedAmbient]);
-
-  // Handle reset - stop ambient sound
-  const handleReset = useCallback(() => {
-    timer.reset();
-    stopAmbient();
-    isFirstStartRef.current = true; // Reset for next session
-  }, [timer, stopAmbient]);
-
-  // Volume change handlers - memoized to prevent VolumeControls re-renders
-  const handleBellVolumeChange = useCallback((vol) => {
-    actions.setBellVolume(vol);
-    setBellVolume(vol);
-  }, [actions, setBellVolume]);
-
-  const handleAmbientVolumeChange = useCallback((vol) => {
-    actions.setAmbientVolume(vol);
-    setAmbientVolume(vol);
-  }, [actions, setAmbientVolume]);
-
   // Update timer duration when context changes
   useEffect(() => {
     if (!timer.isRunning) {
       timer.updateDuration(state.duration);
     }
-  }, [state.duration, timer]);
+  }, [state.duration]);
 
   // Manage bright background after completion
   useEffect(() => {
     if (timer.isComplete) {
       // Show bright background during/after burst
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentionally syncing UI state with timer completion
       setShowBrightBg(true);
 
       // Fade back to original after 9-second burst completes
@@ -249,8 +237,14 @@ function MeditationTimerApp() {
             <VolumeControls
               bellVolume={state.bellVolume}
               ambientVolume={state.ambientVolume}
-              onBellVolumeChange={handleBellVolumeChange}
-              onAmbientVolumeChange={handleAmbientVolumeChange}
+              onBellVolumeChange={(vol) => {
+                actions.setBellVolume(vol);
+                setBellVolume(vol);
+              }}
+              onAmbientVolumeChange={(vol) => {
+                actions.setAmbientVolume(vol);
+                setAmbientVolume(vol);
+              }}
               disabled={false}
             />
 
