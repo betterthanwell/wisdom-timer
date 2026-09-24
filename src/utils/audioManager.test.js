@@ -282,3 +282,56 @@ describe('AudioManager in a browser that ignores volume (iOS)', () => {
     expect(manager.currentAmbient).toBe(null);
   });
 });
+
+// React StrictMode (development) mounts, unmounts and remounts on startup, so
+// init() -> cleanup() -> init() happens while the first init is still loading
+describe('AudioManager set up twice (React StrictMode)', () => {
+  beforeEach(() => {
+    FakeAudio.instances = [];
+    vi.stubGlobal('Audio', FakeAudio);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('loads the sounds only once', async () => {
+    const manager = new AudioManager();
+    const first = manager.init();
+    manager.cleanup();
+    const second = manager.init();
+    await Promise.all([first, second]);
+
+    // 3 preloaded bells + 1 ambient element
+    expect(FakeAudio.instances).toHaveLength(4);
+    expect(manager.isInitialized).toBe(true);
+  });
+
+  it('still works after being cleaned up and set up again', async () => {
+    const manager = new AudioManager();
+    await manager.init();
+    manager.cleanup();
+    await manager.init();
+
+    await manager.playBell('start');
+    expect(bellElements().at(-1).paused).toBe(false);
+  });
+
+  it('stops all sound on cleanup', async () => {
+    vi.useFakeTimers();
+    try {
+      const manager = new AudioManager();
+      await manager.init();
+      await manager.playBell('end');
+      const ringing = bellElements().at(-1);
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(600);
+
+      manager.cleanup();
+      expect(ringing.paused).toBe(true);
+      expect(manager.ambientAudio.paused).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
