@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { countIntervalBellsDue } from '../utils/intervalBells';
 
 export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) => {
   const [duration, setDuration] = useState(initialDuration);
@@ -9,7 +10,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
   const expectedEndTimeRef = useRef(null);
-  const lastIntervalBellRef = useRef(0);
+  const intervalBellsRungRef = useRef(0);
 
   // Start the timer
   const start = useCallback(() => {
@@ -20,12 +21,18 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     const now = Date.now();
     startTimeRef.current = now;
     expectedEndTimeRef.current = now + (timeRemaining * 1000);
-    lastIntervalBellRef.current = duration;
+    // Count bells already due at this point as rung, so resuming (or enabling
+    // interval bells while paused) doesn't immediately ring a catch-up bell
+    intervalBellsRungRef.current = countIntervalBellsDue(
+      duration - timeRemaining,
+      onIntervalBell?.interval,
+      duration
+    );
 
     if (onStart) {
       onStart();
     }
-  }, [timeRemaining, duration, onStart]);
+  }, [timeRemaining, duration, onStart, onIntervalBell]);
 
   // Pause the timer
   const pause = useCallback(() => {
@@ -41,7 +48,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     setIsRunning(false);
     setIsComplete(false);
     setTimeRemaining(duration);
-    lastIntervalBellRef.current = 0;
+    intervalBellsRungRef.current = 0;
 
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -91,19 +98,13 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
 
   // Interval bell checker
   useEffect(() => {
-    if (isRunning && onIntervalBell && timeRemaining > 0) {
-      const elapsed = duration - timeRemaining;
-      const timeSinceLastBell = duration - lastIntervalBellRef.current;
+    if (!isRunning || !onIntervalBell) return;
 
-      // Check if we should play an interval bell
-      if (timeSinceLastBell > 0 && elapsed > 0 && elapsed % onIntervalBell.interval === 0) {
-        if (lastIntervalBellRef.current !== timeRemaining) {
-          lastIntervalBellRef.current = timeRemaining;
-          if (onIntervalBell.callback) {
-            onIntervalBell.callback();
-          }
-        }
-      }
+    const due = countIntervalBellsDue(duration - timeRemaining, onIntervalBell.interval, duration);
+    // If ticks were skipped (e.g. a throttled background tab), ring once rather than several times
+    if (due > intervalBellsRungRef.current) {
+      intervalBellsRungRef.current = due;
+      onIntervalBell.callback?.();
     }
   }, [timeRemaining, isRunning, duration, onIntervalBell]);
 
