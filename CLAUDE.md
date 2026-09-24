@@ -22,6 +22,8 @@ npm run dev          # Start dev server (http://localhost:5173)
 npm run build        # Production build to dist/
 npm run preview      # Preview production build
 npm run lint         # Run ESLint
+npm test             # Run tests once (Vitest)
+npm run test:watch   # Run tests in watch mode
 ```
 
 ## Project Structure
@@ -52,6 +54,7 @@ wisdom-timer/
 │   │   └── useTimerContext.js  # Context object + useTimerContext hook
 │   ├── utils/
 │   │   ├── audioManager.js     # Singleton audio controller class
+│   │   ├── intervalBells.js    # Pure interval-bell scheduling (countIntervalBellsDue)
 │   │   └── timeFormatter.js    # Time formatting utilities
 │   ├── constants/
 │   │   └── audioSources.js     # Audio file paths and metadata
@@ -87,7 +90,7 @@ wisdom-timer/
 ### Timer Logic
 - **useTimer** hook uses `Date.now()` calculations to prevent drift
 - Updates every 100ms for smooth display
-- Supports interval callbacks for bell scheduling
+- Interval bells: `countIntervalBellsDue()` (`src/utils/intervalBells.js`) says how many bells are due; the hook rings when that count goes up, so skipped ticks (throttled tabs) ring once instead of never
 
 ## Code Conventions
 
@@ -162,7 +165,14 @@ Edit `src/index.css` `@theme` block:
 
 ## Testing
 
-No automated tests currently configured. Manual testing recommended:
+**Vitest** + **jsdom** + **@testing-library/react**, configured in `vite.config.js` (`test` block).
+
+- Tests live next to the code they test: `foo.js` → `foo.test.js`
+- Prefer extracting logic into pure functions (like `countIntervalBellsDue`) and unit-testing those
+- Hook tests use `renderHook` with `vi.useFakeTimers()`; advance time in 1-second `act()` steps so React re-renders between ticks (one big `advanceTimersByTime` batches all state updates and skips effects)
+- For bug fixes: write a test that fails on the old code first, then fix
+
+Still manual:
 - Timer accuracy over long durations
 - Audio playback in different browsers
 - Responsive layout on mobile/tablet
