@@ -75,7 +75,7 @@ function MeditationTimerApp() {
     handleTimerStart,
     handleTimerComplete,
     state.intervalBellsEnabled
-      ? { interval: state.intervalDuration, callback: handleIntervalBell }
+      ? { interval: state.intervalDuration, firstAt: state.intervalStart, callback: handleIntervalBell }
       : null
   );
   const { start: startTimer, pause: pauseTimer, finish: finishTimer, reset: resetTimer, updateDuration } = timer;
@@ -338,12 +338,14 @@ function MeditationTimerApp() {
                 disabled={durationLocked}
               />
 
-              {/* Interval Bells */}
+              {/* Interval woodblock */}
               <IntervalSettings
                 enabled={state.intervalBellsEnabled}
                 intervalDuration={state.intervalDuration}
+                intervalStart={state.intervalStart}
                 onToggle={actions.setIntervalBells}
                 onIntervalChange={actions.setIntervalDuration}
+                onStartChange={actions.setIntervalStart}
                 disabled={timer.isRunning}
               />
 

@@ -22,7 +22,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 
 ### Sound
 - **Start bell** - singing bowl (~43 s)
-- **Interval bells** - a short woodblock knock every 1-30 minutes (optional); never at the very end, which belongs to the end bell
+- **Interval woodblock** - a short woodblock knock every 1-30 minutes (optional), the first one after its own delay of 1-60 minutes (default: every 10 minutes, starting after 5); never at the very end, which belongs to the end bell
 - **End bell** - resonant "gling" (~35 s)
 - **Ambient sounds** - rain, ocean waves or forest, looping, with a 0.5 s fade in and out
 - **Bell patterns** - each bell (start, interval, end) can ring 1, 2 or 3 times, e.g. three strikes to begin and end; bowls 5 s apart, woodblock knocks 2 s apart. The choices sit behind a "Bell strikes" switch; your choices keep applying when they're hidden
@@ -35,7 +35,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 | Duration (presets, custom, open-ended) | Locked | Locked - Reset unlocks it |
 | Ambient sound choice | Switches right away (via "Show settings") | *None* stops it; another sound starts on resume |
 | Volume sliders | Usable (via "Show settings") | Usable |
-| Interval bell settings | Locked | Usable |
+| Interval woodblock settings | Locked | Usable |
 
 ### Completion
 - **Enlightenment burst** - a 9-second light animation in three waves, and the title briefly reads "Wisdom Time!"

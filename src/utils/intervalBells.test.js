@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { countIntervalBellsDue } from './intervalBells';
 
 // Elapsed seconds at which the count goes up, i.e. when a bell rings
-const bellTimes = (duration, interval) => {
+const bellTimes = (duration, interval, firstAt) => {
   const times = [];
   for (let elapsed = 1; elapsed <= duration; elapsed++) {
-    if (countIntervalBellsDue(elapsed, interval, duration) > countIntervalBellsDue(elapsed - 1, interval, duration)) {
+    if (countIntervalBellsDue(elapsed, interval, duration, firstAt) > countIntervalBellsDue(elapsed - 1, interval, duration, firstAt)) {
       times.push(elapsed);
     }
   }
@@ -51,5 +51,36 @@ describe('countIntervalBellsDue', () => {
 
   it('handles a zero-length session', () => {
     expect(countIntervalBellsDue(10, 300, 0)).toBe(0);
+  });
+
+  describe('with a separate first bell time', () => {
+    it('rings first at firstAt, then every interval', () => {
+      // 45 min session, first at 5 min, then every 10 min
+      expect(bellTimes(2700, 600, 300)).toEqual([300, 900, 1500, 2100]);
+    });
+
+    it('can ring the first bell later than one interval', () => {
+      // 30 min session, first at 20 min, then every 5 min
+      expect(bellTimes(1800, 300, 1200)).toEqual([1200, 1500]);
+    });
+
+    it('still never rings at the very end', () => {
+      expect(bellTimes(900, 600, 300)).toEqual([300]);
+      expect(countIntervalBellsDue(900, 600, 900, 300)).toBe(1);
+    });
+
+    it('rings no bells when the first bell would be at or after the end', () => {
+      expect(bellTimes(600, 300, 600)).toEqual([]);
+      expect(bellTimes(600, 300, 900)).toEqual([]);
+    });
+
+    it('catches up once over skipped bells', () => {
+      expect(countIntervalBellsDue(299, 600, 2700, 300)).toBe(0);
+      expect(countIntervalBellsDue(1000, 600, 2700, 300)).toBe(2);
+    });
+
+    it('defaults to one interval when no first bell time is given', () => {
+      expect(bellTimes(1200, 300, undefined)).toEqual([300, 600, 900]);
+    });
   });
 });

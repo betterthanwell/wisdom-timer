@@ -39,7 +39,8 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     intervalBellsRungRef.current = countIntervalBellsDue(
       duration - remaining,
       onIntervalBell?.interval,
-      duration
+      duration,
+      onIntervalBell?.firstAt
     );
 
     if (onStart) {
@@ -111,6 +112,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
 
   // Main timer effect
   const intervalSeconds = onIntervalBell?.interval;
+  const firstBellSeconds = onIntervalBell?.firstAt ?? intervalSeconds;
   useEffect(() => {
     if (!isRunning) return;
 
@@ -157,7 +159,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     const endTime = expectedEndTimeRef.current;
     wakeAt(endTime);
     if (intervalSeconds > 0) {
-      for (let elapsed = intervalSeconds; elapsed < duration; elapsed += intervalSeconds) {
+      for (let elapsed = firstBellSeconds; elapsed < duration; elapsed += intervalSeconds) {
         const bellTime = endTime - (duration - elapsed) * 1000;
         if (bellTime - Date.now() > WAKE_UP_HORIZON_MS) break;
         if (bellTime > Date.now()) wakeAt(bellTime);
@@ -166,13 +168,18 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     document.addEventListener('visibilitychange', tick);
 
     return stopTicking;
-  }, [isRunning, onComplete, duration, intervalSeconds]);
+  }, [isRunning, onComplete, duration, intervalSeconds, firstBellSeconds]);
 
   // Interval bell checker
   useEffect(() => {
     if (!isRunning || !onIntervalBell) return;
 
-    const due = countIntervalBellsDue(duration - timeRemaining, onIntervalBell.interval, duration);
+    const due = countIntervalBellsDue(
+      duration - timeRemaining,
+      onIntervalBell.interval,
+      duration,
+      onIntervalBell.firstAt
+    );
     // If ticks were skipped (e.g. a throttled background tab), ring once rather than several times
     if (due > intervalBellsRungRef.current) {
       intervalBellsRungRef.current = due;

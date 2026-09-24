@@ -62,16 +62,17 @@ test('a full 45-minute session: start bell, countdown, end bell', async ({ page 
   expect(await countSound(page, 'bell-end')).toBe(1);
 });
 
-test('interval bells ring during the session, but not at the end', async ({ page }) => {
-  await page.getByRole('switch', { name: 'Interval bells' }).click();
+test('the interval woodblock starts after its own time, repeats, and skips the end', async ({ page }) => {
+  await page.getByRole('switch', { name: 'Interval woodblock' }).click();
   await page.getByLabel('Interval in minutes').fill('5');
-  await setDuration(page, 15);
+  await page.getByLabel('Starting after, in minutes').fill('2');
+  await setDuration(page, 17);
 
   await page.getByRole('button', { name: 'Start', exact: true }).click();
-  await passMinutes(page, 15);
+  await passMinutes(page, 17);
 
   await expect(page.getByText('Complete')).toBeVisible();
-  expect(await countSound(page, 'bell-interval')).toBe(2); // 5 and 10 min
+  expect(await countSound(page, 'bell-interval')).toBe(3); // 2, 7 and 12 min - not 17
   expect(await countSound(page, 'bell-end')).toBe(1);
 });
 
