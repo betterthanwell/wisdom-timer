@@ -210,14 +210,7 @@ Contributions welcome! Feel free to:
 
 ## 🌟 Future Enhancements
 
-- [ ] Session history and statistics
-- [ ] Multiple timer profiles
-- [ ] Dark/light theme toggle
-- [ ] Additional ambient sounds
 - [ ] Guided meditation audio
-- [ ] Progressive Web App (PWA) support
-- [ ] Social sharing of meditation sessions
-- [ ] Integration with meditation apps
 
 ---
 
