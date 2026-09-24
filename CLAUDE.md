@@ -125,6 +125,8 @@ wisdom-timer/
 ### Timer Accuracy
 The timer uses `expectedEndTimeRef` calculated from `Date.now()` rather than decrementing to prevent drift from CPU throttling or background tabs.
 
+Background tabs throttle the 100ms `setInterval` heavily (Chrome: down to once a minute), so `useTimer` also schedules one-off `setTimeout` wake-ups at the exact end time and at each interval-bell time, and re-checks on `visibilitychange`. `pause()` takes the time left from the clock, not from the (possibly stale) displayed value. Tests simulate the worst case by stubbing `setInterval` out entirely.
+
 ### Audio Loading Priority
 Bells preload before ambient sounds (critical for instant playback). The `AudioManager.init()` awaits bell loading before creating ambient elements.
 
