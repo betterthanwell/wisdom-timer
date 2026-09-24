@@ -16,18 +16,21 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
 
   // Start the timer
   const start = useCallback(() => {
-    if (timeRemaining <= 0) return;
+    // After a completed session, starting begins a new full session
+    const remaining = isComplete ? duration : timeRemaining;
+    if (remaining <= 0) return;
 
     setIsRunning(true);
     setIsPaused(false);
     setIsComplete(false);
+    setTimeRemaining(remaining);
     const now = Date.now();
     startTimeRef.current = now;
-    expectedEndTimeRef.current = now + (timeRemaining * 1000);
+    expectedEndTimeRef.current = now + (remaining * 1000);
     // Count bells already due at this point as rung, so resuming (or enabling
     // interval bells while paused) doesn't immediately ring a catch-up bell
     intervalBellsRungRef.current = countIntervalBellsDue(
-      duration - timeRemaining,
+      duration - remaining,
       onIntervalBell?.interval,
       duration
     );
@@ -35,7 +38,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     if (onStart) {
       onStart();
     }
-  }, [timeRemaining, duration, onStart, onIntervalBell]);
+  }, [isComplete, timeRemaining, duration, onStart, onIntervalBell]);
 
   // Pause the timer
   const pause = useCallback(() => {

@@ -1,7 +1,7 @@
 import { formatTime } from '../../utils/timeFormatter';
 import { CircularProgress } from './CircularProgress';
 
-export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = false, isComplete }) => {
+export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = false, isComplete, sessionNumber = 1 }) => {
   const getStatusText = () => {
     if (isComplete) return 'Complete';
     if (isRunning) return 'Meditating...';
@@ -58,6 +58,9 @@ export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = fa
             </div>
             <div className="text-sm md:text-base text-white/90 mt-2 font-semibold drop-shadow-md">
               {getStatusText()}
+            </div>
+            <div className="text-xs md:text-sm text-white/70 mt-1 font-medium drop-shadow-md">
+              Session {sessionNumber}
             </div>
           </div>
         </CircularProgress>

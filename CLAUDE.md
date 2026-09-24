@@ -48,6 +48,7 @@ wisdom-timer/
 │   ├── hooks/
 │   │   ├── useTimer.js         # Timer logic with drift prevention
 │   │   ├── useAudio.js         # Audio playback React hook
+│   │   ├── useSessionCounter.js # Sessions completed today (in memory, resets daily)
 │   │   └── useLocalStorage.js  # LocalStorage persistence hook
 │   ├── context/
 │   │   ├── TimerContext.jsx    # Global state with useReducer (TimerProvider)
@@ -90,6 +91,7 @@ wisdom-timer/
 ### Timer Logic
 - **useTimer** hook uses `Date.now()` calculations to prevent drift
 - Updates every 100ms for smooth display
+- Starting after a completed session begins a new full session (no Reset needed)
 - Interval bells: `countIntervalBellsDue()` (`src/utils/intervalBells.js`) says how many bells are due; the hook rings when that count goes up, so skipped ticks (throttled tabs) ring once instead of never
 
 ## Code Conventions
