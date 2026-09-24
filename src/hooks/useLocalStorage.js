@@ -12,17 +12,13 @@ export const useLocalStorage = (key, initialValue) => {
     }
   });
 
-  // Update localStorage when storedValue changes (debounced to prevent excessive writes)
+  // Update localStorage when storedValue changes
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      try {
-        window.localStorage.setItem(key, JSON.stringify(storedValue));
-      } catch (error) {
-        console.warn(`Error saving ${key} to localStorage:`, error);
-      }
-    }, 300); // Debounce for 300ms
-
-    return () => clearTimeout(timeout);
+    try {
+      window.localStorage.setItem(key, JSON.stringify(storedValue));
+    } catch (error) {
+      console.warn(`Error saving ${key} to localStorage:`, error);
+    }
   }, [key, storedValue]);
 
   return [storedValue, setStoredValue];
