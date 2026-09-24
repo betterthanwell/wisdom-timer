@@ -29,9 +29,9 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 │   ├── index.css                # Global styles, .glass-card(-strong), keyframes, reduced motion
 │   ├── components/
 │   │   ├── Timer/               # TimerDisplay (time, status, "Session N", burst),
-│   │   │                        # TimerControls (Start/Pause/Reset), CircularProgress
+│   │   │                        # TimerControls (Start/Pause|Cancel/Finish/Reset), CircularProgress
 │   │   ├── Settings/            # PresetButtons, DurationSelector, IntervalSettings,
-│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings, GentleEndingSetting
+│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings, GentleEndingSetting, OpenEndedSetting
 │   │   └── UI/                  # GlassCard, Button, Switch (on/off toggle with accessible name)
 │   ├── hooks/
 │   │   ├── useTimer.js          # Countdown from the clock, pause/resume, interval bells, wake-ups
@@ -80,6 +80,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - **Settling in** (`settleSeconds`: 0/10/20/30/60, default 0 = off): only before a *new* session (from Ready or after completion), never on resume. Silent countdown ("Settling in…"), then the normal start. Counts as in-session: quiet screen, wake lock, duration locked. The main button becomes **Cancel**; Cancel, Space and Reset return to Ready. On completion it calls the *latest* `startTimer` via a ref, so changes made while settling (e.g. ambient sound) apply.
 - **Bell patterns**: `startStrikes`, `intervalStrikes`, `endStrikes` (1-3, default 1). Strikes are 5 s apart for start/end bowls, 2 s for the interval woodblock (`BELL_STRIKE_SPACING_MS`). Reset cancels strikes not yet rung; pause doesn't.
 - **Gentle ending** (`gentleEnding`, default off): while running, the ambient level follows `gentleEndingLevel()` - full until the last minute (or the last half of sessions under 2 min), then linearly to 0. Applied as `audioManager.setAmbientLevel()`, a multiplier separate from the volume slider; back to 1 whenever it doesn't apply.
+- **Open-ended sitting** (`openEnded`, default off): the timer runs as a countdown from 24 h (`OPEN_ENDED_SECONDS` in `App.jsx`) but displays the time sat (counting up); no progress ring, "Ends at" or gentle ending. **Finish** (`useTimer.finish()`) completes early - end bell, burst, session counted - and keeps the time sat on screen; Play then starts from 00:00. Presets/custom duration are greyed out while it's on; the switch itself is locked during a session.
 - **Keep screen awake** (default on): a wake lock is held only while the timer is *running* (or settling in), not while paused. The toggle is hidden where the Wake Lock API isn't supported.
 - Product direction: functional meditation features only - no streaks, stats, social sharing or similar engagement features.
 
@@ -95,7 +96,8 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - Returns `timeRemaining`, `isRunning`, `isPaused`, `isComplete`, `endsAt` (end timestamp while running, else `null`), `progress`, `duration`, and `start`, `pause`, `reset`, `updateDuration`.
 - A 100ms `setInterval` updates the display. Background tabs throttle it heavily (Chrome: down to once a minute), so the hook also schedules one-off `setTimeout` wake-ups at the end time and at each interval-bell time, and re-checks on `visibilitychange`. A `finished` guard prevents completing twice.
 - `pause()` takes the time left from the clock, not the (possibly stale) displayed value.
-- `start()` after completion begins a new full session.
+- `start()` after completion begins a new full session. `finish()` completes a running or paused session early (open-ended sitting).
+- Background wake-ups are only scheduled up to 6 hours ahead (`WAKE_UP_HORIZON_MS`), so a 24 h open-ended session with 1-minute bells doesn't create ~1,400 timeouts.
 - Interval bells: `countIntervalBellsDue(elapsed, interval, duration)` says how many bells are due (never at the end); the hook rings when the count goes up, so skipped ticks ring once. `start()` counts already-due bells as rung, so resuming doesn't ring a catch-up bell.
 
 ### Audio (`audioManager`)

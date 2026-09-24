@@ -19,6 +19,7 @@ const initialState = {
   intervalStrikes: 1,
   endStrikes: 1,
   gentleEnding: false, // fade ambient sound out over the last minute
+  openEnded: false, // count up until Finish instead of counting down
 };
 
 // Reducer: every setting change is { type: 'SET_SETTING', key, value }
@@ -60,6 +61,7 @@ export const TimerProvider = ({ children }) => {
     setSettleSeconds: (seconds) => setSetting('settleSeconds', seconds),
     setBellStrikes: (bell, strikes) => setSetting(`${bell}Strikes`, strikes),
     setGentleEnding: (enabled) => setSetting('gentleEnding', enabled),
+    setOpenEnded: (enabled) => setSetting('openEnded', enabled),
   };
 
   return (

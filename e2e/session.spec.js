@@ -149,6 +149,20 @@ test('bell patterns: three strikes to begin, five seconds apart', async ({ page 
   expect(await countSound(page, 'bell-start')).toBe(3);
 });
 
+test('open-ended sitting: counts up until Finish', async ({ page }) => {
+  await page.getByRole('switch', { name: 'Open-ended sitting' }).click();
+  await expect(page.getByText('00:00')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await passMinutes(page, 20);
+  await expect(page.getByText('20:00')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Finish' }).click();
+  await expect(page.getByText('Complete')).toBeVisible();
+  await expect(page.getByText('20:00')).toBeVisible();
+  expect(await countSound(page, 'bell-end')).toBe(1);
+});
+
 test('ambient sound starts with the session', async ({ page }) => {
   await page.getByRole('button', { name: 'Rain' }).click();
   await page.getByRole('button', { name: 'Start', exact: true }).click();

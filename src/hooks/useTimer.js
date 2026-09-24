@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { countIntervalBellsDue } from '../utils/intervalBells';
 
+// Background wake-ups are scheduled this far ahead at most (open-ended
+// sessions last up to 24 h; the visible 100ms ticks cover the rest)
+const WAKE_UP_HORIZON_MS = 6 * 60 * 60 * 1000;
+
 export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) => {
   const [duration, setDuration] = useState(initialDuration);
   const [timeRemaining, setTimeRemaining] = useState(initialDuration);
@@ -58,6 +62,28 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
       intervalRef.current = null;
     }
   }, [isRunning]);
+
+  // Finish now (open-ended sitting): complete the session early, keeping
+  // the time sat
+  const finish = useCallback(() => {
+    if (!isRunning && !isPaused) return;
+
+    if (isRunning) {
+      setTimeRemaining(Math.max(0, Math.ceil((expectedEndTimeRef.current - Date.now()) / 1000)));
+    }
+    setIsRunning(false);
+    setIsPaused(false);
+    setIsComplete(true);
+    setEndsAt(null);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (onComplete) {
+      onComplete();
+    }
+  }, [isRunning, isPaused, onComplete]);
 
   // Reset the timer
   const reset = useCallback(() => {
@@ -133,6 +159,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     if (intervalSeconds > 0) {
       for (let elapsed = intervalSeconds; elapsed < duration; elapsed += intervalSeconds) {
         const bellTime = endTime - (duration - elapsed) * 1000;
+        if (bellTime - Date.now() > WAKE_UP_HORIZON_MS) break;
         if (bellTime > Date.now()) wakeAt(bellTime);
       }
     }
@@ -171,6 +198,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     endsAt,
     start,
     pause,
+    finish,
     reset,
     updateDuration,
     progress: duration > 0 ? ((duration - timeRemaining) / duration) * 100 : 0,

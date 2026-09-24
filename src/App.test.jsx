@@ -409,6 +409,100 @@ describe('App', () => {
     });
   });
 
+  describe('open-ended sitting', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const passSeconds = (seconds) => {
+      for (let i = 0; i < seconds; i++) {
+        act(() => {
+          vi.advanceTimersByTime(1000);
+        });
+      }
+    };
+    const openEndedSwitch = () => screen.getByRole('switch', { name: 'Open-ended sitting' });
+
+    const startOpenEnded = async () => {
+      await renderApp();
+      fireEvent.click(openEndedSwitch());
+      vi.clearAllMocks();
+    };
+
+    it('is off by default', async () => {
+      await renderApp();
+      expect(openEndedSwitch().getAttribute('aria-checked')).toBe('false');
+      expect(screen.queryByRole('button', { name: 'Finish' })).toBe(null);
+    });
+
+    it('greys out the duration settings and starts from 00:00', async () => {
+      await startOpenEnded();
+      expect(button('45m').disabled).toBe(true);
+      expect(screen.getByLabelText('Minutes').disabled).toBe(true);
+      expect(screen.getByText('00:00')).toBeTruthy();
+      expect(screen.getByText('Counts up until you press Finish.')).toBeTruthy();
+    });
+
+    it('counts up, with no end time', async () => {
+      await startOpenEnded();
+      click('Start');
+      passSeconds(75);
+
+      expect(screen.getByText('01:15')).toBeTruthy();
+      expect(screen.queryByText(/^Ends at /)).toBe(null);
+    });
+
+    it('keeps ringing interval bells', async () => {
+      await startOpenEnded();
+      fireEvent.click(screen.getByRole('switch', { name: 'Interval bells' }));
+      fireEvent.change(screen.getByLabelText('Interval in minutes'), { target: { value: '1' } });
+      click('Start');
+      passSeconds(180);
+
+      const intervalBells = audioManager.playBell.mock.calls.filter(([type]) => type === 'interval');
+      expect(intervalBells).toHaveLength(3);
+    });
+
+    it('Finish rings the end bell, completes the session and keeps the time sat', async () => {
+      await startOpenEnded();
+      click('Rain');
+      click('Start');
+      passSeconds(90);
+
+      click('Finish');
+      expect(audioManager.playBell).toHaveBeenCalledWith('end', 1);
+      expect(audioManager.stopAmbient).toHaveBeenCalled();
+      expect(screen.getByText('Complete')).toBeTruthy();
+      expect(screen.getByText('01:30')).toBeTruthy();
+      expect(screen.getByText('Session 1')).toBeTruthy();
+
+      click('Start');
+      expect(screen.getByText('00:00')).toBeTruthy();
+      expect(screen.getByText('Session 2')).toBeTruthy();
+    });
+
+    it('can also finish while paused', async () => {
+      await startOpenEnded();
+      click('Start');
+      passSeconds(30);
+      click('Pause');
+      click('Finish');
+      expect(screen.getByText('Complete')).toBeTruthy();
+    });
+
+    it('goes back to the chosen duration when turned off, and remembers the choice', async () => {
+      await startOpenEnded();
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).openEnded).toBe(true);
+
+      fireEvent.click(openEndedSwitch());
+      expect(screen.getByText('45:00')).toBeTruthy();
+    });
+  });
+
   describe('quiet screen while sitting', () => {
     const settingsVisible = () => screen.queryByRole('heading', { name: 'Settings' }) !== null;
     const dimmed = () => screen.getByTestId('quiet-dim').className.includes('opacity-100');

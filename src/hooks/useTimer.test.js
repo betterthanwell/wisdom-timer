@@ -96,6 +96,64 @@ describe('useTimer', () => {
     expect(result.current.endsAt).toBe(null);
   });
 
+  describe('finish (open-ended sitting)', () => {
+    it('completes the session early and keeps the time sat', () => {
+      const { result, onComplete } = renderTimer(24 * 3600);
+      act(() => result.current.start());
+      advanceSeconds(1200);
+
+      act(() => result.current.finish());
+      expect(onComplete).toHaveBeenCalledTimes(1);
+      expect(result.current.isComplete).toBe(true);
+      expect(result.current.isRunning).toBe(false);
+      expect(result.current.endsAt).toBe(null);
+      expect(result.current.duration - result.current.timeRemaining).toBe(1200);
+
+      advanceSeconds(60);
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('can finish while paused', () => {
+      const { result, onComplete } = renderTimer(24 * 3600);
+      act(() => result.current.start());
+      advanceSeconds(300);
+      act(() => result.current.pause());
+      act(() => result.current.finish());
+
+      expect(onComplete).toHaveBeenCalledTimes(1);
+      expect(result.current.isComplete).toBe(true);
+      expect(result.current.isPaused).toBe(false);
+    });
+
+    it('does nothing when no session is in progress', () => {
+      const { result, onComplete } = renderTimer(600);
+      act(() => result.current.finish());
+      expect(onComplete).not.toHaveBeenCalled();
+      expect(result.current.isComplete).toBe(false);
+    });
+
+    it('starts again from zero after finishing', () => {
+      const { result } = renderTimer(24 * 3600);
+      act(() => result.current.start());
+      advanceSeconds(100);
+      act(() => result.current.finish());
+
+      act(() => result.current.start());
+      expect(result.current.timeRemaining).toBe(24 * 3600);
+    });
+  });
+
+  it('only schedules background wake-ups for the next 6 hours', () => {
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    const bell = { interval: 60, callback: vi.fn() };
+    const { result } = renderTimer(24 * 3600, bell);
+
+    act(() => result.current.start());
+    // 1-minute bells for 6 hours (359 of them, plus the end) - not 1,439
+    expect(setTimeoutSpy.mock.calls.length).toBeLessThanOrEqual(400);
+    setTimeoutSpy.mockRestore();
+  });
+
   it('reports paused only between pause and the next start or reset', () => {
     const { result } = renderTimer(60);
     expect(result.current.isPaused).toBe(false);

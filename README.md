@@ -11,6 +11,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 ### Timer
 - **Any duration** from 0:01 to 99:59 with minute/second inputs; **presets** for 30, 45, 60 and 90 minutes (default 45)
 - **Settling in** (optional) - a silent 10 s to 1 min countdown before the start bell of a new session, so you can put the phone down and get comfortable; Cancel, Space or Reset stop it
+- **Open-ended sitting** (optional) - count up from 00:00 with no set end; interval bells keep ringing, and **Finish** rings the end bell and completes the session
 - **Pause and resume** - the start bell rings again when you resume
 - **Play after a finished session starts the next one** - no need to press Reset
 - **"Ends at 07:45"** under the timer while a session runs (in your device's time format)
@@ -31,7 +32,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 ### While a session is in progress
 | | Running | Paused |
 |---|---|---|
-| Duration (presets and custom) | Locked | Locked - Reset unlocks it |
+| Duration (presets, custom, open-ended) | Locked | Locked - Reset unlocks it |
 | Ambient sound choice | Switches right away (via "Show settings") | *None* stops it; another sound starts on resume |
 | Volume sliders | Usable (via "Show settings") | Usable |
 | Interval bell settings | Locked | Usable |

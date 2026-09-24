@@ -1,4 +1,4 @@
-import { Play, Pause, RotateCcw, X } from 'lucide-react';
+import { Play, Pause, RotateCcw, X, Flag } from 'lucide-react';
 import { Button } from '../UI/Button';
 
 export const TimerControls = ({
@@ -8,6 +8,8 @@ export const TimerControls = ({
   onPause,
   onCancel,
   onReset,
+  onFinish,
+  showFinish = false,
   disabled = false,
   startDisabled = false,
 }) => {
@@ -34,6 +36,20 @@ export const TimerControls = ({
           <Play className="w-7 h-7" />
         )}
       </Button>
+
+      {/* Finish Button (open-ended sitting) */}
+      {showFinish && (
+        <Button
+          variant="icon"
+          size="icon"
+          onClick={onFinish}
+          disabled={disabled}
+          aria-label="Finish"
+          className="w-12 h-12 rounded-full"
+        >
+          <Flag className="w-5 h-5" />
+        </Button>
+      )}
 
       {/* Reset Button */}
       <Button

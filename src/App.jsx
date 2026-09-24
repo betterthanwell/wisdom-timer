@@ -21,6 +21,10 @@ import { KeepAwakeSetting } from './components/Settings/KeepAwakeSetting';
 import { SettleSetting } from './components/Settings/SettleSetting';
 import { BellPatternSettings } from './components/Settings/BellPatternSettings';
 import { GentleEndingSetting } from './components/Settings/GentleEndingSetting';
+import { OpenEndedSetting } from './components/Settings/OpenEndedSetting';
+
+// Open-ended sitting counts up, as a countdown from 24 hours
+const OPEN_ENDED_SECONDS = 24 * 60 * 60;
 
 function MeditationTimerApp() {
   const { state, actions } = useTimerContext();
@@ -67,14 +71,16 @@ function MeditationTimerApp() {
   }, [isInitialized, state.bellVolume, state.ambientVolume, setBellVolume, setAmbientVolume]);
 
   const timer = useTimer(
-    state.duration,
+    state.openEnded ? OPEN_ENDED_SECONDS : state.duration,
     handleTimerStart,
     handleTimerComplete,
     state.intervalBellsEnabled
       ? { interval: state.intervalDuration, callback: handleIntervalBell }
       : null
   );
-  const { start: startTimer, pause: pauseTimer, reset: resetTimer, updateDuration } = timer;
+  const { start: startTimer, pause: pauseTimer, finish: finishTimer, reset: resetTimer, updateDuration } = timer;
+  // Open-ended: show the time sat (counting up) instead of the time left
+  const displaySeconds = state.openEnded ? timer.duration - timer.timeRemaining : timer.timeRemaining;
 
   // Handle pause - pause ambient sound
   const handlePause = useCallback(() => {
@@ -139,6 +145,13 @@ function MeditationTimerApp() {
     if (durationLocked) return;
     actions.setDuration(newDuration);
     updateDuration(newDuration);
+  };
+
+  // Switching between a set duration and open-ended sitting (between sessions)
+  const handleOpenEndedChange = (enabled) => {
+    if (durationLocked) return;
+    actions.setOpenEnded(enabled);
+    updateDuration(enabled ? OPEN_ENDED_SECONDS : state.duration);
   };
 
   // Ambient sound can change at any time. While running it switches right
@@ -235,13 +248,13 @@ function MeditationTimerApp() {
           <div className="space-y-8">
             {/* Timer Display */}
             <TimerDisplay
-              timeRemaining={timer.timeRemaining}
-              progress={timer.progress}
+              timeRemaining={displaySeconds}
+              progress={state.openEnded ? 0 : timer.progress}
               isRunning={timer.isRunning}
               isPaused={timer.isPaused}
               isComplete={timer.isComplete}
               sessionNumber={sessionNumber}
-              endsAt={timer.endsAt}
+              endsAt={state.openEnded ? null : timer.endsAt}
               settleRemaining={isSettling ? settleRemaining : null}
             />
 
@@ -252,6 +265,8 @@ function MeditationTimerApp() {
               onStart={handleStart}
               onPause={handlePause}
               onCancel={cancelSettling}
+              onFinish={finishTimer}
+              showFinish={state.openEnded && (timer.isRunning || timer.isPaused)}
               onReset={handleReset}
               disabled={!isInitialized}
               startDisabled={timer.timeRemaining === 0 && !timer.isComplete}
@@ -284,6 +299,13 @@ function MeditationTimerApp() {
                 <h2 className="text-lg font-semibold">Settings</h2>
               </div>
 
+              {/* Open-ended sitting */}
+              <OpenEndedSetting
+                enabled={state.openEnded}
+                onToggle={handleOpenEndedChange}
+                disabled={durationLocked}
+              />
+
               {/* Preset Buttons */}
               <div>
                 <label className="block text-sm font-medium text-white/80 mb-2">
@@ -293,7 +315,7 @@ function MeditationTimerApp() {
                   presets={state.presetDurations}
                   currentDuration={state.duration}
                   onSelect={handleDurationChange}
-                  disabled={durationLocked}
+                  disabled={durationLocked || state.openEnded}
                 />
               </div>
 
@@ -305,7 +327,7 @@ function MeditationTimerApp() {
                 <DurationSelector
                   duration={state.duration}
                   onChange={handleDurationChange}
-                  disabled={durationLocked}
+                  disabled={durationLocked || state.openEnded}
                 />
               </div>
 
