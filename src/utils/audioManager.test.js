@@ -129,21 +129,129 @@ describe('AudioManager', () => {
     });
   });
 
-  describe('ambient volume', () => {
-    it('changes the volume of ambient sound that is playing', async () => {
+  describe('ambient sound', () => {
+    beforeEach(() => {
       vi.useFakeTimers();
-      try {
-        manager.setAmbientVolume(0.5);
-        const playing = manager.playAmbient('rain');
-        await vi.advanceTimersByTimeAsync(600); // let the 500ms fade-in finish
-        await playing;
-        expect(manager.ambientAudio.volume).toBeCloseTo(0.5);
-
-        manager.setAmbientVolume(0.2);
-        expect(manager.ambientAudio.volume).toBe(0.2);
-      } finally {
-        vi.useRealTimers();
-      }
     });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('changes the volume of ambient sound that is playing', async () => {
+      manager.setAmbientVolume(0.5);
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(600); // let the 500ms fade-in finish
+      expect(manager.ambientAudio.volume).toBeCloseTo(0.5);
+
+      manager.setAmbientVolume(0.2);
+      expect(manager.ambientAudio.volume).toBe(0.2);
+    });
+
+    it('fades in over about 500ms', async () => {
+      manager.setAmbientVolume(0.5);
+      manager.playAmbient('rain');
+
+      await vi.advanceTimersByTimeAsync(250);
+      expect(manager.ambientAudio.volume).toBeGreaterThan(0);
+      expect(manager.ambientAudio.volume).toBeLessThan(0.5);
+
+      await vi.advanceTimersByTimeAsync(350);
+      expect(manager.ambientAudio.volume).toBeCloseTo(0.5);
+    });
+
+    it('applies a volume change made during the fade-in', async () => {
+      manager.setAmbientVolume(0.5);
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(200);
+
+      manager.setAmbientVolume(0.2);
+      await vi.advanceTimersByTimeAsync(400);
+      expect(manager.ambientAudio.volume).toBeCloseTo(0.2);
+    });
+
+    it('fades out and stops', async () => {
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(600);
+
+      const stopped = manager.stopAmbient();
+      await vi.advanceTimersByTimeAsync(600);
+      await stopped;
+      expect(manager.ambientAudio.paused).toBe(true);
+      expect(manager.ambientAudio.currentTime).toBe(0);
+      expect(manager.currentAmbient).toBe(null);
+    });
+
+    it('stays stopped when stopped while still starting (play then reset quickly)', async () => {
+      let finishStarting;
+      vi.spyOn(manager.ambientAudio, 'play').mockImplementation(function () {
+        this.paused = false;
+        return new Promise((resolve) => {
+          finishStarting = resolve;
+        });
+      });
+
+      manager.playAmbient('rain');
+      const stopped = manager.stopAmbient();
+      finishStarting();
+      await vi.advanceTimersByTimeAsync(1000);
+      await stopped;
+
+      expect(manager.ambientAudio.paused).toBe(true);
+      expect(manager.ambientAudio.volume).toBe(0);
+      expect(manager.currentAmbient).toBe(null);
+    });
+
+    it('fully stops ambient sound that is paused (reset while paused)', async () => {
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(600);
+      manager.ambientAudio.currentTime = 42;
+      manager.pauseAmbient();
+
+      await manager.stopAmbient();
+      expect(manager.currentAmbient).toBe(null);
+      expect(manager.ambientAudio.currentTime).toBe(0);
+    });
+  });
+});
+
+// iOS Safari ignores volume set from JavaScript and always reports 1
+class FixedVolumeAudio extends FakeAudio {
+  get volume() {
+    return 1;
+  }
+
+  set volume(_value) {}
+}
+
+describe('AudioManager in a browser that ignores volume (iOS)', () => {
+  let manager;
+
+  beforeEach(async () => {
+    FakeAudio.instances = [];
+    vi.stubGlobal('Audio', FixedVolumeAudio);
+    manager = new AudioManager();
+    await manager.init();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    manager.cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('still stops ambient sound after the fade-out time', async () => {
+    manager.playAmbient('rain');
+    await vi.advanceTimersByTimeAsync(600);
+
+    let done = false;
+    manager.stopAmbient().then(() => {
+      done = true;
+    });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(done).toBe(true);
+    expect(manager.ambientAudio.paused).toBe(true);
+    expect(manager.currentAmbient).toBe(null);
   });
 });
