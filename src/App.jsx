@@ -247,6 +247,23 @@ function MeditationTimerApp() {
     };
   }, [timer.isComplete]);
 
+  // Whether focus last moved by Tab (rather than a click or tap)
+  const tabbedRef = useRef(false);
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === 'Tab') tabbedRef.current = true;
+    };
+    const onPointerDown = () => {
+      tabbedRef.current = false;
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    window.addEventListener('pointerdown', onPointerDown, true);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown, true);
+      window.removeEventListener('pointerdown', onPointerDown, true);
+    };
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -257,6 +274,18 @@ function MeditationTimerApp() {
 
       // Leave browser shortcuts like Cmd/Ctrl+R (reload) alone
       if (e.metaKey || e.ctrlKey || e.altKey) {
+        return;
+      }
+
+      // A held-down key repeats: act on the first press only. And like the
+      // Start button, nothing until the sounds have loaded.
+      if (e.repeat || !isInitialized) {
+        return;
+      }
+
+      // Space on a button reached with Tab presses that button, as usual;
+      // after a click or tap it stays Start/Pause
+      if (e.code === 'Space' && tabbedRef.current && e.target.closest?.('button')) {
         return;
       }
 
@@ -277,7 +306,7 @@ function MeditationTimerApp() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [timer.isRunning, isSettling, cancelSettling, handleStart, handlePause, handleReset]);
+  }, [isInitialized, timer.isRunning, isSettling, cancelSettling, handleStart, handlePause, handleReset]);
 
   return (
     <div

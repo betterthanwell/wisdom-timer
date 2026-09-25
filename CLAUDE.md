@@ -142,7 +142,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 ### Accessibility
 - `prefers-reduced-motion` disables animations.
 - Icon-only buttons and unlabeled inputs have `aria-label`s (Start/Pause/Reset, Minutes, Seconds, "Interval in minutes", "Starting after, in minutes"); the "Interval woodblock" toggle is `role="switch"` with `aria-checked`. Tests rely on these names.
-- Keyboard: Space start/pause, R reset. Ignored while typing in inputs, and when Cmd/Ctrl/Alt is held (browser shortcuts like Cmd+R stay working). The hint under the settings (`data-testid="keyboard-hint"`) only shows where the main pointer is fine (`pointer-fine:` - mouse/trackpad), not on touch screens.
+- Keyboard: Space start/pause, R reset. Ignored while typing in inputs, when Cmd/Ctrl/Alt is held (browser shortcuts like Cmd+R stay working), for key repeat (held down), and until the sounds have loaded (like the Start button). Space on a button reached with Tab presses that button; after a click or tap (`pointerdown`) it stays Start/Pause - `:focus-visible` can't tell them apart, since Chromium makes a clicked button focus-visible once a key is pressed. The hint under the settings (`data-testid="keyboard-hint"`) only shows where the main pointer is fine (`pointer-fine:` - mouse/trackpad), not on touch screens.
 - Volume sliders are named "Bells volume" / "Sound volume"; choice buttons (settle time, strikes, presets, ambient sound) expose selection with `aria-pressed`.
 
 ## Code Conventions

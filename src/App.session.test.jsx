@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import App from './App';
 import { audioManager } from './utils/audioManager';
 import { button, click, startBellCount, renderApp, completeOneSecondSession, setUpAppTests } from './test/appTestUtils';
 
@@ -219,6 +220,27 @@ describe('App', () => {
 
       fireEvent.keyDown(window, { code: 'KeyR', key: 'r' });
       expect(screen.getByText('Ready')).toBeTruthy();
+    });
+
+    it('ignores a held-down Space (key repeat)', async () => {
+      await renderApp();
+      fireEvent.keyDown(window, { code: 'Space', key: ' ' });
+      fireEvent.keyDown(window, { code: 'Space', key: ' ', repeat: true });
+      fireEvent.keyDown(window, { code: 'Space', key: ' ', repeat: true });
+
+      expect(screen.getByText('Meditating...')).toBeTruthy();
+      expect(startBellCount()).toBe(1);
+    });
+
+    it('ignores Space and R until the sounds have loaded, like the Start button', async () => {
+      audioManager.init.mockReturnValueOnce(new Promise(() => {}));
+      render(<App />);
+      expect(button('Start').disabled).toBe(true);
+
+      fireEvent.keyDown(window, { code: 'Space', key: ' ' });
+      fireEvent.keyDown(window, { code: 'KeyR', key: 'r' });
+      expect(screen.getByText('Ready')).toBeTruthy();
+      expect(audioManager.unlock).not.toHaveBeenCalled();
     });
 
     it.each([
