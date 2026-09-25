@@ -231,12 +231,12 @@ function MeditationTimerApp() {
       <div
         data-testid="quiet-dim"
         aria-hidden="true"
-        className={`fixed inset-0 bg-black/25 pointer-events-none transition-opacity duration-[2000ms] ${
+        className={`fixed inset-0 z-10 bg-black/25 pointer-events-none transition-opacity duration-[2000ms] ${
           quiet ? 'opacity-100' : 'opacity-0'
         }`}
       />
 
-      <div className="relative w-full max-w-md sm:max-w-xl space-y-4">
+      <div className="w-full max-w-md sm:max-w-xl space-y-4">
         <h1
           className="text-3xl sm:text-5xl font-bold tracking-tight text-white text-center"
           style={{ textShadow: '0 1px 3px rgba(120, 53, 15, 0.3), 0 0 24px rgba(255, 255, 255, 0.35)' }}
