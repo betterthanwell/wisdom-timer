@@ -5,7 +5,7 @@ import { useTimerContext } from './context/useTimerContext';
 import { useTimer } from './hooks/useTimer';
 import { useAudio } from './hooks/useAudio';
 import { useSessionCounter } from './hooks/useSessionCounter';
-import { useWakeLock, isWakeLockSupported } from './hooks/useWakeLock';
+import { useWakeLock } from './hooks/useWakeLock';
 import { useSettleCountdown } from './hooks/useSettleCountdown';
 import { useAmbientDownloads } from './hooks/useAmbientDownloads';
 import { gentleEndingLevel } from './utils/gentleEnding';
@@ -22,9 +22,7 @@ import { DurationSelector } from './components/Settings/DurationSelector';
 import { IntervalSettings } from './components/Settings/IntervalSettings';
 import { AmbientSoundSelector } from './components/Settings/AmbientSoundSelector';
 import { VolumeControls } from './components/Settings/VolumeControls';
-import { KeepAwakeSetting } from './components/Settings/KeepAwakeSetting';
 import { SettleSetting } from './components/Settings/SettleSetting';
-import { BellPatternSettings } from './components/Settings/BellPatternSettings';
 import { GentleEndingSetting } from './components/Settings/GentleEndingSetting';
 import { OpenEndedSetting } from './components/Settings/OpenEndedSetting';
 import { MettaSetting } from './components/Settings/MettaSetting';
@@ -179,8 +177,9 @@ function MeditationTimerApp() {
     setAmbientLevel(ambientLevel);
   }, [ambientLevel, setAmbientLevel]);
 
-  // Keep the screen on while a session is running, so the phone doesn't lock
-  useWakeLock(state.keepScreenAwake && inSession);
+  // Keep the screen on while a session is running, so the phone doesn't lock.
+  // Always, for now: its switch (KeepAwakeSetting, keepScreenAwake) isn't shown.
+  useWakeLock(inSession);
 
   // Duration can only change between sessions, not while running or paused
   const durationLocked = timer.isRunning || timer.isPaused || isSettling;
@@ -457,14 +456,8 @@ function MeditationTimerApp() {
                   onStartChange={actions.setIntervalStart}
                   disabled={timer.isRunning}
                 />
-                {/* How many times each bell rings (choices behind a switch;
-                    saved choices apply either way) */}
-                <BellPatternSettings
-                  strikes={{ start: state.startStrikes, interval: state.intervalStrikes, end: state.endStrikes }}
-                  onChange={actions.setBellStrikes}
-                  shown={state.showBellStrikes}
-                  onShownChange={actions.setShowBellStrikes}
-                />
+                {/* Bell strikes (BellPatternSettings) aren't shown for now;
+                    saved strike counts still apply */}
               </section>
 
               <section className={SECTION}>
@@ -500,8 +493,8 @@ function MeditationTimerApp() {
                 />
               </section>
 
-              {/* The screen while sitting: dimming, and keeping it awake
-                  (only where the browser supports it) */}
+              {/* The screen while sitting (it's always kept awake, where the
+                  browser supports that) */}
               <section className={SECTION}>
                 <DimSetting
                   enabled={state.dimScreen}
@@ -509,12 +502,6 @@ function MeditationTimerApp() {
                   onToggle={actions.setDimScreen}
                   onLevelChange={handleDimLevelChange}
                 />
-                {isWakeLockSupported() && (
-                  <KeepAwakeSetting
-                    enabled={state.keepScreenAwake}
-                    onToggle={actions.setKeepScreenAwake}
-                  />
-                )}
               </section>
             </div>
 

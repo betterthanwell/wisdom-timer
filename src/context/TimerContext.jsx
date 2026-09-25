@@ -13,9 +13,9 @@ const initialState = {
   selectedAmbient: null,
   ambientVolume: 0.5,
   bellVolume: 0.7,
-  keepScreenAwake: true,
+  keepScreenAwake: true, // no switch for now: sessions always keep the screen awake
   settleSeconds: 0, // settling-in countdown before the start bell (off)
-  // How many times each bell rings (1-3)
+  // How many times each bell rings (1-3; no choices shown for now)
   startStrikes: 1,
   intervalStrikes: 1,
   endStrikes: 1,

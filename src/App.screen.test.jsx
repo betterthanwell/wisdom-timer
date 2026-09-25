@@ -148,11 +148,9 @@ describe('App', () => {
       delete navigator.wakeLock;
     });
 
-    const keepAwakeSwitch = () => screen.getByRole('switch', { name: 'Keep screen awake' });
-
-    it('is on by default, and keeps the screen awake while running', async () => {
+    it('keeps the screen awake while running, with no switch to turn that off', async () => {
       await renderApp();
-      expect(keepAwakeSwitch().getAttribute('aria-checked')).toBe('true');
+      expect(screen.queryByRole('switch', { name: 'Keep screen awake' })).toBe(null);
       expect(wakeLock.request).not.toHaveBeenCalled();
 
       click('Start');
@@ -169,20 +167,13 @@ describe('App', () => {
       await waitFor(() => expect(lock.release).toHaveBeenCalled());
     });
 
-    it('does nothing when turned off, and remembers that', async () => {
+    // It could be turned off while it had a switch
+    it('keeps the screen awake even if it was turned off before', async () => {
+      localStorage.setItem('wisdomTimerSettings', JSON.stringify({ keepScreenAwake: false }));
       await renderApp();
-      fireEvent.click(keepAwakeSwitch());
       click('Start');
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      expect(wakeLock.request).not.toHaveBeenCalled();
-
-      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).keepScreenAwake).toBe(false);
+      await waitFor(() => expect(wakeLock.request).toHaveBeenCalledWith('screen'));
     });
-  });
-
-  it('hides the keep-awake setting where the browser does not support it', async () => {
-    await renderApp();
-    expect(screen.queryByRole('switch', { name: 'Keep screen awake' })).toBe(null);
   });
 
   describe('settings validation', () => {
