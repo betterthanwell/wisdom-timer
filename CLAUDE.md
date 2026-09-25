@@ -59,11 +59,11 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 │   │   └── timeFormatter.js     # formatTime (MM:SS) etc.
 │   └── constants/
 │       └── audioSources.js      # AUDIO_SOURCES (paths) + AMBIENT_SOUNDS (buttons)
-├── e2e/                         # Playwright: session.spec.js, offline.spec.js, sounds.js (sound recorder)
+├── e2e/                         # Playwright: session.spec.js, offline.spec.js, darkreader.spec.js, sounds.js (sound recorder)
 ├── public/audio/bells|ambient/  # Sound files (see Audio below)
 ├── public/manifest.webmanifest  # Web app manifest (install to home screen) + public/icons/
 ├── .github/workflows/           # ci.yml (lint, test, build), e2e.yml (Playwright)
-├── index.html                   # HTML shell + CSP meta tags
+├── index.html                   # HTML shell + CSP meta tags + darkreader-lock
 ├── vercel.json                  # HTTP security headers (the effective ones)
 ├── vite.config.js               # Vite + Vitest config; serviceWorker() plugin builds /sw.js
 ├── playwright.config.js         # Playwright config (vite preview on :4173)
@@ -135,6 +135,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 
 ### Known platform limits
 - iOS pauses JavaScript when the screen locks, so no timer runs until unlock; bells can't ring while locked.
+- Dark Reader (the extension, and Firefox for iOS's night mode built on it) repainted the page near-black and hid the switches and slider tracks (faint white tints). `index.html` opts out with `<meta name="darkreader-lock">`; the app has its own dimming. `e2e/darkreader.spec.js` runs Dark Reader against the page.
 - iOS ignores `HTMLMediaElement.volume` (confirmed on an iPhone: gentle ending didn't fade). Bells and the ambient sound now go through Web Audio gains.
 - Locked screen: pre-scheduling bells in Web Audio is the remaining idea. Old attempt: branch `claude/locked-screen-audio-6Q8xo` (PR #7) - keep it.
 
@@ -226,4 +227,4 @@ Never on wisdomtimer.app (`utils/testingTools.js` checks the host):
 - **Runtime:** `react`, `react-dom`, `lucide-react`
 - **Build:** `vite`, `@vitejs/plugin-react`, `tailwindcss`, `@tailwindcss/postcss`, `postcss`, `autoprefixer`
 - **Lint:** `eslint`, `@eslint/js`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `globals`
-- **Test:** `vitest`, `jsdom`, `@testing-library/react`, `@testing-library/dom`, `@playwright/test`
+- **Test:** `vitest`, `jsdom`, `@testing-library/react`, `@testing-library/dom`, `@playwright/test`, `darkreader` (e2e only)
