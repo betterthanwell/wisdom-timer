@@ -59,6 +59,11 @@ export const useAudio = () => {
     setIsPlaying(false);
   }, []);
 
+  // Call during a tap or key press: lets sounds started later (by timers) play
+  const unlock = useCallback(() => {
+    audioManager.unlock();
+  }, []);
+
   // Stop strikes of a bell pattern that haven't rung yet
   const cancelPendingBells = useCallback(() => {
     audioManager.cancelPendingBells();
@@ -83,6 +88,7 @@ export const useAudio = () => {
     isInitialized,
     isPlaying,
     currentAmbient,
+    unlock,
     playBell,
     cancelPendingBells,
     playAmbient,

@@ -36,6 +36,7 @@ const KEY = 'px-1.5 py-0.5 rounded-md border border-white/30 bg-white/15 font-sa
 function MeditationTimerApp() {
   const { state, actions } = useTimerContext();
   const {
+    unlock: unlockAudio,
     playBell,
     cancelPendingBells,
     playAmbient,
@@ -109,6 +110,10 @@ function MeditationTimerApp() {
   }, [startTimer]);
 
   const handleStart = useCallback(() => {
+    // Now, during the tap (or Space): bells started later by timers - the
+    // interval and end bells, and the start bell after settling in - are
+    // only allowed to play once audio has been unlocked by one
+    unlockAudio();
     setSettingsRevealed(false); // every start begins quiet
     // Settle in only before a new session - resuming starts right away
     if (!timer.isPaused && state.settleSeconds > 0) {
@@ -116,7 +121,7 @@ function MeditationTimerApp() {
     } else {
       startTimer();
     }
-  }, [timer.isPaused, state.settleSeconds, beginSettling, startTimer]);
+  }, [unlockAudio, timer.isPaused, state.settleSeconds, beginSettling, startTimer]);
 
   // Handle reset - stop ambient sound
   const handleReset = useCallback(() => {

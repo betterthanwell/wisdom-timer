@@ -52,6 +52,8 @@ class FakeAudio {
 
 const bellElements = () => FakeAudio.instances.filter((a) => a.src.includes('/bells/'));
 
+// jsdom has no Web Audio API, so these tests cover browsers without it:
+// bells then play on <audio> elements
 describe('AudioManager', () => {
   let manager;
 
@@ -431,5 +433,282 @@ describe('AudioManager set up twice (React StrictMode)', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+// Minimal stand-in for the Web Audio API: records what's connected and started
+class FakeAudioNode {
+  connect(node) {
+    this.connectedTo = node;
+    return node;
+  }
+}
+
+class FakeBufferSource extends FakeAudioNode {
+  constructor(context) {
+    super();
+    this.context = context;
+    this.buffer = null;
+    this.playing = false;
+  }
+
+  start() {
+    this.playing = true;
+    this.context.started.push(this);
+  }
+
+  stop() {
+    this.playing = false;
+    this.onended?.();
+  }
+
+  // Test helper: the sound has played to its end
+  finish() {
+    this.playing = false;
+    this.onended?.();
+  }
+}
+
+class FakeAudioContext {
+  static instances = [];
+  static failDecoding = false;
+  // Audio taken away by the system (iOS: a call, another app) and not given back
+  static stayInterrupted = false;
+
+  constructor() {
+    // Browsers create audio contexts suspended until a tap unlocks them
+    this.state = 'suspended';
+    this.destination = new FakeAudioNode();
+    this.started = [];
+    FakeAudioContext.instances.push(this);
+  }
+
+  // Like browsers, the state changes a moment after resume() is called
+  resume() {
+    this.resumeCalls = (this.resumeCalls ?? 0) + 1;
+    this.resumed = FakeAudioContext.stayInterrupted
+      ? new Promise(() => {})
+      : Promise.resolve().then(() => {
+          this.state = 'running';
+        });
+    return this.resumed;
+  }
+
+  decodeAudioData(data) {
+    if (FakeAudioContext.failDecoding) return Promise.reject(new Error('EncodingError'));
+    return Promise.resolve({ decodedFrom: data.downloadedFrom });
+  }
+
+  createBuffer() {
+    return { silence: true };
+  }
+
+  createBufferSource() {
+    return new FakeBufferSource(this);
+  }
+
+  createGain() {
+    const gain = new FakeAudioNode();
+    gain.gain = { value: 1 };
+    return gain;
+  }
+}
+
+describe('AudioManager with Web Audio', () => {
+  let manager;
+  let downloads; // path -> resolve, for downloads the test finishes itself
+
+  // fetch() stand-in; `slow` downloads wait for the test
+  const stubDownloads = ({ slow = [] } = {}) => {
+    downloads = {};
+    vi.stubGlobal('fetch', vi.fn((path) => {
+      const response = { ok: true, arrayBuffer: async () => ({ downloadedFrom: path }) };
+      if (!slow.includes(path)) return Promise.resolve(response);
+      return new Promise((resolve) => {
+        downloads[path] = () => resolve(response);
+      });
+    }));
+  };
+
+  const context = () => FakeAudioContext.instances.at(-1);
+  // Bells started through Web Audio (not the silent unlock sound)
+  const bellsRung = () => context().started.filter((source) => source.buffer?.decodedFrom);
+  const lastBell = () => bellsRung().at(-1);
+
+  beforeEach(() => {
+    FakeAudio.instances = [];
+    FakeAudioContext.instances = [];
+    FakeAudioContext.failDecoding = false;
+    FakeAudioContext.stayInterrupted = false;
+    vi.stubGlobal('Audio', FakeAudio);
+    vi.stubGlobal('AudioContext', FakeAudioContext);
+    stubDownloads();
+    manager = new AudioManager();
+  });
+
+  afterEach(() => {
+    manager.cleanup();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    delete navigator.audioSession;
+  });
+
+  const initAndUnlock = async () => {
+    await manager.init();
+    manager.unlock();
+  };
+
+  it('downloads and decodes each bell once, and rings it through Web Audio', async () => {
+    await initAndUnlock();
+    expect(fetch).toHaveBeenCalledTimes(3);
+
+    await manager.playBell('end');
+    expect(lastBell().buffer.decodedFrom).toBe('/audio/bells/bell-end.mp3');
+    expect(lastBell().connectedTo).toBe(manager.bellGain);
+    expect(manager.bellGain.connectedTo).toBe(context().destination);
+    // No <audio> element needed for bells
+    expect(bellElements()).toEqual([]);
+  });
+
+  it('unlock() resumes the audio context and starts a silent sound (older iOS needs one)', async () => {
+    await manager.init();
+    expect(context().state).toBe('suspended');
+
+    manager.unlock();
+    await context().resumed;
+    expect(context().state).toBe('running');
+    expect(context().started.map((source) => source.buffer)).toEqual([{ silence: true }]);
+  });
+
+  it('rings the start bell through Web Audio in the same tap, while audio is still resuming', async () => {
+    await manager.init();
+    manager.unlock();
+    expect(context().state).toBe('suspended');
+
+    await manager.playBell('start');
+    expect(lastBell().buffer.decodedFrom).toBe('/audio/bells/bell-start.mp3');
+    expect(bellElements()).toEqual([]);
+    // It waited for the tap's own resume: Safari may refuse one asked for
+    // outside a tap
+    expect(context().resumeCalls).toBe(1);
+  });
+
+  it('plays bells at the bell volume, and volume changes reach bells still ringing', async () => {
+    await initAndUnlock();
+    manager.setBellVolume(0.3);
+    expect(manager.bellGain.gain.value).toBe(0.3);
+
+    await manager.playBell('start');
+    manager.setBellVolume(0.6);
+    expect(manager.bellGain.gain.value).toBe(0.6);
+  });
+
+  it('starts at the bell volume set before loading', async () => {
+    manager.setBellVolume(0.2);
+    await initAndUnlock();
+    expect(manager.bellGain.gain.value).toBe(0.2);
+  });
+
+  it('asks iOS to treat the sound as media playback, so the silent switch does not mute the bells', async () => {
+    navigator.audioSession = { type: 'auto' };
+    await manager.init();
+    expect(navigator.audioSession.type).toBe('playback');
+  });
+
+  it('rings several strikes through Web Audio, and can cancel the ones not yet rung', async () => {
+    vi.useFakeTimers();
+    await initAndUnlock();
+
+    await manager.playBell('end', 3);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(bellsRung()).toHaveLength(2);
+
+    manager.cancelPendingBells();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(bellsRung()).toHaveLength(2);
+  });
+
+  it('stops ringing bells on cleanup', async () => {
+    await initAndUnlock();
+    await manager.playBell('end');
+    const ringing = lastBell();
+
+    manager.cleanup();
+    expect(ringing.playing).toBe(false);
+  });
+
+  it('forgets a bell once it has finished ringing', async () => {
+    await initAndUnlock();
+    await manager.playBell('end');
+    lastBell().finish();
+    expect(manager.ringingSources.size).toBe(0);
+  });
+
+  it('rings a bell on an <audio> element if it cannot be decoded', async () => {
+    FakeAudioContext.failDecoding = true;
+    await initAndUnlock();
+
+    await manager.playBell('end');
+    expect(bellsRung()).toEqual([]);
+    expect(bellElements().at(-1).src).toBe('/audio/bells/bell-end.mp3');
+    expect(bellElements().at(-1).paused).toBe(false);
+  });
+
+  it('rings a bell on an <audio> element while audio is still locked (no tap yet)', async () => {
+    await manager.init();
+    await manager.playBell('end');
+
+    expect(bellsRung()).toEqual([]);
+    expect(bellElements().at(-1).paused).toBe(false);
+  });
+
+  it('rings through Web Audio again once audio comes back from an interruption', async () => {
+    await initAndUnlock();
+    await manager.resuming;
+    context().state = 'interrupted';
+
+    await manager.playBell('end');
+    expect(context().state).toBe('running');
+    expect(lastBell().buffer.decodedFrom).toBe('/audio/bells/bell-end.mp3');
+  });
+
+  it('rings on an <audio> element if audio stays interrupted, rather than late or not at all', async () => {
+    vi.useFakeTimers();
+    await initAndUnlock();
+    await manager.resuming;
+    context().state = 'interrupted';
+    FakeAudioContext.stayInterrupted = true;
+
+    const ringing = manager.playBell('end');
+    await vi.advanceTimersByTimeAsync(1000);
+    await ringing;
+    expect(bellsRung()).toEqual([]);
+    expect(bellElements().at(-1).src).toBe('/audio/bells/bell-end.mp3');
+    expect(bellElements().at(-1).paused).toBe(false);
+  });
+
+  it('waits at most 2 seconds for a slow bell, and rings it through Web Audio once decoded', async () => {
+    vi.useFakeTimers();
+    stubDownloads({ slow: ['/audio/bells/bell-start.mp3'] });
+    manager = new AudioManager();
+    let ready = false;
+    manager.init().then(() => {
+      ready = true;
+    });
+
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(ready).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(ready).toBe(true);
+    manager.unlock();
+
+    // Not decoded yet: rings on an <audio> element
+    await manager.playBell('start');
+    expect(bellElements().at(-1).src).toBe('/audio/bells/bell-start.mp3');
+
+    downloads['/audio/bells/bell-start.mp3']();
+    await vi.advanceTimersByTimeAsync(0);
+    await manager.playBell('start');
+    expect(lastBell().buffer.decodedFrom).toBe('/audio/bells/bell-start.mp3');
   });
 });
