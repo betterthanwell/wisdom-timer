@@ -30,6 +30,7 @@ import { MettaSetting } from './components/Settings/MettaSetting';
 import { DimSetting } from './components/Settings/DimSetting';
 import { GuidedSetting } from './components/Settings/GuidedSetting';
 import { MettaCard } from './components/Timer/MettaCard';
+import { InterruptedPause } from './components/Timer/InterruptedPause';
 
 // Open-ended sitting counts up, as a countdown from 24 hours
 const OPEN_ENDED_SECONDS = 24 * 60 * 60;
@@ -52,6 +53,8 @@ function MeditationTimerApp() {
     setBellVolume,
     setAmbientVolume,
     setAmbientLevel,
+    setInterruptionListener,
+    cutShortVoicePosition,
     isInitialized,
   } = useAudio();
   const { completedToday, startNewDayIfNeeded, recordCompleted } = useSessionCounter();
@@ -78,6 +81,23 @@ function MeditationTimerApp() {
     voiceTimeoutRef.current = null;
   }, []);
   useEffect(() => cancelVoice, [cancelVoice]);
+
+  // A guided session stopped from outside (iOS: a call, Siri, the lock
+  // screen): it pauses where the voice stopped, and says so loudly until
+  // carried on or reset. (Other sessions run on: the sit's length is the
+  // point there.)
+  const [interrupted, setInterrupted] = useState(false);
+  const pauseAtRef = useRef(null);
+  const rescueSession = useCallback(
+    (voicePosition) => {
+      debugLog.add(`session paused by an interruption (voice at ${voicePosition.toFixed(2)}s)`);
+      cancelVoice();
+      pauseAmbient();
+      pauseAtRef.current(GUIDED_LEAD_IN_SECONDS + voicePosition);
+      setInterrupted(true);
+    },
+    [cancelVoice, pauseAmbient]
+  );
 
   // Callbacks for timer events
   const handleTimerStart = useCallback((elapsed) => {
@@ -106,12 +126,19 @@ function MeditationTimerApp() {
   }, [startNewDayIfNeeded, guided, guidedTrack, cancelVoice, playBell, state.startStrikes, playAmbient, activeAmbient]);
 
   const handleTimerComplete = useCallback(() => {
+    // The page may only wake up (iOS: unlocked) after the end - if the voice
+    // was cut short meanwhile, the session isn't over: rescue it
+    const cutShortAt = guided ? cutShortVoicePosition() : null;
+    if (cutShortAt !== null) {
+      rescueSession(cutShortAt);
+      return;
+    }
     debugLog.add('session complete');
     cancelVoice();
     playBell('end', state.endStrikes);
     stopAmbient();
     recordCompleted();
-  }, [cancelVoice, playBell, state.endStrikes, stopAmbient, recordCompleted]);
+  }, [guided, cutShortVoicePosition, rescueSession, cancelVoice, playBell, state.endStrikes, stopAmbient, recordCompleted]);
 
   const handleIntervalBell = useCallback(() => {
     playBell('interval', state.intervalStrikes);
@@ -133,7 +160,10 @@ function MeditationTimerApp() {
       ? { interval: state.intervalDuration, firstAt: state.intervalStart, callback: handleIntervalBell }
       : null
   );
-  const { start: startTimer, pause: pauseTimer, finish: finishTimer, reset: resetTimer, updateDuration } = timer;
+  const { start: startTimer, pause: pauseTimer, pauseAt, finish: finishTimer, reset: resetTimer, updateDuration } = timer;
+  useEffect(() => {
+    pauseAtRef.current = pauseAt;
+  }, [pauseAt]);
   // Open-ended: show the time sat (counting up) instead of the time left
   const displaySeconds = openEnded ? timer.duration - timer.timeRemaining : timer.timeRemaining;
 
@@ -143,6 +173,27 @@ function MeditationTimerApp() {
     cancelVoice();
     pauseAmbient();
   }, [pauseTimer, cancelVoice, pauseAmbient]);
+
+  // Told by the audio manager of an interruption: the voice's position, or
+  // null before the voice has started (the lead-in)
+  const onInterruptionRef = useRef(() => {});
+  useEffect(() => {
+    onInterruptionRef.current = (voicePosition) => {
+      if (!guided || !timer.isRunning) return;
+      if (voicePosition !== null) {
+        rescueSession(voicePosition);
+      } else {
+        debugLog.add('session paused by an interruption (lead-in)');
+        cancelVoice();
+        pauseTimer();
+        setInterrupted(true);
+      }
+    };
+  }, [guided, timer.isRunning, rescueSession, cancelVoice, pauseTimer]);
+  useEffect(() => {
+    setInterruptionListener((voicePosition) => onInterruptionRef.current(voicePosition));
+    return () => setInterruptionListener(null);
+  }, [setInterruptionListener]);
 
   // Handle start/resume (ambient sound is handled by handleTimerStart)
   // Quiet screen: while running, settings are hidden unless asked for
@@ -163,6 +214,7 @@ function MeditationTimerApp() {
     // only allowed to play once audio has been unlocked by one
     debugLog.add(`Start tapped${!timer.isPaused && state.settleSeconds > 0 ? `, settling in ${state.settleSeconds}s` : ''}`);
     unlockAudio();
+    setInterrupted(false);
     setSettingsRevealed(false); // every start begins quiet
     // A new session: end-bell strikes of the last one still to ring would
     // clash with the start bell (resuming keeps the start bell's strikes)
@@ -181,6 +233,7 @@ function MeditationTimerApp() {
 
   // Handle reset - stop ambient sound
   const handleReset = useCallback(() => {
+    setInterrupted(false);
     cancelSettling();
     cancelVoice();
     cancelPendingBells();
@@ -425,7 +478,11 @@ function MeditationTimerApp() {
           />
         )}
 
-        {/* The time, shining free of any card */}
+        {/* The time, shining free of any card - or, after an interruption,
+            a loud PAUSED with one big button to carry on */}
+        {interrupted && timer.isPaused ? (
+          <InterruptedPause timeRemaining={timer.timeRemaining} onCarryOn={handleStart} />
+        ) : (
         <TimerDisplay
           timeRemaining={displaySeconds}
           progress={openEnded ? 0 : timer.progress}
@@ -436,6 +493,7 @@ function MeditationTimerApp() {
           endsAt={openEnded ? null : timer.endsAt}
           settleRemaining={isSettling ? settleRemaining : null}
         />
+        )}
 
         {/* The controls, on the card below it */}
         <GlassCard strong className="px-5 py-5">

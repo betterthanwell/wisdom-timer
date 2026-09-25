@@ -200,6 +200,48 @@ describe('useTimer', () => {
     });
   });
 
+  // Rescuing a guided session after an interruption: pause where the voice
+  // stopped, even if the clock ran on (or past the end) meanwhile
+  describe('pauseAt', () => {
+    it('pauses a running session at a given point', () => {
+      const { result, onComplete } = renderTimer(100);
+      act(() => result.current.start());
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+
+      act(() => result.current.pauseAt(20.5));
+      expect(result.current.isPaused).toBe(true);
+      expect(result.current.isRunning).toBe(false);
+      expect(result.current.timeRemaining).toBe(80);
+
+      act(() => result.current.start());
+      act(() => {
+        vi.advanceTimersByTime(79_499);
+      });
+      expect(onComplete).not.toHaveBeenCalled();
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('takes back a completion, when called from onComplete', () => {
+      let timer;
+      const onComplete = vi.fn(() => timer.pauseAt(30));
+      const { result } = renderHook(() => (timer = useTimer(100, vi.fn(), onComplete, null)));
+      act(() => result.current.start());
+      act(() => {
+        vi.advanceTimersByTime(100_000);
+      });
+
+      expect(onComplete).toHaveBeenCalledTimes(1);
+      expect(result.current.isComplete).toBe(false);
+      expect(result.current.isPaused).toBe(true);
+      expect(result.current.timeRemaining).toBe(70);
+    });
+  });
+
   it('only schedules background wake-ups for the next 6 hours', () => {
     const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
     const bell = { interval: 60, callback: vi.fn() };

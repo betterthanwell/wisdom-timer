@@ -17,7 +17,7 @@ Free for anyone, anywhere, any time, for ever.
 ### Timer
 - **Any duration** from 0:01 to 99:59 with minute/second inputs; **presets** for 30, 45, 60 and 90 minutes (default 45)
 - **Settling in** (optional) - a silent 5 s to 1 min countdown before the start bell of a new session, so you can put the phone down and get comfortable; Cancel, Space or Reset stop it
-- **Guided meditation** (optional) - pick one of four guided meditations by Thanissaro Bhikkhu (metta 4 min, breath 12, 30 or 40 min) and press Play: the start bell rings, the voice begins 15 seconds later, and the end bell rings the moment the recording ends. Downloaded when chosen, then kept on your device for offline use
+- **Guided meditation** (optional) - pick one of four guided meditations by Thanissaro Bhikkhu (metta 4 min, breath 12, 30 or 40 min) and press Play: the start bell rings, the voice begins 15 seconds later, and the end bell rings the moment the recording ends. Downloaded when chosen, then kept on your device for offline use. If a phone call (or anything else) interrupts the voice, the session pauses right there and a big **Carry on** button picks it up again
 - **Open-ended sitting** (optional) - count up from 00:00 with no set end; interval bells keep ringing, and **Finish** rings the end bell and completes the session
 - **Pause and resume** - the start bell rings again when you resume
 - **Play after a finished session starts the next one** - no need to press Reset

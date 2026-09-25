@@ -19,6 +19,9 @@ export const recordSounds = () => {
   const realPlay = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function (...args) {
     record(new URL(this.src, location.href).pathname, { via: 'element' });
+    // The latest element played, so a test can act from outside the app
+    // (e.g. pause it, like iOS does for a call)
+    window.__lastMediaElement = this;
     this.muted = true;
     return realPlay.apply(this, args);
   };
