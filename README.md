@@ -46,6 +46,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 - **Settings are remembered** in the browser (localStorage) and checked when loaded, so old or damaged saved values fall back to the defaults
 - **Accessible** - labelled controls for screen readers, and animations are switched off when your system asks for reduced motion
 - **Responsive** - works on phones, tablets and desktops
+- **Works offline** - after one visit the app and its bells are kept on your device, so it opens and runs in airplane mode or without signal; bells are held in memory, so losing wifi mid-session changes nothing. Can be added to the home screen (ambient sounds still need a connection)
 - **Security headers** - Content Security Policy, clickjacking protection and more (`vercel.json`, plus meta tags in `index.html`)
 
 ## ⚠️ Known limitations
@@ -99,6 +100,7 @@ Bugs are fixed test-first: a test that fails on the old code, then the fix.
 src/
 ├── App.jsx                     # Main app: session flow, keyboard shortcuts, layout
 ├── main.jsx                    # Entry point
+├── sw.js                       # Service worker: keeps the app and bells offline
 ├── index.css                   # Global styles, glass-morphism, animations
 ├── components/
 │   ├── Timer/                  # TimerDisplay, TimerControls, CircularProgress, MettaCard
@@ -123,6 +125,7 @@ src/
     └── audioSources.js         # Sound file paths and ambient sound list
 e2e/                            # Playwright end-to-end tests
 public/audio/                   # Bell and ambient sound files
+public/manifest.webmanifest     # Web app manifest (+ public/icons/)
 ```
 
 ## 🔊 Audio Files
