@@ -54,6 +54,16 @@ describe('App', () => {
       vi.clearAllMocks();
     };
 
+    it('shows the next session number while settling in after a completed one', async () => {
+      await renderApp();
+      completeOneSecondSession();
+      click('Settle in for 10s');
+      click('Start');
+
+      expect(screen.getByText('Settling in…')).toBeTruthy();
+      expect(screen.getByText('Session 2')).toBeTruthy();
+    });
+
     it('is off by default: Start starts straight away', async () => {
       await renderApp();
       expect(button('No settling in').getAttribute('aria-pressed')).toBe('true');

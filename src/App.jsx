@@ -129,6 +129,9 @@ function MeditationTimerApp() {
     debugLog.add(`Start tapped${!timer.isPaused && state.settleSeconds > 0 ? `, settling in ${state.settleSeconds}s` : ''}`);
     unlockAudio();
     setSettingsRevealed(false); // every start begins quiet
+    // A new session: end-bell strikes of the last one still to ring would
+    // clash with the start bell (resuming keeps the start bell's strikes)
+    if (!timer.isPaused) cancelPendingBells();
     // Settle in only before a new session - resuming starts right away
     if (!timer.isPaused && state.settleSeconds > 0) {
       // The ambient sound will start from the countdown's timer: prime it now
@@ -137,7 +140,7 @@ function MeditationTimerApp() {
     } else {
       startTimer();
     }
-  }, [unlockAudio, timer.isPaused, state.settleSeconds, activeAmbient, primeAmbient, beginSettling, startTimer]);
+  }, [unlockAudio, timer.isPaused, cancelPendingBells, state.settleSeconds, activeAmbient, primeAmbient, beginSettling, startTimer]);
 
   // Handle reset - stop ambient sound
   const handleReset = useCallback(() => {
@@ -148,8 +151,8 @@ function MeditationTimerApp() {
   }, [cancelSettling, cancelPendingBells, resetTimer, stopAmbient]);
 
   // The session you're on today; once one completes, it stays on that number
-  // until Play starts the next
-  const sessionNumber = timer.isComplete ? completedToday : completedToday + 1;
+  // until Play starts the next (or settling in for it)
+  const sessionNumber = timer.isComplete && !isSettling ? completedToday : completedToday + 1;
 
   const inSession = timer.isRunning || isSettling;
   const quiet = inSession && !settingsRevealed;
