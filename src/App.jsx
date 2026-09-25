@@ -344,6 +344,15 @@ function MeditationTimerApp() {
           {showBrightBg ? 'Wisdom Time!' : 'Wisdom Timer'}
         </h1>
 
+        {/* Metta phrases in their own card, above everything while a session is under way */}
+        {state.mettaMode && (timer.isRunning || timer.isPaused) && (
+          <MettaCard
+            elapsed={timer.duration - timer.timeRemaining}
+            seconds={state.mettaSeconds}
+            isRunning={timer.isRunning}
+          />
+        )}
+
         {/* The time, shining free of any card */}
         <TimerDisplay
           timeRemaining={displaySeconds}
@@ -356,7 +365,7 @@ function MeditationTimerApp() {
           settleRemaining={isSettling ? settleRemaining : null}
         />
 
-        {/* The controls, on the topmost card */}
+        {/* The controls, on the card below it */}
         <GlassCard strong className="px-5 py-5">
           <TimerControls
             isRunning={timer.isRunning}
@@ -371,15 +380,6 @@ function MeditationTimerApp() {
             startDisabled={timer.timeRemaining === 0 && !timer.isComplete}
           />
         </GlassCard>
-
-        {/* Metta phrases in their own card, while a session is under way */}
-        {state.mettaMode && (timer.isRunning || timer.isPaused) && (
-          <MettaCard
-            elapsed={timer.duration - timer.timeRemaining}
-            seconds={state.mettaSeconds}
-            isRunning={timer.isRunning}
-          />
-        )}
 
         {/* While running, settings stay out of the way until asked for */}
         {inSession && (

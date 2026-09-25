@@ -271,7 +271,7 @@ test('the keyboard hint shows with a mouse or trackpad, not on a touch screen', 
   }
 });
 
-test('metta mode: the phrases take turns below the controls while sitting', async ({ page }) => {
+test('metta mode: the phrases take turns above the timer while sitting', async ({ page }) => {
   await page.getByRole('switch', { name: 'Metta mode' }).click();
   await page.getByRole('button', { name: 'Start', exact: true }).click();
 
