@@ -54,6 +54,9 @@ export class AudioManager {
     this.ambientPausedByApp = false;
     // This stop of the voice has been reported already
     this.interruptionReported = false;
+    // Audio was interrupted: the next tap builds fresh audio (iOS may leave
+    // the old context "running" but silent until a reload)
+    this.needsFreshAudio = false;
     this.isInitialized = false;
     this.initPromise = null;
     this.fadeInterval = null;
@@ -80,14 +83,7 @@ export class AudioManager {
       await Promise.all(Object.keys(AUDIO_SOURCES.bells).map((type) => this.loadBell(type, deadline)));
 
       // Create ambient audio element AFTER bells are ready
-      this.ambientAudio = new Audio();
-      this.ambientAudio.loop = true;
-      this.ambientAudio.volume = 0; // Start at 0 for fade in
-      this.ambientAudio.preload = 'auto';
-      this.ambientAudio.addEventListener('pause', () => {
-        const position = this.cutShortVoicePosition();
-        if (position !== null) this.reportInterruption(position, 'voice paused from outside');
-      });
+      this.createAmbientElement();
 
       this.isInitialized = true;
       return true;
@@ -95,6 +91,37 @@ export class AudioManager {
       console.error('Failed to initialize audio:', error);
       return false;
     }
+  }
+
+  // The one element for ambient sounds and guided voices
+  createAmbientElement() {
+    this.ambientAudio = new Audio();
+    this.ambientAudio.loop = true;
+    this.ambientAudio.volume = 0; // Start at 0 for fade in
+    this.ambientAudio.preload = 'auto';
+    this.ambientAudio.addEventListener('pause', () => {
+      const position = this.cutShortVoicePosition();
+      if (position !== null) this.reportInterruption(position, 'voice paused from outside');
+    });
+  }
+
+  // After an interruption, in a tap: a new context and bell gain (the
+  // decoded bells are kept - they work in any context) and a new ambient
+  // element, since an element stays tied to the context it was routed
+  // through. Whatever was playing stops; the app starts it again.
+  rebuildAudio() {
+    this.needsFreshAudio = false;
+    debugLog.add(`fresh audio after an interruption (was ${this.context.state})`);
+    this.clearFade();
+    this.context.close?.().catch(() => {});
+    this.ringingSources.clear();
+    this.ambientGain = null;
+    this.resuming = null;
+    this.ambientAudio.pause();
+    this.currentAmbient = null;
+    this.clearInterruption();
+    this.createAmbientElement();
+    this.setUpWebAudio();
   }
 
   setUpWebAudio() {
@@ -170,6 +197,10 @@ export class AudioManager {
   // only let sound start without a tap once audio has been unlocked by one.
   unlock() {
     if (!this.context) return;
+    if (this.needsFreshAudio) {
+      this.rebuildAudio();
+      if (!this.context) return;
+    }
 
     this.unlocked = true;
     debugLog.add(`unlock (audio ${this.context.state})`);
@@ -348,6 +379,7 @@ export class AudioManager {
   // Once per stop: the element's pause event and the context's interruption
   // can both report the same one
   reportInterruption(position, reason) {
+    this.needsFreshAudio = true;
     if (this.interruptionReported) return;
     this.interruptionReported = true;
     debugLog.add(`INTERRUPTED: ${reason}${position === null ? '' : ` at ${position.toFixed(2)}s`}`);

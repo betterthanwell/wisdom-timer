@@ -618,6 +618,11 @@ class FakeAudioContext {
     if (type === 'statechange') (this.stateListeners ??= []).push(fn);
   }
 
+  close() {
+    this.state = 'closed';
+    return Promise.resolve();
+  }
+
   // Test helper: the system takes the audio away (iOS: a call)
   interrupt() {
     this.state = 'interrupted';
@@ -822,6 +827,48 @@ describe('AudioManager with Web Audio', () => {
       expect(interruptions).toEqual([30]);
       expect(manager.ambientAudio.paused).toBe(true);
       expect(manager.cutShortVoicePosition()).toBe(30);
+    });
+
+    // iOS: after a call the context may say "running" again yet stay silent
+    // until a reload. So the next tap builds fresh audio.
+    it('after an interruption, the next tap builds fresh audio for the voice and the bells', async () => {
+      await initAndUnlock();
+      await vi.advanceTimersByTimeAsync(0);
+      manager.playAmbient('metta', 30);
+      await vi.advanceTimersByTimeAsync(600);
+      const oldContext = context();
+      const oldElement = manager.ambientAudio;
+      oldContext.interrupt();
+
+      // Carry on
+      manager.unlock();
+      expect(oldContext.state).toBe('closed');
+      expect(context()).not.toBe(oldContext);
+      expect(manager.ambientAudio).not.toBe(oldElement);
+      expect(context().mediaSources[0].mediaElement).toBe(manager.ambientAudio);
+      expect(manager.ambientGain.connectedTo).toBe(context().destination);
+      await vi.advanceTimersByTimeAsync(0);
+
+      manager.playAmbient('metta', 30);
+      await vi.advanceTimersByTimeAsync(600);
+      expect(manager.ambientAudio.src).toContain('guided/metta');
+      expect(manager.ambientAudio.currentTime).toBe(30);
+      expect(manager.ambientAudio.paused).toBe(false);
+
+      // Bells ring through the new context, without downloading again
+      await manager.playBell('end');
+      expect(lastBell().context).toBe(context());
+      expect(fetch).toHaveBeenCalledTimes(3);
+    });
+
+    it('keeps the same audio when unlocking without an interruption', async () => {
+      await initAndUnlock();
+      await vi.advanceTimersByTimeAsync(0);
+      const firstContext = context();
+      const element = manager.ambientAudio;
+      manager.unlock();
+      expect(context()).toBe(firstContext);
+      expect(manager.ambientAudio).toBe(element);
     });
 
     it('reports an interruption before the voice has started (the lead-in), without a position', async () => {
