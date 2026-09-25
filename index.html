@@ -7,6 +7,9 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="theme-color" content="#F97316" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Dark Reader (and Firefox for iOS night mode, built on it) would hide the
+         switches and blacken the gradient; the app has its own screen dimming -->
+    <meta name="darkreader-lock" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-Frame-Options" content="DENY">

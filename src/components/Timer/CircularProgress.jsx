@@ -14,10 +14,10 @@ const glow = (rgb, peak, falloff) => {
 
 const GLOWS = [
   // [size relative to the ring, background]
-  [1.9, glow('255, 246, 220', 0.36, (r) => (1 - r) ** 2.5)],
-  [1.1, glow('255, 252, 240', 0.34, (r) => (1 - r * r) ** 2)],
+  [2.85, glow('255, 246, 220', 0.36, (r) => (1 - r) ** 2.5)],
+  [1.65, glow('255, 252, 240', 0.34, (r) => (1 - r * r) ** 2)],
   // The core stays soft enough that white text on top of it is readable
-  [0.6, glow('255, 255, 255', 0.4, (r) => (1 - r * r) ** 2)],
+  [0.9, glow('255, 255, 255', 0.4, (r) => (1 - r * r) ** 2)],
 ];
 
 export const CircularProgress = ({ progress, size = 280, strokeWidth = 5, children, breathing = false, className = '' }) => {
