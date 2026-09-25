@@ -143,6 +143,63 @@ describe('useTimer', () => {
     });
   });
 
+  // Guided meditations: the session lasts exactly as long as the recording
+  describe('durations with fractions of a second', () => {
+    it('shows whole seconds and completes at the exact millisecond', () => {
+      const { result, onComplete } = renderTimer(2.5);
+      expect(result.current.timeRemaining).toBe(3);
+
+      act(() => result.current.start());
+      act(() => {
+        vi.advanceTimersByTime(2499);
+      });
+      expect(onComplete).not.toHaveBeenCalled();
+      expect(result.current.timeRemaining).toBe(1);
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the milliseconds over pause and resume', () => {
+      const { result, onComplete } = renderTimer(10);
+
+      act(() => result.current.start());
+      act(() => {
+        vi.advanceTimersByTime(3300);
+      });
+      act(() => result.current.pause());
+      expect(result.current.timeRemaining).toBe(7);
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      // 6.7 s were left, not 7
+      act(() => result.current.start());
+      act(() => {
+        vi.advanceTimersByTime(6699);
+      });
+      expect(onComplete).not.toHaveBeenCalled();
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('tells onStart how long has been sat, to the millisecond', () => {
+      const { result, onStart } = renderTimer(10);
+
+      act(() => result.current.start());
+      expect(onStart).toHaveBeenLastCalledWith(0);
+      act(() => {
+        vi.advanceTimersByTime(3300);
+      });
+      act(() => result.current.pause());
+      act(() => result.current.start());
+      expect(onStart).toHaveBeenLastCalledWith(3.3);
+    });
+  });
+
   it('only schedules background wake-ups for the next 6 hours', () => {
     const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
     const bell = { interval: 60, callback: vi.fn() };

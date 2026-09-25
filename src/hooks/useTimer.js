@@ -6,9 +6,15 @@ import { countIntervalBellsDue } from '../utils/intervalBells';
 // sessions last up to 24 h; the visible 100ms ticks cover the rest)
 const WAKE_UP_HORIZON_MS = 6 * 60 * 60 * 1000;
 
+// Durations are in seconds and may have fractions (a guided meditation lasts
+// exactly as long as its recording); time left is kept in whole milliseconds
+// and shown in whole seconds, rounded up
+const toMs = (seconds) => Math.round(seconds * 1000);
+const shownSeconds = (ms) => Math.ceil(ms / 1000);
+
 export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) => {
   const [duration, setDuration] = useState(initialDuration);
-  const [timeRemaining, setTimeRemaining] = useState(initialDuration);
+  const [timeRemaining, setTimeRemaining] = useState(() => shownSeconds(toMs(initialDuration)));
   const [isRunning, setIsRunning] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   // Started, then paused - the session is still in progress
@@ -20,42 +26,51 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
   const startTimeRef = useRef(null);
   const expectedEndTimeRef = useRef(null);
   const intervalBellsRungRef = useRef(0);
+  // The exact time left while not running (ms)
+  const remainingMsRef = useRef(toMs(initialDuration));
 
   // Start the timer
   const start = useCallback(() => {
     // After a completed session, starting begins a new full session
-    const remaining = isComplete ? duration : timeRemaining;
-    if (remaining <= 0) return;
+    const remainingMs = isComplete ? toMs(duration) : remainingMsRef.current;
+    if (remainingMs <= 0) return;
+    const elapsed = (toMs(duration) - remainingMs) / 1000;
 
     setIsRunning(true);
     setIsPaused(false);
     setIsComplete(false);
-    setTimeRemaining(remaining);
+    setTimeRemaining(shownSeconds(remainingMs));
     const now = sessionClock.now();
     startTimeRef.current = now;
-    expectedEndTimeRef.current = now + (remaining * 1000);
+    expectedEndTimeRef.current = now + remainingMs;
     setEndsAt(expectedEndTimeRef.current);
     // Count bells already due at this point as rung, so resuming (or enabling
     // interval bells while paused) doesn't immediately ring a catch-up bell
     intervalBellsRungRef.current = countIntervalBellsDue(
-      duration - remaining,
+      elapsed,
       onIntervalBell?.interval,
       duration,
       onIntervalBell?.firstAt
     );
 
+    // How long has been sat so far (s), e.g. to resume a recording there
     if (onStart) {
-      onStart();
+      onStart(elapsed);
     }
-  }, [isComplete, timeRemaining, duration, onStart, onIntervalBell]);
+  }, [isComplete, duration, onStart, onIntervalBell]);
+
+  // Take the exact time left from the clock (not the last displayed value,
+  // which can be stale if ticks were throttled)
+  const stopClock = useCallback(() => {
+    remainingMsRef.current = Math.max(0, expectedEndTimeRef.current - sessionClock.now());
+    setTimeRemaining(shownSeconds(remainingMsRef.current));
+  }, []);
 
   // Pause the timer
   const pause = useCallback(() => {
     if (!isRunning) return;
 
-    // Take the time left from the clock, not the last displayed value, which
-    // can be stale if ticks were throttled
-    setTimeRemaining(Math.max(0, Math.ceil((expectedEndTimeRef.current - sessionClock.now()) / 1000)));
+    stopClock();
     setIsRunning(false);
     setIsPaused(true);
     setEndsAt(null);
@@ -63,16 +78,14 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-  }, [isRunning]);
+  }, [isRunning, stopClock]);
 
   // Finish now (open-ended sitting): complete the session early, keeping
   // the time sat
   const finish = useCallback(() => {
     if (!isRunning && !isPaused) return;
 
-    if (isRunning) {
-      setTimeRemaining(Math.max(0, Math.ceil((expectedEndTimeRef.current - sessionClock.now()) / 1000)));
-    }
+    if (isRunning) stopClock();
     setIsRunning(false);
     setIsPaused(false);
     setIsComplete(true);
@@ -85,7 +98,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     if (onComplete) {
       onComplete();
     }
-  }, [isRunning, isPaused, onComplete]);
+  }, [isRunning, isPaused, onComplete, stopClock]);
 
   // Reset the timer
   const reset = useCallback(() => {
@@ -93,7 +106,8 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     setEndsAt(null);
     setIsPaused(false);
     setIsComplete(false);
-    setTimeRemaining(duration);
+    remainingMsRef.current = toMs(duration);
+    setTimeRemaining(shownSeconds(remainingMsRef.current));
     intervalBellsRungRef.current = 0;
 
     if (intervalRef.current) {
@@ -106,7 +120,8 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
   const updateDuration = useCallback((newDuration) => {
     setDuration(newDuration);
     if (!isRunning) {
-      setTimeRemaining(newDuration);
+      remainingMsRef.current = toMs(newDuration);
+      setTimeRemaining(shownSeconds(remainingMsRef.current));
       setIsComplete(false);
     }
   }, [isRunning]);
@@ -131,7 +146,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
 
     function tick() {
       if (finished) return;
-      const remaining = Math.max(0, Math.ceil((expectedEndTimeRef.current - sessionClock.now()) / 1000));
+      const remaining = shownSeconds(Math.max(0, expectedEndTimeRef.current - sessionClock.now()));
 
       setTimeRemaining(remaining);
 
