@@ -200,7 +200,7 @@ describe('App', () => {
 
       expect(screen.getByText('45:00')).toBeTruthy(); // default duration
       expect(button('None').getAttribute('aria-pressed')).toBe('true'); // selected
-      expect(screen.getAllByRole('slider')[0].value).toBe('70'); // default bell volume
+      expect(screen.getByRole('slider', { name: 'Bells volume' }).value).toBe('70'); // default bell volume
     });
 
     it('cannot start a 0:00 session', async () => {
