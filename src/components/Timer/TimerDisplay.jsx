@@ -44,19 +44,19 @@ export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = fa
         </>
       )}
 
-      <div className="flex flex-col items-center">
+      {/* The time as a radiant glow (nimitta), free of any card. It stays
+          bright above the quiet screen's dim while the rest of the page dims. */}
+      <div data-testid="nimitta" className="relative z-20 flex flex-col items-center py-2 sm:py-6">
         <CircularProgress
           progress={isSettling ? 0 : progress}
-          strokeWidth={8}
-          isRunning={isRunning}
+          breathing={isRunning || isSettling}
           className="w-[min(16rem,68vw)] sm:w-72"
         >
-          <div className="flex flex-col items-center" style={{ textShadow: '0 1px 3px rgba(120, 53, 15, 0.35)' }}>
-            <div
-              className={`text-5xl sm:text-6xl font-semibold tabular-nums tracking-tight text-white ${
-                isRunning ? 'animate-pulse-slow' : ''
-              }`}
-            >
+          <div
+            className="flex flex-col items-center"
+            style={{ textShadow: '0 1px 3px rgba(120, 53, 15, 0.35), 0 0 18px rgba(255, 255, 255, 0.5)' }}
+          >
+            <div className="text-5xl sm:text-6xl font-semibold tabular-nums tracking-tight text-white">
               {formatTime(isSettling ? settleRemaining : timeRemaining)}
             </div>
             <div className="mt-1 text-sm font-semibold text-white">
@@ -68,7 +68,7 @@ export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = fa
           </div>
         </CircularProgress>
         {/* Keeps its height when empty, so nothing jumps when a session starts */}
-        <div className="h-5 mt-2 text-sm font-medium text-white/85">
+        <div className="h-5 mt-2 text-sm font-medium text-white/85" style={{ textShadow: '0 1px 3px rgba(120, 53, 15, 0.35)' }}>
           {endsAt !== null && `Ends at ${formatClockTime(endsAt)}`}
         </div>
       </div>

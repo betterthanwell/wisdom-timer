@@ -51,6 +51,7 @@ export const recordSounds = () => {
     if (destination !== this.context.destination) return realConnect.call(this, destination, ...args);
     if (!muted.has(this.context)) {
       const context = this.context;
+      window.__audioContext = context;
       context.addEventListener('statechange', () => window.__audioStates.push(context.state));
       const gain = context.createGain();
       gain.gain.value = 0;
@@ -71,3 +72,24 @@ export const recordSounds = () => {
 export const soundsPlayed = (page) => page.evaluate(() => window.__sounds);
 export const countSound = async (page, name) => (await soundsPlayed(page)).filter((path) => path.includes(name)).length;
 export const soundLog = (page) => page.evaluate(() => window.__soundLog);
+
+// When a test fails, print what its page did with sound - how each sound
+// played, the audio context's state and its changes - and the page's console
+// messages, so CI logs say why a bell didn't ring. Call once per spec file.
+export const reportSoundsOnFailure = (test) => {
+  let messages = [];
+  test.beforeEach(({ page }) => {
+    messages = [];
+    page.on('console', (message) => messages.push(`${message.type()}: ${message.text()}`));
+    page.on('pageerror', (error) => messages.push(`pageerror: ${error.message}`));
+  });
+  test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status === testInfo.expectedStatus) return;
+    const audio = await page
+      .evaluate(() => ({ state: window.__audioContext?.state, changes: window.__audioStates, sounds: window.__soundLog }))
+      .catch((error) => `unavailable (${error.message})`);
+    console.log(
+      [`[${testInfo.project.name}] ${testInfo.title}`, `audio: ${JSON.stringify(audio)}`, 'console:', ...messages].join('\n  ')
+    );
+  });
+};

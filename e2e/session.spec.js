@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { recordSounds, countSound, soundLog } from './sounds';
+import { recordSounds, countSound, soundLog, reportSoundsOnFailure } from './sounds';
 
 // Advance the fake clock in 1-minute jumps. fastForward fires each due timer
 // once per jump (like a throttled background tab) instead of every 100ms
@@ -15,6 +15,8 @@ const setDuration = async (page, minutes, seconds = 0) => {
   await page.getByLabel('Minutes', { exact: true }).fill(String(minutes));
   await page.getByLabel('Seconds', { exact: true }).fill(String(seconds));
 };
+
+reportSoundsOnFailure(test);
 
 const START = new Date('2026-09-24T08:00:00');
 
@@ -148,16 +150,20 @@ test('quiet screen: settings hide while running and come back on request', async
   await expect(page.getByRole('button', { name: /settings$/ })).toBeHidden();
 });
 
-test('quiet screen: the dim covers the whole page, cards and text included', async ({ page }) => {
+test('quiet screen: the dim covers the whole page, cards and text included - all but the glowing time and the metta phrase', async ({ page }) => {
+  await page.getByRole('switch', { name: 'Metta mode' }).click();
   await page.getByRole('button', { name: 'Start', exact: true }).click();
 
-  // Is the dim layer the topmost thing over the title and the timer? (It
-  // ignores clicks, so let it take part in hit-testing just for the check.)
+  // Is the dim layer the topmost thing over the title and the controls? (It
+  // ignores clicks, so let it take part in hit-testing just for the check.
+  // Hit-testing only sees what's on screen, so bring each element into view.)
   const dimIsOnTop = (name) =>
     page.evaluate((selector) => {
       const dim = document.querySelector('[data-testid="quiet-dim"]');
       dim.style.pointerEvents = 'auto';
-      const box = document.querySelector(selector).getBoundingClientRect();
+      const element = document.querySelector(selector);
+      element.scrollIntoView({ block: 'center' });
+      const box = element.getBoundingClientRect();
       const top = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
       dim.style.pointerEvents = '';
       return top === dim;
@@ -165,6 +171,9 @@ test('quiet screen: the dim covers the whole page, cards and text included', asy
 
   expect(await dimIsOnTop('h1')).toBe(true);
   expect(await dimIsOnTop('[aria-label="Pause"]')).toBe(true);
+  // The time and its glow (the nimitta), and the metta phrase, shine on above it
+  expect(await dimIsOnTop('[data-testid="nimitta"]')).toBe(false);
+  expect(await dimIsOnTop('[data-testid="metta-phrase"]')).toBe(false);
 });
 
 test('settling in: a silent countdown, then the start bell', async ({ page }) => {
@@ -181,9 +190,10 @@ test('settling in: a silent countdown, then the start bell', async ({ page }) =>
 });
 
 test('bell patterns: three strikes to begin, five seconds apart', async ({ page }) => {
-  // The strike choices are tucked away behind a switch
-  await page.getByRole('switch', { name: 'Show bell strikes' }).click();
-  await page.getByRole('button', { name: 'Start bell: 3 strikes' }).click();
+  // No strike choices on screen for now, but a saved choice still applies
+  await page.evaluate(() => localStorage.setItem('wisdomTimerSettings', JSON.stringify({ startStrikes: 3 })));
+  await page.reload();
+  await page.clock.runFor(2500); // sound loading fallback timeouts
   await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect.poll(() => countSound(page, 'bell-start')).toBe(1);
 

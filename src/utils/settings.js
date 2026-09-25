@@ -1,9 +1,12 @@
 import { AUDIO_SOURCES } from '../constants/audioSources';
 
 // Settling-in countdown choices, in seconds (0 = off)
-export const SETTLE_SECONDS = [0, 10, 20, 30, 60];
+export const SETTLE_SECONDS = [0, 5, 10, 20, 60];
 // Metta mode: how long each phrase shows, in seconds
 export const METTA_SECONDS = [5, 10, 20, 30];
+// How dark the quiet screen's dim can be (0.1 = 10% black)
+export const DIM_LEVEL_MIN = 0.1;
+export const DIM_LEVEL_MAX = 0.9;
 
 const isWholeNumber = (value, min, max) => Number.isInteger(value) && value >= min && value <= max;
 const isVolume = (value) => typeof value === 'number' && value >= 0 && value <= 1;
@@ -27,6 +30,8 @@ const validators = {
   showBellStrikes: (value) => typeof value === 'boolean',
   mettaMode: (value) => typeof value === 'boolean',
   mettaSeconds: (value) => METTA_SECONDS.includes(value),
+  dimScreen: (value) => typeof value === 'boolean',
+  dimLevel: (value) => typeof value === 'number' && value >= DIM_LEVEL_MIN && value <= DIM_LEVEL_MAX,
 };
 
 // The settings that are saved: exactly those with a validator

@@ -6,18 +6,25 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 
 ![React](https://img.shields.io/badge/React-19.3-blue) ![Vite](https://img.shields.io/badge/Vite-8.3-purple) ![Tailwind](https://img.shields.io/badge/Tailwind-4.3-cyan) ![Tests](https://img.shields.io/badge/tests-Vitest%20%2B%20Playwright-green)
 
+## 🕊️ Free, for good
+
+No streaks, no stats, no accounts, no ads, no analytics, no payments - not even micropayments. Nothing to nudge you back, nothing to buy, no evil whatsoever: just a timer, some bells and a quiet screen.
+
+Free for anyone, anywhere, any time, for ever.
+
 ## ✨ Features
 
 ### Timer
 - **Any duration** from 0:01 to 99:59 with minute/second inputs; **presets** for 30, 45, 60 and 90 minutes (default 45)
-- **Settling in** (optional) - a silent 10 s to 1 min countdown before the start bell of a new session, so you can put the phone down and get comfortable; Cancel, Space or Reset stop it
+- **Settling in** (optional) - a silent 5 s to 1 min countdown before the start bell of a new session, so you can put the phone down and get comfortable; Cancel, Space or Reset stop it
 - **Open-ended sitting** (optional) - count up from 00:00 with no set end; interval bells keep ringing, and **Finish** rings the end bell and completes the session
 - **Pause and resume** - the start bell rings again when you resume
 - **Play after a finished session starts the next one** - no need to press Reset
+- **The time as a soft light** - no box around it: the time sits in a warm glow (think *nimitta*) that breathes slowly while you sit - 4 s swelling, 4 s settling - and holds still when paused. The session's progress is a thin trail of light around it; Play, Pause and Reset sit on the card below
 - **"Ends at 07:45"** under the timer while a session runs (in your device's time format)
-- **Quiet screen while sitting** - while the timer runs, the settings and hints are hidden and the page dims slightly; "Show settings" brings them back
+- **Quiet screen while sitting** - while the timer runs, the settings and hints are hidden and the page dims around the glowing time and the metta phrase (on by default; how dark is up to you, 10-90%); "Show settings" brings them back
 - **Session counter** - "Session 1", "Session 2", … for sessions completed today (kept in memory: it starts over on reload and on a new day)
-- **Keeps the screen awake** while a session runs (on by default, can be turned off), so your phone doesn't lock mid-session - in browsers that support it
+- **Keeps the screen awake** while a session runs, so your phone doesn't lock mid-session - in browsers that support it
 - **Stays on time in background tabs** - the end and interval bells are scheduled directly, so they ring on time even when the browser slows down timers for a hidden tab
 
 ### Sound
@@ -25,9 +32,9 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 - **Interval woodblock** - a short woodblock knock every 1-30 minutes (optional), the first one after its own delay of 1-60 minutes (default: every 10 minutes, starting after 5); never at the very end, which belongs to the end bell
 - **End bell** - resonant "gling" (~35 s)
 - **Ambient sounds** - rain, ocean waves or forest, looping, with a 0.5 s fade in and out
-- **Bell patterns** - each bell (start, interval, end) can ring 1, 2 or 3 times, e.g. three strikes to begin and end; bowls 5 s apart, woodblock knocks 2 s apart. The choices sit behind a "Bell strikes" switch; your choices keep applying when they're hidden
+- **Bell patterns** (not offered for now) - each bell rings once; the choice of 1, 2 or 3 strikes per bell (bowls 5 s apart, woodblock knocks 2 s apart) is hidden for now, and a choice saved earlier still applies
 - **Metta mode** (optional) - the four loving-kindness phrases take turns in large letters above the timer while you sit: *May I be happy. May my loved ones be happy. May those I find difficult be happy. May all beings everywhere be happy.* Each shows for 5, 10, 20 or 30 seconds (default 10), then the cycle starts again
-- **Gentle ending** (on by default) - the ambient sound fades out over the last minute, so the end bell arrives into silence
+- **Gentle ending** (on by default) - the ambient sound fades out over the last minute, so the end bell arrives into silence; the bells themselves never fade
 - **Separate volume sliders** for bells and ambient sound; changes apply immediately, including to a bell that is still ringing
 
 ### While a session is in progress
@@ -52,7 +59,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 
 ## ⚠️ Known limitations
 
-- **iPhone with the screen locked:** iOS pauses web pages when the phone locks, so bells can't ring until you unlock it. "Keep screen awake" (on by default) prevents the automatic lock; locking the phone yourself still pauses the page.
+- **iPhone with the screen locked:** iOS pauses web pages when the phone locks, so bells can't ring until you unlock it. Keeping the screen awake during a session prevents the automatic lock; locking the phone yourself still pauses the page.
 
 ## 🚀 Getting Started
 
@@ -75,7 +82,7 @@ npm run dev          # http://localhost:5173
 | `npm run lint` | ESLint |
 | `npm test` | Unit and component tests (Vitest), about 7 s |
 | `npm run test:watch` | Vitest in watch mode |
-| `npm run test:e2e` | End-to-end tests (Playwright) in Chromium, WebKit and an iPhone profile; builds first. One-time setup: `npx playwright install chromium webkit` |
+| `npm run test:e2e` | End-to-end tests (Playwright) in Chromium, Firefox, WebKit and an iPhone profile; builds first. One-time setup: `npx playwright install chromium firefox webkit` |
 
 ## 🧪 Testing
 

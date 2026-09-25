@@ -1,4 +1,5 @@
 import { Bell, Volume2 } from 'lucide-react';
+import { SettingLabel } from '../UI/SettingLabel';
 
 const VolumeSlider = ({ icon: Icon, label, value, onChange, disabled }) => {
   const percent = Math.round(value * 100);
@@ -33,6 +34,7 @@ export const VolumeControls = ({
 }) => {
   return (
     <div className="space-y-3">
+      <SettingLabel icon={Volume2}>Sound volume</SettingLabel>
       <VolumeSlider icon={Bell} label="Bells" value={bellVolume} onChange={onBellVolumeChange} disabled={disabled} />
       <VolumeSlider icon={Volume2} label="Sound" value={ambientVolume} onChange={onAmbientVolumeChange} disabled={disabled} />
     </div>

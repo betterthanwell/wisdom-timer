@@ -5,7 +5,7 @@ import { useTimerContext } from './context/useTimerContext';
 import { useTimer } from './hooks/useTimer';
 import { useAudio } from './hooks/useAudio';
 import { useSessionCounter } from './hooks/useSessionCounter';
-import { useWakeLock, isWakeLockSupported } from './hooks/useWakeLock';
+import { useWakeLock } from './hooks/useWakeLock';
 import { useSettleCountdown } from './hooks/useSettleCountdown';
 import { useAmbientDownloads } from './hooks/useAmbientDownloads';
 import { gentleEndingLevel } from './utils/gentleEnding';
@@ -22,12 +22,11 @@ import { DurationSelector } from './components/Settings/DurationSelector';
 import { IntervalSettings } from './components/Settings/IntervalSettings';
 import { AmbientSoundSelector } from './components/Settings/AmbientSoundSelector';
 import { VolumeControls } from './components/Settings/VolumeControls';
-import { KeepAwakeSetting } from './components/Settings/KeepAwakeSetting';
 import { SettleSetting } from './components/Settings/SettleSetting';
-import { BellPatternSettings } from './components/Settings/BellPatternSettings';
 import { GentleEndingSetting } from './components/Settings/GentleEndingSetting';
 import { OpenEndedSetting } from './components/Settings/OpenEndedSetting';
 import { MettaSetting } from './components/Settings/MettaSetting';
+import { DimSetting } from './components/Settings/DimSetting';
 import { MettaCard } from './components/Timer/MettaCard';
 
 // Open-ended sitting counts up, as a countdown from 24 hours
@@ -157,6 +156,19 @@ function MeditationTimerApp() {
   const inSession = timer.isRunning || isSettling;
   const quiet = inSession && !settingsRevealed;
 
+  // Changing the dimming level shows it for a moment, so it can be chosen
+  // without starting a session
+  const [previewingDim, setPreviewingDim] = useState(false);
+  const dimPreviewTimeoutRef = useRef(null);
+  useEffect(() => () => clearTimeout(dimPreviewTimeoutRef.current), []);
+  const handleDimLevelChange = (level) => {
+    actions.setDimLevel(level);
+    setPreviewingDim(true);
+    clearTimeout(dimPreviewTimeoutRef.current);
+    dimPreviewTimeoutRef.current = setTimeout(() => setPreviewingDim(false), 1500);
+  };
+  const dimmed = state.dimScreen && (quiet || previewingDim);
+
   // Gentle ending: fade the ambient sound out over the last minute, so the
   // end bell arrives into silence. Full level whenever it doesn't apply.
   const ambientLevel =
@@ -165,8 +177,9 @@ function MeditationTimerApp() {
     setAmbientLevel(ambientLevel);
   }, [ambientLevel, setAmbientLevel]);
 
-  // Keep the screen on while a session is running, so the phone doesn't lock
-  useWakeLock(state.keepScreenAwake && inSession);
+  // Keep the screen on while a session is running, so the phone doesn't lock.
+  // Always, for now: its switch (KeepAwakeSetting, keepScreenAwake) isn't shown.
+  useWakeLock(inSession);
 
   // Duration can only change between sessions, not while running or paused
   const durationLocked = timer.isRunning || timer.isPaused || isSettling;
@@ -313,27 +326,28 @@ function MeditationTimerApp() {
 
   return (
     <div
-      className={`min-h-dvh flex justify-center px-4 py-6 sm:py-12 transition-colors duration-[3000ms] ease-in-out ${
+      className={`min-h-dvh flex justify-center overflow-x-clip px-4 py-6 sm:py-12 transition-colors duration-[3000ms] ease-in-out ${
         showBrightBg
           ? 'bg-gradient-to-br from-[#FFFBEB] via-[#FEF3C7] to-[#FDE047]'
           : 'bg-gradient-to-br from-[#FDE68A] to-[#F97316]'
       }`}
     >
-      {/* Testing tools (previews and local only) */}
-      {testingTools.debug && <DebugPanel />}
+      {/* Testing tools (previews and local only); the ?debug log is a card
+          at the end of the page */}
       {testingTools.speed !== 1 && (
         <div className="fixed top-2 right-2 z-[60] rounded-md bg-black/80 px-2 py-1 font-mono text-xs text-white">
           speed ×{testingTools.speed}
         </div>
       )}
 
-      {/* Dims the page while sitting (clicks pass through) */}
+      {/* Dims the page while sitting, if chosen (clicks pass through) */}
       <div
         data-testid="quiet-dim"
         aria-hidden="true"
-        className={`fixed inset-0 z-10 bg-black/25 pointer-events-none transition-opacity duration-[2000ms] ${
-          quiet ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`fixed inset-0 z-10 pointer-events-none transition-opacity ${
+          previewingDim ? 'duration-300' : 'duration-[2000ms]'
+        } ${dimmed ? 'opacity-100' : 'opacity-0'}`}
+        style={{ backgroundColor: `rgba(0, 0, 0, ${state.dimLevel})` }}
       />
 
       <div className="w-full max-w-md sm:max-w-xl space-y-4">
@@ -344,7 +358,7 @@ function MeditationTimerApp() {
           {showBrightBg ? 'Wisdom Time!' : 'Wisdom Timer'}
         </h1>
 
-        {/* Metta phrases in their own card, while a session is under way */}
+        {/* Metta phrases in their own card, above everything while a session is under way */}
         {state.mettaMode && (timer.isRunning || timer.isPaused) && (
           <MettaCard
             elapsed={timer.duration - timer.timeRemaining}
@@ -353,18 +367,20 @@ function MeditationTimerApp() {
           />
         )}
 
-        {/* Main Timer Card */}
-        <GlassCard strong className="px-5 py-6 sm:p-10 space-y-3">
-          <TimerDisplay
-            timeRemaining={displaySeconds}
-            progress={state.openEnded ? 0 : timer.progress}
-            isRunning={timer.isRunning}
-            isPaused={timer.isPaused}
-            isComplete={timer.isComplete}
-            sessionNumber={sessionNumber}
-            endsAt={state.openEnded ? null : timer.endsAt}
-            settleRemaining={isSettling ? settleRemaining : null}
-          />
+        {/* The time, shining free of any card */}
+        <TimerDisplay
+          timeRemaining={displaySeconds}
+          progress={state.openEnded ? 0 : timer.progress}
+          isRunning={timer.isRunning}
+          isPaused={timer.isPaused}
+          isComplete={timer.isComplete}
+          sessionNumber={sessionNumber}
+          endsAt={state.openEnded ? null : timer.endsAt}
+          settleRemaining={isSettling ? settleRemaining : null}
+        />
+
+        {/* The controls, on the card below it */}
+        <GlassCard strong className="px-5 py-5">
           <TimerControls
             isRunning={timer.isRunning}
             isSettling={isSettling}
@@ -394,7 +410,7 @@ function MeditationTimerApp() {
           </div>
         )}
 
-        {/* Settings Card, in groups: duration, bells, metta, sound, screen */}
+        {/* Settings Card, in groups: duration, bells, metta, ambient sound, screen, volume */}
         {!quiet && (
           <GlassCard className="px-5 py-5 sm:p-6">
             <div className="flex items-center gap-2 text-white">
@@ -440,14 +456,8 @@ function MeditationTimerApp() {
                   onStartChange={actions.setIntervalStart}
                   disabled={timer.isRunning}
                 />
-                {/* How many times each bell rings (choices behind a switch;
-                    saved choices apply either way) */}
-                <BellPatternSettings
-                  strikes={{ start: state.startStrikes, interval: state.intervalStrikes, end: state.endStrikes }}
-                  onChange={actions.setBellStrikes}
-                  shown={state.showBellStrikes}
-                  onShownChange={actions.setShowBellStrikes}
-                />
+                {/* Bell strikes (BellPatternSettings) aren't shown for now;
+                    saved strike counts still apply */}
               </section>
 
               <section className={SECTION}>
@@ -469,6 +479,21 @@ function MeditationTimerApp() {
                   enabled={state.gentleEnding}
                   onToggle={actions.setGentleEnding}
                 />
+              </section>
+
+              {/* The screen while sitting (it's always kept awake, where the
+                  browser supports that) */}
+              <section className={SECTION}>
+                <DimSetting
+                  enabled={state.dimScreen}
+                  level={state.dimLevel}
+                  onToggle={actions.setDimScreen}
+                  onLevelChange={handleDimLevelChange}
+                />
+              </section>
+
+              {/* Volume, last */}
+              <section className={SECTION}>
                 <VolumeControls
                   bellVolume={state.bellVolume}
                   ambientVolume={state.ambientVolume}
@@ -482,16 +507,6 @@ function MeditationTimerApp() {
                   }}
                 />
               </section>
-
-              {/* Keep screen awake (only where the browser supports it) */}
-              {isWakeLockSupported() && (
-                <section className={SECTION}>
-                  <KeepAwakeSetting
-                    enabled={state.keepScreenAwake}
-                    onToggle={actions.setKeepScreenAwake}
-                  />
-                </section>
-              )}
             </div>
 
             {!isInitialized && (
@@ -512,6 +527,8 @@ function MeditationTimerApp() {
             <kbd className={KEY}>R</kbd> reset
           </p>
         )}
+
+        {testingTools.debug && <DebugPanel />}
       </div>
     </div>
   );

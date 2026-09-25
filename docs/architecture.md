@@ -1,7 +1,7 @@
 # Architecture
 
 ## State
-- **TimerContext** - `useReducer` for settings: `duration`, `presetDurations`, `intervalBellsEnabled`, `intervalDuration`, `intervalStart`, `selectedAmbient`, `ambientVolume`, `bellVolume`, `keepScreenAwake`. One generic `SET_SETTING` action (`{ key, value }`); named action functions (`setDuration`, `setKeepScreenAwake`, …) wrap it.
+- **TimerContext** - `useReducer` for settings: `duration`, `presetDurations`, `intervalBellsEnabled`, `intervalDuration`, `intervalStart`, `selectedAmbient`, `ambientVolume`, `bellVolume`, `keepScreenAwake`, `dimScreen`, `dimLevel`, … One generic `SET_SETTING` action (`{ key, value }`); named action functions (`setDuration`, `setKeepScreenAwake`, …) wrap it.
 - Saved settings (`localStorage` key `wisdomTimerSettings`) seed the reducer's initial state through `sanitizeSettings()`, which keeps only valid values for known keys and uses defaults otherwise. Saving uses `pickSavedSettings()`: **every setting with a validator in `utils/settings.js` is saved, and nothing else.**
 - Session state (running, paused, complete, time left) lives in `useTimer`, not the context.
 
@@ -36,6 +36,7 @@
 
 ## Known platform limits
 - iOS pauses JavaScript when the screen locks, so no timer runs until unlock; bells can't ring while locked.
+- Dark Reader (the extension, and Firefox for iOS's night mode built on it) repainted the page near-black and hid the switches and slider tracks (faint white tints). `index.html` opts out with `<meta name="darkreader-lock">`; the app has its own dimming. `e2e/darkreader.spec.js` runs Dark Reader against the page.
 - iOS ignores `HTMLMediaElement.volume` (confirmed on an iPhone: gentle ending didn't fade). Bells and the ambient sound now go through Web Audio gains.
 - Locked screen: pre-scheduling bells in Web Audio is the remaining idea. Old attempt: branch `claude/locked-screen-audio-6Q8xo` (PR #7) - keep it.
 
@@ -55,4 +56,4 @@ Caching: `/assets/*` (content-hashed build files) is `immutable` for a year; `/s
 - **Runtime:** `react`, `react-dom`, `lucide-react`
 - **Build:** `vite`, `@vitejs/plugin-react`, `tailwindcss`, `@tailwindcss/postcss`, `postcss`, `autoprefixer`
 - **Lint:** `eslint`, `@eslint/js`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `globals`
-- **Test:** `vitest`, `jsdom`, `@testing-library/react`, `@testing-library/dom`, `@playwright/test`
+- **Test:** `vitest`, `jsdom`, `@testing-library/react`, `@testing-library/dom`, `@playwright/test`, `darkreader` (e2e only)
