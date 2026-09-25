@@ -1,4 +1,4 @@
-import { AUDIO_SOURCES } from '../constants/audioSources';
+import { AUDIO_SOURCES, DOWNLOADED_SOUNDS } from '../constants/audioSources';
 import { debugLog } from './debugLog';
 
 // Time between strikes when a bell rings several times: the bowls get room
@@ -314,21 +314,26 @@ export class AudioManager {
     }
   }
 
-  // Play ambient sound with fade in
-  async playAmbient(soundId) {
+  // Play ambient sound with fade in. Also plays a guided meditation's
+  // recording (ambient sounds don't play in guided mode): once, not looped,
+  // from `from` seconds in.
+  async playAmbient(soundId, from = 0) {
     if (!this.isInitialized || !this.ambientAudio) {
       console.warn('AudioManager not initialized.');
       return;
     }
 
-    const sound = AUDIO_SOURCES.ambient[soundId];
+    const sound = DOWNLOADED_SOUNDS[soundId];
     if (!sound) {
       console.warn(`Ambient sound "${soundId}" not found`);
       return;
     }
+    const guided = Object.hasOwn(AUDIO_SOURCES.guided, soundId);
 
-    // Same sound: keep playing, or resume from where it was paused
+    // Same sound: keep playing, or resume from where it was paused (a
+    // recording from exactly where the session is)
     if (this.currentAmbient === soundId) {
+      if (guided) this.ambientAudio.currentTime = from;
       this.resumeAmbient();
       return;
     }
@@ -341,6 +346,8 @@ export class AudioManager {
 
       // Set new source and play (unmuted: it may have been primed)
       this.ambientAudio.src = sound.path;
+      this.ambientAudio.loop = !guided;
+      if (from > 0) this.ambientAudio.currentTime = from;
       this.ambientAudio.muted = false;
       this.setAmbientOutput(0);
       // Routed through Web Audio, the sound needs the audio context running
@@ -372,7 +379,7 @@ export class AudioManager {
   // was already started in a tap. Plays it muted (iOS ignores volume, not
   // muted) and pauses it again; playAmbient() unmutes it.
   primeAmbient(soundId) {
-    const sound = AUDIO_SOURCES.ambient[soundId];
+    const sound = DOWNLOADED_SOUNDS[soundId];
     if (!sound || !this.ambientAudio || this.currentAmbient) return;
 
     const audio = this.ambientAudio;

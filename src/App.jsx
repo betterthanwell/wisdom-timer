@@ -10,7 +10,8 @@ import { useSettleCountdown } from './hooks/useSettleCountdown';
 import { useAmbientDownloads } from './hooks/useAmbientDownloads';
 import { gentleEndingLevel } from './utils/gentleEnding';
 import { ambientDownloads } from './utils/ambientDownloads';
-import { testingTools } from './utils/testingTools';
+import { testingTools, sessionClock } from './utils/testingTools';
+import { AUDIO_SOURCES, GUIDED_LEAD_IN_SECONDS } from './constants/audioSources';
 import { debugLog } from './utils/debugLog';
 import { DebugPanel } from './components/UI/DebugPanel';
 import { GlassCard } from './components/UI/GlassCard';
@@ -27,6 +28,7 @@ import { GentleEndingSetting } from './components/Settings/GentleEndingSetting';
 import { OpenEndedSetting } from './components/Settings/OpenEndedSetting';
 import { MettaSetting } from './components/Settings/MettaSetting';
 import { DimSetting } from './components/Settings/DimSetting';
+import { GuidedSetting } from './components/Settings/GuidedSetting';
 import { MettaCard } from './components/Timer/MettaCard';
 
 // Open-ended sitting counts up, as a countdown from 24 hours
@@ -59,24 +61,57 @@ function MeditationTimerApp() {
   const ambientStatuses = useAmbientDownloads();
   const activeAmbient = ambientStatuses[state.selectedAmbient]?.state === 'kept' ? state.selectedAmbient : null;
 
+  // Guided meditation: the recording sets the session - the start bell, the
+  // voice after a lead-in, the end bell the moment it finishes - and nothing
+  // else plays (no ambient sound, woodblock, metta phrases or settling in)
+  const guided = state.guidedMode;
+  const guidedTrack = state.guidedTrack;
+  const guidedTrackKept = ambientStatuses[guidedTrack]?.state === 'kept';
+  const guidedSeconds = GUIDED_LEAD_IN_SECONDS + AUDIO_SOURCES.guided[guidedTrack].seconds;
+  const openEnded = state.openEnded && !guided;
+  const sessionSeconds = guided ? guidedSeconds : openEnded ? OPEN_ENDED_SECONDS : state.duration;
+
+  // The voice waiting for the lead-in to end
+  const voiceTimeoutRef = useRef(null);
+  const cancelVoice = useCallback(() => {
+    clearTimeout(voiceTimeoutRef.current);
+    voiceTimeoutRef.current = null;
+  }, []);
+  useEffect(() => cancelVoice, [cancelVoice]);
+
   // Callbacks for timer events
-  const handleTimerStart = useCallback(() => {
+  const handleTimerStart = useCallback((elapsed) => {
     debugLog.add('session starts');
     startNewDayIfNeeded();
+    if (guided) {
+      // The start bell only at the beginning: on resume it would ring over
+      // the voice
+      if (elapsed === 0) playBell('start', state.startStrikes);
+      // The voice picks up exactly where the session is
+      const voiceAt = elapsed - GUIDED_LEAD_IN_SECONDS;
+      if (voiceAt >= 0) {
+        playAmbient(guidedTrack, voiceAt);
+      } else {
+        cancelVoice();
+        voiceTimeoutRef.current = setTimeout(() => playAmbient(guidedTrack, 0), sessionClock.realDelay(-voiceAt * 1000));
+      }
+      return;
+    }
     // Rings on resume too - that's intended
     playBell('start', state.startStrikes);
     // Starts the selected sound, or resumes it if it's the one that was paused
     if (activeAmbient) {
       playAmbient(activeAmbient);
     }
-  }, [startNewDayIfNeeded, playBell, state.startStrikes, playAmbient, activeAmbient]);
+  }, [startNewDayIfNeeded, guided, guidedTrack, cancelVoice, playBell, state.startStrikes, playAmbient, activeAmbient]);
 
   const handleTimerComplete = useCallback(() => {
     debugLog.add('session complete');
+    cancelVoice();
     playBell('end', state.endStrikes);
     stopAmbient();
     recordCompleted();
-  }, [playBell, state.endStrikes, stopAmbient, recordCompleted]);
+  }, [cancelVoice, playBell, state.endStrikes, stopAmbient, recordCompleted]);
 
   const handleIntervalBell = useCallback(() => {
     playBell('interval', state.intervalStrikes);
@@ -91,22 +126,23 @@ function MeditationTimerApp() {
   }, [isInitialized, state.bellVolume, state.ambientVolume, setBellVolume, setAmbientVolume]);
 
   const timer = useTimer(
-    state.openEnded ? OPEN_ENDED_SECONDS : state.duration,
+    sessionSeconds,
     handleTimerStart,
     handleTimerComplete,
-    state.intervalBellsEnabled
+    state.intervalBellsEnabled && !guided
       ? { interval: state.intervalDuration, firstAt: state.intervalStart, callback: handleIntervalBell }
       : null
   );
   const { start: startTimer, pause: pauseTimer, finish: finishTimer, reset: resetTimer, updateDuration } = timer;
   // Open-ended: show the time sat (counting up) instead of the time left
-  const displaySeconds = state.openEnded ? timer.duration - timer.timeRemaining : timer.timeRemaining;
+  const displaySeconds = openEnded ? timer.duration - timer.timeRemaining : timer.timeRemaining;
 
   // Handle pause - pause ambient sound
   const handlePause = useCallback(() => {
     pauseTimer();
+    cancelVoice();
     pauseAmbient();
-  }, [pauseTimer, pauseAmbient]);
+  }, [pauseTimer, cancelVoice, pauseAmbient]);
 
   // Handle start/resume (ambient sound is handled by handleTimerStart)
   // Quiet screen: while running, settings are hidden unless asked for
@@ -132,22 +168,25 @@ function MeditationTimerApp() {
     // clash with the start bell (resuming keeps the start bell's strikes)
     if (!timer.isPaused) cancelPendingBells();
     // Settle in only before a new session - resuming starts right away
-    if (!timer.isPaused && state.settleSeconds > 0) {
+    // Guided: the voice will start from a timer after the lead-in - prime it now
+    if (guided) primeAmbient(guidedTrack);
+    if (!timer.isPaused && state.settleSeconds > 0 && !guided) {
       // The ambient sound will start from the countdown's timer: prime it now
       if (activeAmbient) primeAmbient(activeAmbient);
       beginSettling(state.settleSeconds, () => startTimerRef.current());
     } else {
       startTimer();
     }
-  }, [unlockAudio, timer.isPaused, cancelPendingBells, state.settleSeconds, activeAmbient, primeAmbient, beginSettling, startTimer]);
+  }, [unlockAudio, timer.isPaused, cancelPendingBells, guided, guidedTrack, state.settleSeconds, activeAmbient, primeAmbient, beginSettling, startTimer]);
 
   // Handle reset - stop ambient sound
   const handleReset = useCallback(() => {
     cancelSettling();
+    cancelVoice();
     cancelPendingBells();
     resetTimer();
     stopAmbient();
-  }, [cancelSettling, cancelPendingBells, resetTimer, stopAmbient]);
+  }, [cancelSettling, cancelVoice, cancelPendingBells, resetTimer, stopAmbient]);
 
   // The session you're on today; once one completes, it stays on that number
   // until Play starts the next (or settling in for it)
@@ -172,7 +211,7 @@ function MeditationTimerApp() {
   // Gentle ending: fade the ambient sound out over the last minute, so the
   // end bell arrives into silence. Full level whenever it doesn't apply.
   const ambientLevel =
-    state.gentleEnding && timer.isRunning ? gentleEndingLevel(timer.timeRemaining, timer.duration) : 1;
+    state.gentleEnding && timer.isRunning && !guided ? gentleEndingLevel(timer.timeRemaining, timer.duration) : 1;
   useEffect(() => {
     setAmbientLevel(ambientLevel);
   }, [ambientLevel, setAmbientLevel]);
@@ -196,6 +235,20 @@ function MeditationTimerApp() {
     if (durationLocked) return;
     actions.setOpenEnded(enabled);
     updateDuration(enabled ? OPEN_ENDED_SECONDS : state.duration);
+  };
+
+  // Guided meditation on or off, and which one (between sessions)
+  const handleGuidedChange = (enabled) => {
+    if (durationLocked) return;
+    actions.setGuidedMode(enabled);
+    updateDuration(enabled ? guidedSeconds : state.openEnded ? OPEN_ENDED_SECONDS : state.duration);
+  };
+  const handleGuidedTrackSelect = (trackId) => {
+    if (durationLocked) return;
+    actions.setGuidedTrack(trackId);
+    updateDuration(GUIDED_LEAD_IN_SECONDS + AUDIO_SOURCES.guided[trackId].seconds);
+    // Choosing one whose download failed tries again
+    if (isInitialized) downloadAmbient(trackId);
   };
 
   // Whether a session is running and which sound is chosen, for a download
@@ -223,6 +276,11 @@ function MeditationTimerApp() {
   useEffect(() => {
     if (isInitialized && state.selectedAmbient) downloadAmbient(state.selectedAmbient);
   }, [isInitialized, state.selectedAmbient, downloadAmbient]);
+
+  // Likewise the chosen guided meditation, while guided mode is on
+  useEffect(() => {
+    if (isInitialized && guided) downloadAmbient(guidedTrack);
+  }, [isInitialized, guided, guidedTrack, downloadAmbient]);
 
   // Ambient sound can change at any time. While running it switches right
   // away; while paused the new sound starts on resume. None always stops it.
@@ -359,7 +417,7 @@ function MeditationTimerApp() {
         </h1>
 
         {/* Metta phrases in their own card, above everything while a session is under way */}
-        {state.mettaMode && (timer.isRunning || timer.isPaused) && (
+        {state.mettaMode && !guided && (timer.isRunning || timer.isPaused) && (
           <MettaCard
             elapsed={timer.duration - timer.timeRemaining}
             seconds={state.mettaSeconds}
@@ -370,12 +428,12 @@ function MeditationTimerApp() {
         {/* The time, shining free of any card */}
         <TimerDisplay
           timeRemaining={displaySeconds}
-          progress={state.openEnded ? 0 : timer.progress}
+          progress={openEnded ? 0 : timer.progress}
           isRunning={timer.isRunning}
           isPaused={timer.isPaused}
           isComplete={timer.isComplete}
           sessionNumber={sessionNumber}
-          endsAt={state.openEnded ? null : timer.endsAt}
+          endsAt={openEnded ? null : timer.endsAt}
           settleRemaining={isSettling ? settleRemaining : null}
         />
 
@@ -388,10 +446,10 @@ function MeditationTimerApp() {
             onPause={handlePause}
             onCancel={cancelSettling}
             onFinish={finishTimer}
-            showFinish={state.openEnded && (timer.isRunning || timer.isPaused)}
+            showFinish={openEnded && (timer.isRunning || timer.isPaused)}
             onReset={handleReset}
             disabled={!isInitialized}
-            startDisabled={timer.timeRemaining === 0 && !timer.isComplete}
+            startDisabled={(timer.timeRemaining === 0 && !timer.isComplete) || (guided && !guidedTrackKept)}
           />
         </GlassCard>
 
@@ -410,7 +468,8 @@ function MeditationTimerApp() {
           </div>
         )}
 
-        {/* Settings Card, in groups: duration, bells, metta, ambient sound, screen, volume */}
+        {/* Settings Card, in groups: guided meditation, duration, bells, metta,
+            ambient sound, screen, volume */}
         {!quiet && (
           <GlassCard className="px-5 py-5 sm:p-6">
             <div className="flex items-center gap-2 text-white">
@@ -419,6 +478,19 @@ function MeditationTimerApp() {
             </div>
 
             <div className="mt-4 divide-y divide-white/15">
+              <section className={SECTION}>
+                <GuidedSetting
+                  enabled={guided}
+                  track={guidedTrack}
+                  downloads={ambientStatuses}
+                  onToggle={handleGuidedChange}
+                  onTrackSelect={handleGuidedTrackSelect}
+                  disabled={durationLocked}
+                />
+              </section>
+
+              {/* In guided mode the recording sets the session: none of these apply */}
+              {!guided && (
               <section className={SECTION}>
                 <OpenEndedSetting
                   enabled={state.openEnded}
@@ -448,7 +520,9 @@ function MeditationTimerApp() {
                   disabled={durationLocked}
                 />
               </section>
+              )}
 
+              {!guided && (
               <section className={SECTION}>
                 <IntervalSettings
                   enabled={state.intervalBellsEnabled}
@@ -462,7 +536,9 @@ function MeditationTimerApp() {
                 {/* Bell strikes (BellPatternSettings) aren't shown for now;
                     saved strike counts still apply */}
               </section>
+              )}
 
+              {!guided && (
               <section className={SECTION}>
                 <MettaSetting
                   enabled={state.mettaMode}
@@ -471,7 +547,9 @@ function MeditationTimerApp() {
                   onSecondsChange={actions.setMettaSeconds}
                 />
               </section>
+              )}
 
+              {!guided && (
               <section className={SECTION}>
                 <AmbientSoundSelector
                   selectedSound={activeAmbient}
@@ -483,6 +561,7 @@ function MeditationTimerApp() {
                   onToggle={actions.setGentleEnding}
                 />
               </section>
+              )}
 
               {/* The screen while sitting (it's always kept awake, where the
                   browser supports that) */}

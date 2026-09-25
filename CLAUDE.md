@@ -46,7 +46,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   │   ├── Timer/               # TimerDisplay (time, status, "Session N", burst), CircularProgress (glow + progress trail),
 │   │   │                        # TimerControls (Start/Pause|Cancel/Finish/Reset), MettaCard
 │   │   ├── Settings/            # PresetButtons, DurationSelector, IntervalSettings,
-│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings, GentleEndingSetting, OpenEndedSetting, MettaSetting, DimSetting
+│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings, GentleEndingSetting, OpenEndedSetting, MettaSetting, DimSetting, GuidedSetting
 │   │   │                        # (KeepAwakeSetting and BellPatternSettings aren't shown for now)
 │   │   └── UI/                  # GlassCard, Button (`round` for circles), Switch (on/off toggle with accessible name),
 │   │                            # SettingLabel (icon + setting name), ChoiceButton (option with aria-pressed),

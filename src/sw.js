@@ -10,7 +10,7 @@
 //   deploy that changes something brings a new worker and a fresh cache.
 // - Activate: delete the caches of older versions.
 // - Fetch: files in PRECACHE (and page loads) come from the cache. Ambient
-//   sounds come from AMBIENT_CACHE once the app has downloaded them there
+//   sounds and guided meditations come from AMBIENT_CACHE once the app has downloaded them there
 //   (utils/ambientDownloads.js; kept across versions), else the network.
 //   <audio> elements load with Range requests; for kept files those get the
 //   requested part of the cached file (206), since Safari won't play a full

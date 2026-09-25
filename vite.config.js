@@ -3,10 +3,10 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { AUDIO_SOURCES, AMBIENT_CACHE } from './src/constants/audioSources.js'
+import { AUDIO_SOURCES, AMBIENT_CACHE, DOWNLOADED_SOUNDS } from './src/constants/audioSources.js'
 
-// Files from public/ that the service worker keeps for offline use (the
-// ambient sounds are too big to download up front: the app downloads each
+// Files from public/ that the service worker keeps for offline use (ambient
+// sounds and guided meditations are too big to download up front: the app downloads each
 // when chosen, into AMBIENT_CACHE - see src/utils/ambientDownloads.js)
 const OFFLINE_PUBLIC_FILES = [
   '/favicon.svg',
@@ -49,7 +49,7 @@ const serviceWorker = () => ({
         `const VERSION = ${JSON.stringify(version.digest('hex').slice(0, 12))};\n` +
         `const PRECACHE = ${JSON.stringify(precache)};\n` +
         `const AMBIENT_CACHE = ${JSON.stringify(AMBIENT_CACHE)};\n` +
-        `const AMBIENT_PATHS = ${JSON.stringify(Object.values(AUDIO_SOURCES.ambient).map((sound) => sound.path))};\n` +
+        `const AMBIENT_PATHS = ${JSON.stringify(Object.values(DOWNLOADED_SOUNDS).map((sound) => sound.path))};\n` +
         source,
     })
   },

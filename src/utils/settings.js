@@ -31,6 +31,8 @@ const validators = {
   mettaMode: (value) => typeof value === 'boolean',
   mettaSeconds: (value) => METTA_SECONDS.includes(value),
   dimScreen: (value) => typeof value === 'boolean',
+  guidedMode: (value) => typeof value === 'boolean',
+  guidedTrack: (value) => typeof value === 'string' && Object.hasOwn(AUDIO_SOURCES.guided, value),
   dimLevel: (value) => typeof value === 'number' && value >= DIM_LEVEL_MIN && value <= DIM_LEVEL_MAX,
 };
 

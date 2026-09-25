@@ -1,8 +1,8 @@
-import { AUDIO_SOURCES, AMBIENT_CACHE } from '../constants/audioSources';
+import { DOWNLOADED_SOUNDS, AMBIENT_CACHE } from '../constants/audioSources';
 import { debugLog } from './debugLog';
 
-// Ambient sounds are big (7-25 MB each), so none is downloaded up front: a
-// sound is downloaded when it's chosen, then kept in Cache Storage for good,
+// Ambient sounds and guided meditations are big (3-25 MB each), so none is
+// downloaded up front: a sound is downloaded when it's chosen, then kept in Cache Storage for good,
 // where the service worker plays it from - online or offline.
 //
 // Each sound's status: 'checking' (looking in the cache, at page load),
@@ -10,7 +10,7 @@ import { debugLog } from './debugLog';
 // kept sound plays. Without Cache Storage (old browsers, jsdom) every sound
 // counts as kept and streams from the network as before.
 export const createAmbientDownloads = ({
-  sources = AUDIO_SOURCES.ambient,
+  sources = DOWNLOADED_SOUNDS,
   cacheStorage = globalThis.caches,
   fetchSound = (path) => fetch(path),
 } = {}) => {

@@ -30,12 +30,12 @@ export const useAudio = () => {
   }, [isInitialized]);
 
   // Play ambient sound
-  const playAmbient = useCallback(async (soundId) => {
+  const playAmbient = useCallback(async (soundId, ...from) => {
     if (!isInitialized) {
       console.warn('Audio not initialized yet');
       return;
     }
-    await audioManager.playAmbient(soundId);
+    await audioManager.playAmbient(soundId, ...from);
     setCurrentAmbient(soundId);
     setIsPlaying(true);
   }, [isInitialized]);

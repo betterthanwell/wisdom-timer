@@ -293,3 +293,34 @@ test('metta mode: the phrases take turns above the timer while sitting', async (
   await page.getByRole('button', { name: 'Reset' }).click();
   await expect(phrase).toBeHidden();
 });
+
+test('guided meditation: start bell, the voice after the lead-in, end bell exactly when the recording ends', async ({ page }) => {
+  await page.getByRole('switch', { name: 'Guided meditation' }).click();
+  // Downloaded when chosen and kept on the device; Start waits for it
+  await expect
+    .poll(() => page.evaluate(() => caches.open('ambient-sounds-v1').then((cache) => cache.match('/audio/guided/metta.mp3')).then(Boolean)), { timeout: 30_000 })
+    .toBe(true);
+  const start = page.getByRole('button', { name: 'Start', exact: true });
+  await expect(start).toBeEnabled();
+  // 15 s lead-in + 248.576 s of recording
+  await expect(page.getByText('04:24')).toBeVisible();
+
+  await start.click();
+  await expect.poll(() => countSound(page, 'bell-start')).toBe(1);
+  // Primed (muted) in the tap, so it may start from the lead-in's timer (iOS)
+  const primed = await countSound(page, 'guided/metta');
+
+  await page.clock.fastForward(14_000);
+  expect(await countSound(page, 'guided/metta')).toBe(primed);
+  await page.clock.fastForward(1_000);
+  await expect.poll(() => countSound(page, 'guided/metta')).toBe(primed + 1);
+  expect(await page.evaluate(() => [...document.querySelectorAll('audio')].length)).toBe(0); // (not in the DOM)
+
+  await passSeconds(page, 248);
+  await page.clock.fastForward(575);
+  await expect(page.getByText('Complete')).not.toBeVisible();
+  expect(await countSound(page, 'bell-end')).toBe(0);
+  await page.clock.fastForward(1);
+  await expect(page.getByText('Complete')).toBeVisible();
+  await expect.poll(() => countSound(page, 'bell-end')).toBe(1);
+});

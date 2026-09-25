@@ -234,6 +234,28 @@ describe('AudioManager', () => {
       expect(manager.currentAmbient).toBe('rain');
     });
 
+    it('loops ambient sounds but plays a guided meditation once', async () => {
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(600);
+      expect(manager.ambientAudio.loop).toBe(true);
+
+      manager.playAmbient('metta');
+      await vi.advanceTimersByTimeAsync(1200);
+      expect(manager.ambientAudio.src).toContain('guided/metta');
+      expect(manager.ambientAudio.loop).toBe(false);
+    });
+
+    it('plays a guided meditation from a given point, also when resuming it', async () => {
+      manager.playAmbient('metta', 42.5);
+      await vi.advanceTimersByTimeAsync(600);
+      expect(manager.ambientAudio.currentTime).toBe(42.5);
+
+      manager.pauseAmbient();
+      manager.playAmbient('metta', 50.25);
+      expect(manager.ambientAudio.currentTime).toBe(50.25);
+      expect(manager.ambientAudio.paused).toBe(false);
+    });
+
     it('does not prime over a sound that is already current (e.g. paused mid-session)', async () => {
       manager.playAmbient('ocean');
       await vi.advanceTimersByTimeAsync(600);
