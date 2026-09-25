@@ -1,18 +1,21 @@
-/* global VERSION, PRECACHE */
+/* global VERSION, PRECACHE, AMBIENT_CACHE, AMBIENT_PATHS */
 // Service worker: keeps the app and its bells on the device, so the timer
 // opens and works without a network (airplane mode, no signal). Not bundled
 // with the app: the serviceWorker() plugin in vite.config.js emits it as
-// /sw.js in production builds, with VERSION and PRECACHE defined above it.
+// /sw.js in production builds, with VERSION, PRECACHE, AMBIENT_CACHE and
+// AMBIENT_PATHS defined above it.
 //
 // - Install: download everything in PRECACHE into a cache named after
 //   VERSION. VERSION changes whenever any of those files does, so each
 //   deploy that changes something brings a new worker and a fresh cache.
 // - Activate: delete the caches of older versions.
-// - Fetch: files in PRECACHE (and page loads) come from the cache, anything
-//   else (ambient sounds) from the network. <audio> elements load with Range
-//   requests; for kept files those get the requested part of the cached file
-//   (206), since Safari won't play a full response to one - this is what lets
-//   bells that fall back to <audio> ring offline.
+// - Fetch: files in PRECACHE (and page loads) come from the cache. Ambient
+//   sounds come from AMBIENT_CACHE once the app has downloaded them there
+//   (utils/ambientDownloads.js; kept across versions), else the network.
+//   <audio> elements load with Range requests; for kept files those get the
+//   requested part of the cached file (206), since Safari won't play a full
+//   response to one - this is what lets ambient sounds, and bells that fall
+//   back to <audio>, play offline.
 
 const CACHE_PREFIX = 'wisdom-timer-';
 const CACHE = `${CACHE_PREFIX}${VERSION}`;
@@ -47,12 +50,13 @@ self.addEventListener('fetch', (event) => {
 
   // Every page load gets the app's page
   const path = request.mode === 'navigate' ? '/' : url.pathname;
-  if (!PRECACHE.includes(path)) return;
+  const cacheName = PRECACHE.includes(path) ? CACHE : AMBIENT_PATHS.includes(path) ? AMBIENT_CACHE : null;
+  if (!cacheName) return;
 
   const range = request.headers.get('range');
   event.respondWith(
     caches
-      .open(CACHE)
+      .open(cacheName)
       .then((cache) => cache.match(path))
       .then((cached) => {
         if (!cached) return fetch(request);

@@ -7,7 +7,9 @@ import { useAudio } from './hooks/useAudio';
 import { useSessionCounter } from './hooks/useSessionCounter';
 import { useWakeLock, isWakeLockSupported } from './hooks/useWakeLock';
 import { useSettleCountdown } from './hooks/useSettleCountdown';
+import { useAmbientDownloads } from './hooks/useAmbientDownloads';
 import { gentleEndingLevel } from './utils/gentleEnding';
+import { ambientDownloads } from './utils/ambientDownloads';
 import { testingTools } from './utils/testingTools';
 import { debugLog } from './utils/debugLog';
 import { DebugPanel } from './components/UI/DebugPanel';
@@ -53,6 +55,11 @@ function MeditationTimerApp() {
   } = useAudio();
   const { completedToday, startNewDayIfNeeded, recordCompleted } = useSessionCounter();
 
+  // Only an ambient sound that's on the device plays; until it is, the
+  // selector shows None (the choice itself is kept and saved)
+  const ambientStatuses = useAmbientDownloads();
+  const activeAmbient = ambientStatuses[state.selectedAmbient]?.state === 'kept' ? state.selectedAmbient : null;
+
   // Callbacks for timer events
   const handleTimerStart = useCallback(() => {
     debugLog.add('session starts');
@@ -60,10 +67,10 @@ function MeditationTimerApp() {
     // Rings on resume too - that's intended
     playBell('start', state.startStrikes);
     // Starts the selected sound, or resumes it if it's the one that was paused
-    if (state.selectedAmbient) {
-      playAmbient(state.selectedAmbient);
+    if (activeAmbient) {
+      playAmbient(activeAmbient);
     }
-  }, [startNewDayIfNeeded, playBell, state.startStrikes, playAmbient, state.selectedAmbient]);
+  }, [startNewDayIfNeeded, playBell, state.startStrikes, playAmbient, activeAmbient]);
 
   const handleTimerComplete = useCallback(() => {
     debugLog.add('session complete');
@@ -125,12 +132,12 @@ function MeditationTimerApp() {
     // Settle in only before a new session - resuming starts right away
     if (!timer.isPaused && state.settleSeconds > 0) {
       // The ambient sound will start from the countdown's timer: prime it now
-      if (state.selectedAmbient) primeAmbient(state.selectedAmbient);
+      if (activeAmbient) primeAmbient(activeAmbient);
       beginSettling(state.settleSeconds, () => startTimerRef.current());
     } else {
       startTimer();
     }
-  }, [unlockAudio, timer.isPaused, state.settleSeconds, state.selectedAmbient, primeAmbient, beginSettling, startTimer]);
+  }, [unlockAudio, timer.isPaused, state.settleSeconds, activeAmbient, primeAmbient, beginSettling, startTimer]);
 
   // Handle reset - stop ambient sound
   const handleReset = useCallback(() => {
@@ -175,14 +182,51 @@ function MeditationTimerApp() {
     updateDuration(enabled ? OPEN_ENDED_SECONDS : state.duration);
   };
 
+  // Whether a session is running and which sound is chosen, for a download
+  // that finishes later
+  const latestRef = useRef({});
+  useEffect(() => {
+    latestRef.current = { isRunning: timer.isRunning, selectedAmbient: state.selectedAmbient };
+  }, [timer.isRunning, state.selectedAmbient]);
+
+  // Download an ambient sound that isn't on the device yet; if a session is
+  // running by then and it's still the choice, start it
+  const downloadAmbient = useCallback(
+    (soundId) => {
+      if (ambientDownloads.isKept(soundId)) return;
+      ambientDownloads.download(soundId).then((kept) => {
+        const latest = latestRef.current;
+        if (kept && latest.isRunning && latest.selectedAmbient === soundId) playAmbient(soundId);
+      });
+    },
+    [playAmbient]
+  );
+
+  // The chosen sound - also a saved choice at page load - is downloaded once
+  // the bells have loaded
+  useEffect(() => {
+    if (isInitialized && state.selectedAmbient) downloadAmbient(state.selectedAmbient);
+  }, [isInitialized, state.selectedAmbient, downloadAmbient]);
+
   // Ambient sound can change at any time. While running it switches right
   // away; while paused the new sound starts on resume. None always stops it.
+  // A sound not on the device yet starts once downloaded (by the effect
+  // above; choosing it again retries a failed download).
   const handleAmbientSelect = (soundId) => {
     actions.setAmbientSound(soundId);
     if (soundId === null) {
       stopAmbient();
-    } else if (timer.isRunning) {
-      playAmbient(soundId);
+    } else if (ambientDownloads.isKept(soundId)) {
+      if (timer.isRunning) playAmbient(soundId);
+    } else {
+      if (timer.isRunning) {
+        // Now, in the tap: lets it start later (iOS), if nothing is playing
+        primeAmbient(soundId);
+        stopAmbient();
+      }
+      if (soundId === state.selectedAmbient && ambientStatuses[soundId]?.state === 'failed' && isInitialized) {
+        downloadAmbient(soundId);
+      }
     }
   };
 
@@ -385,7 +429,8 @@ function MeditationTimerApp() {
 
               <section className={SECTION}>
                 <AmbientSoundSelector
-                  selectedSound={state.selectedAmbient}
+                  selectedSound={activeAmbient}
+                  downloads={ambientStatuses}
                   onSoundSelect={handleAmbientSelect}
                 />
                 <GentleEndingSetting

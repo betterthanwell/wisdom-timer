@@ -207,12 +207,15 @@ test('open-ended sitting: counts up until Finish', async ({ page }) => {
   await expect.poll(() => countSound(page, 'bell-end')).toBe(1);
 });
 
-test('ambient sound starts with the session', async ({ page }) => {
-  await page.getByRole('button', { name: 'Rain' }).click();
+test('ambient sound: downloaded when chosen, then starts with the session', async ({ page }) => {
+  const forest = page.getByRole('button', { name: 'Forest' });
+  await forest.click();
+  // Selected once it's on the device
+  await expect(forest).toHaveAttribute('aria-pressed', 'true', { timeout: 10_000 });
   await page.getByRole('button', { name: 'Start', exact: true }).click();
   await passSeconds(page, 1);
 
-  await expect.poll(() => countSound(page, 'ambient/rain')).toBe(1);
+  await expect.poll(() => countSound(page, 'ambient/forest')).toBe(1);
 });
 
 test('keyboard: Space starts and pauses, R resets', async ({ page }) => {
