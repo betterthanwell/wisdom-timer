@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { sessionClock } from '../utils/testingTools';
 
 // A short countdown before a session starts, so you can get comfortable.
 // begin(seconds, onDone) starts it; onDone is called once at the end unless
@@ -12,7 +13,7 @@ export const useSettleCountdown = () => {
   const begin = useCallback((seconds, onDone) => {
     onDoneRef.current = onDone;
     setSettleRemaining(seconds);
-    setEndAt(Date.now() + seconds * 1000);
+    setEndAt(sessionClock.now() + seconds * 1000);
   }, []);
 
   const cancel = useCallback(() => {
@@ -25,7 +26,7 @@ export const useSettleCountdown = () => {
     let done = false;
     const tick = () => {
       if (done) return;
-      const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+      const left = Math.max(0, Math.ceil((endAt - sessionClock.now()) / 1000));
       setSettleRemaining(left);
       if (left === 0) {
         done = true;
@@ -35,7 +36,7 @@ export const useSettleCountdown = () => {
     };
 
     const interval = setInterval(tick, 250);
-    const wakeUp = setTimeout(tick, Math.max(0, endAt - Date.now()));
+    const wakeUp = setTimeout(tick, Math.max(0, sessionClock.realDelay(endAt - sessionClock.now())));
     return () => {
       done = true;
       clearInterval(interval);

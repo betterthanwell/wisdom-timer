@@ -80,7 +80,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - Start is disabled for a 0:00 duration.
 - **"Ends at HH:MM"** shows under the timer only while running (hidden when paused, since the end moves); locale time format via `formatClockTime()`.
 - **Quiet screen**: while running, the settings card and keyboard hint are hidden and the page dims (`quiet-dim` overlay); "Show settings" (`aria-expanded`) reveals them and lifts the dim for that run. Paused/stopped shows everything; every start begins quiet again.
-- **Settling in** (`settleSeconds`: 0/10/20/30/60, default 0 = off): only before a *new* session (from Ready or after completion), never on resume. Silent countdown ("Settling in…"), then the normal start. Counts as in-session: quiet screen, wake lock, duration locked. The main button becomes **Cancel**; Cancel, Space and Reset return to Ready. On completion it calls the *latest* `startTimer` via a ref, so changes made while settling (e.g. ambient sound) apply.
+- **Settling in** (`settleSeconds`: 0/10/20/30/60, default 0 = off; the tap that begins it primes the chosen ambient sound - `audioManager.primeAmbient()`, muted play + pause - since iOS won't let the countdown's timer start an `<audio>` element otherwise): only before a *new* session (from Ready or after completion), never on resume. Silent countdown ("Settling in…"), then the normal start. Counts as in-session: quiet screen, wake lock, duration locked. The main button becomes **Cancel**; Cancel, Space and Reset return to Ready. On completion it calls the *latest* `startTimer` via a ref, so changes made while settling (e.g. ambient sound) apply.
 - **Bell patterns**: `startStrikes`, `intervalStrikes`, `endStrikes` (1-3, default 1). Strikes are 5 s apart for start/end bowls, 2 s for the interval woodblock (`BELL_STRIKE_SPACING_MS`). Reset cancels strikes not yet rung; pause doesn't. The "Bell strikes" section is always shown (whether interval bells are on or off); its switch (`showBellStrikes`, default off, saved) shows/hides the 1×/2×/3× choices. Hiding is UI only: saved strike counts - including start/end - keep applying.
 - **Gentle ending** (`gentleEnding`, default on): while running, the ambient level follows `gentleEndingLevel()` - full until the last minute (or the last half of sessions under 2 min), then linearly to 0. Applied as `audioManager.setAmbientLevel()`, a multiplier separate from the volume slider; back to 1 whenever it doesn't apply.
 - **Metta mode** (`mettaMode`, default off; `mettaSeconds` 5/10/20/30, default 10): while a session is running or paused, a separate `MettaCard` above the timer card shows one of the four `METTA_PHRASES` (oneself → loved ones → those I find difficult → all beings everywhere), then back to the first. Which phrase is derived from the time sat (`mettaStep()`), so pause holds it and resume carries on. Each phrase fades in, holds and fades out over its time (`mettaFlash` keyframes, frozen while paused; no animation with reduced motion). Hidden when Ready, settling in and after Reset. The card has a fixed height so the timer doesn't jump between one- and three-line phrases.
@@ -186,6 +186,12 @@ The gradients are Tailwind arbitrary-value classes in `App.jsx` (`from-[#FDE68A]
 - Commit messages explain the why; PR descriptions include what was verified (test counts, what fails on the old code, manual test steps).
 - After a merge: confirm every pushed commit is on `main` (`git merge-base --is-ancestor <sha> origin/main`) **before** deleting branches - GitHub has lagged registering pushes, and a PR was once merged without its last commit.
 - Keep this file and `README.md` in sync with behavior changes.
+
+## Testing on a phone (previews and local only)
+
+Never on wisdomtimer.app (`utils/testingTools.js` checks the host):
+- `?speed=60` - session time runs 60× faster (1-600; `sessionClock` in `useTimer` and `useSettleCountdown`); a "speed ×N" badge shows while it's on.
+- `?debug` - an on-screen panel (`UI/DebugPanel`) with the audio context state and the latest audio events (`debugLog.add()`: unlock, resume, how each bell played or why it fell back, ambient failures). Use both on a Vercel preview for iPhone checks, e.g. `…vercel.app/?speed=60&debug`.
 
 ## Common Issues
 

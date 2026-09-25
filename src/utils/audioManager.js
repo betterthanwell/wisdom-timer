@@ -1,4 +1,5 @@
 import { AUDIO_SOURCES } from '../constants/audioSources';
+import { debugLog } from './debugLog';
 
 // Time between strikes when a bell rings several times: the bowls get room
 // to ring out, the short woodblock knocks come quicker
@@ -93,7 +94,10 @@ export class AudioManager {
       this.bellGain = this.context.createGain();
       this.bellGain.gain.value = this.bellVolume;
       this.bellGain.connect(this.context.destination);
+      this.context.addEventListener?.('statechange', () => debugLog.add(`audio → ${this.context.state}`));
+      debugLog.add(`audio created (${this.context.state})`);
     } catch (error) {
+      debugLog.add(`no Web Audio: ${error.name}`);
       console.warn('Web Audio not available, bells play on <audio> elements:', error);
       this.context = null;
       return;
@@ -136,8 +140,11 @@ export class AudioManager {
     try {
       const response = await fetch(path);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await this.context.decodeAudioData(await response.arrayBuffer());
+      const buffer = await this.context.decodeAudioData(await response.arrayBuffer());
+      debugLog.add(`decoded ${path.split('/').pop()}`);
+      return buffer;
     } catch (error) {
+      debugLog.add(`could not decode ${path.split('/').pop()}: ${error.name ?? error}`);
       console.warn(`Could not load bell ${path} for Web Audio, it will play on an <audio> element:`, error);
       return null;
     }
@@ -149,6 +156,7 @@ export class AudioManager {
     if (!this.context) return;
 
     this.unlocked = true;
+    debugLog.add(`unlock (audio ${this.context.state})`);
     if (this.context.state !== 'running') {
       this.resumeWebAudio();
     }
@@ -176,6 +184,7 @@ export class AudioManager {
     });
     const running = await Promise.race([resumed, gaveUp]);
     clearTimeout(timeout);
+    if (!running) debugLog.add(`resume gave up (audio ${this.context.state})`);
     return running && this.context.state === 'running';
   }
 
@@ -186,6 +195,7 @@ export class AudioManager {
       .then(
         () => true,
         (error) => {
+          debugLog.add(`resume failed: ${error.name}`);
           console.warn('Could not resume audio:', error);
           return false;
         }
@@ -237,8 +247,10 @@ export class AudioManager {
       source.onended = () => this.ringingSources.delete(source);
       this.ringingSources.add(source);
       source.start();
+      debugLog.add(`${type} bell → Web Audio`);
       return;
     }
+    const reason = !buffer ? 'not decoded' : !this.unlocked ? 'not unlocked' : `audio ${this.context?.state}`;
 
     // Otherwise an <audio> element. A new element each time (not a clone,
     // which didn't reliably keep the volume)
@@ -255,8 +267,10 @@ export class AudioManager {
 
     try {
       await bellAudio.play();
+      debugLog.add(`${type} bell → <audio> (${reason})`);
     } catch (error) {
       this.ringingBells.delete(bellAudio);
+      debugLog.add(`${type} bell FAILED on <audio> (${reason}): ${error.name}`);
       console.error(`Failed to play bell "${type}":`, error);
     }
   }
@@ -286,8 +300,9 @@ export class AudioManager {
         await this.stopAmbient();
       }
 
-      // Set new source and play
+      // Set new source and play (unmuted: it may have been primed)
       this.ambientAudio.src = sound.path;
+      this.ambientAudio.muted = false;
       this.ambientAudio.volume = 0;
       this.currentAmbient = soundId;
       await this.ambientAudio.play();
@@ -299,12 +314,35 @@ export class AudioManager {
 
       // Fade in
       this.fadeIn();
+      debugLog.add(`ambient ${soundId} playing`);
     } catch (error) {
       if (this.currentAmbient === soundId) {
         this.currentAmbient = null;
       }
+      debugLog.add(`ambient ${soundId} FAILED: ${error.name}`);
       console.error(`Failed to play ambient sound "${soundId}":`, error);
     }
+  }
+
+  // Call during a tap when the ambient sound will start later, from a timer
+  // (after settling in): iOS only lets a timer start an <audio> element that
+  // was already started in a tap. Plays it muted (iOS ignores volume, not
+  // muted) and pauses it again; playAmbient() unmutes it.
+  primeAmbient(soundId) {
+    const sound = AUDIO_SOURCES.ambient[soundId];
+    if (!sound || !this.ambientAudio || this.currentAmbient) return;
+
+    const audio = this.ambientAudio;
+    audio.src = sound.path;
+    audio.muted = true;
+    audio.play().then(
+      () => {
+        // Unless the sound has really started meanwhile
+        if (!this.currentAmbient) audio.pause();
+        debugLog.add(`ambient ${soundId} primed`);
+      },
+      (error) => debugLog.add(`ambient ${soundId} priming FAILED: ${error.name}`)
+    );
   }
 
   // Pause ambient sound (without resetting position)

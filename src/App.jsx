@@ -8,6 +8,9 @@ import { useSessionCounter } from './hooks/useSessionCounter';
 import { useWakeLock, isWakeLockSupported } from './hooks/useWakeLock';
 import { useSettleCountdown } from './hooks/useSettleCountdown';
 import { gentleEndingLevel } from './utils/gentleEnding';
+import { testingTools } from './utils/testingTools';
+import { debugLog } from './utils/debugLog';
+import { DebugPanel } from './components/UI/DebugPanel';
 import { GlassCard } from './components/UI/GlassCard';
 import { SettingLabel } from './components/UI/SettingLabel';
 import { TimerDisplay } from './components/Timer/TimerDisplay';
@@ -40,6 +43,7 @@ function MeditationTimerApp() {
     playBell,
     cancelPendingBells,
     playAmbient,
+    primeAmbient,
     pauseAmbient,
     stopAmbient,
     setBellVolume,
@@ -51,6 +55,7 @@ function MeditationTimerApp() {
 
   // Callbacks for timer events
   const handleTimerStart = useCallback(() => {
+    debugLog.add('session starts');
     startNewDayIfNeeded();
     // Rings on resume too - that's intended
     playBell('start', state.startStrikes);
@@ -61,6 +66,7 @@ function MeditationTimerApp() {
   }, [startNewDayIfNeeded, playBell, state.startStrikes, playAmbient, state.selectedAmbient]);
 
   const handleTimerComplete = useCallback(() => {
+    debugLog.add('session complete');
     playBell('end', state.endStrikes);
     stopAmbient();
     recordCompleted();
@@ -113,15 +119,18 @@ function MeditationTimerApp() {
     // Now, during the tap (or Space): bells started later by timers - the
     // interval and end bells, and the start bell after settling in - are
     // only allowed to play once audio has been unlocked by one
+    debugLog.add(`Start tapped${!timer.isPaused && state.settleSeconds > 0 ? `, settling in ${state.settleSeconds}s` : ''}`);
     unlockAudio();
     setSettingsRevealed(false); // every start begins quiet
     // Settle in only before a new session - resuming starts right away
     if (!timer.isPaused && state.settleSeconds > 0) {
+      // The ambient sound will start from the countdown's timer: prime it now
+      if (state.selectedAmbient) primeAmbient(state.selectedAmbient);
       beginSettling(state.settleSeconds, () => startTimerRef.current());
     } else {
       startTimer();
     }
-  }, [unlockAudio, timer.isPaused, state.settleSeconds, beginSettling, startTimer]);
+  }, [unlockAudio, timer.isPaused, state.settleSeconds, state.selectedAmbient, primeAmbient, beginSettling, startTimer]);
 
   // Handle reset - stop ambient sound
   const handleReset = useCallback(() => {
@@ -234,6 +243,14 @@ function MeditationTimerApp() {
           : 'bg-gradient-to-br from-[#FDE68A] to-[#F97316]'
       }`}
     >
+      {/* Testing tools (previews and local only) */}
+      {testingTools.debug && <DebugPanel />}
+      {testingTools.speed !== 1 && (
+        <div className="fixed top-2 right-2 z-[60] rounded-md bg-black/80 px-2 py-1 font-mono text-xs text-white">
+          speed ×{testingTools.speed}
+        </div>
+      )}
+
       {/* Dims the page while sitting (clicks pass through) */}
       <div
         data-testid="quiet-dim"

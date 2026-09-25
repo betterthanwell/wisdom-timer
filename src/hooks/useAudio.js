@@ -40,6 +40,11 @@ export const useAudio = () => {
     setIsPlaying(true);
   }, [isInitialized]);
 
+  // Call during a tap when the ambient sound will start later (settling in)
+  const primeAmbient = useCallback((soundId) => {
+    audioManager.primeAmbient(soundId);
+  }, []);
+
   // Pause ambient sound
   const pauseAmbient = useCallback(() => {
     audioManager.pauseAmbient();
@@ -92,6 +97,7 @@ export const useAudio = () => {
     playBell,
     cancelPendingBells,
     playAmbient,
+    primeAmbient,
     pauseAmbient,
     resumeAmbient,
     stopAmbient,
