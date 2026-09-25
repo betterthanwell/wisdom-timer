@@ -300,8 +300,9 @@ export class AudioManager {
         await this.stopAmbient();
       }
 
-      // Set new source and play
+      // Set new source and play (unmuted: it may have been primed)
       this.ambientAudio.src = sound.path;
+      this.ambientAudio.muted = false;
       this.ambientAudio.volume = 0;
       this.currentAmbient = soundId;
       await this.ambientAudio.play();
@@ -321,6 +322,27 @@ export class AudioManager {
       debugLog.add(`ambient ${soundId} FAILED: ${error.name}`);
       console.error(`Failed to play ambient sound "${soundId}":`, error);
     }
+  }
+
+  // Call during a tap when the ambient sound will start later, from a timer
+  // (after settling in): iOS only lets a timer start an <audio> element that
+  // was already started in a tap. Plays it muted (iOS ignores volume, not
+  // muted) and pauses it again; playAmbient() unmutes it.
+  primeAmbient(soundId) {
+    const sound = AUDIO_SOURCES.ambient[soundId];
+    if (!sound || !this.ambientAudio || this.currentAmbient) return;
+
+    const audio = this.ambientAudio;
+    audio.src = sound.path;
+    audio.muted = true;
+    audio.play().then(
+      () => {
+        // Unless the sound has really started meanwhile
+        if (!this.currentAmbient) audio.pause();
+        debugLog.add(`ambient ${soundId} primed`);
+      },
+      (error) => debugLog.add(`ambient ${soundId} priming FAILED: ${error.name}`)
+    );
   }
 
   // Pause ambient sound (without resetting position)

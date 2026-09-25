@@ -43,6 +43,7 @@ function MeditationTimerApp() {
     playBell,
     cancelPendingBells,
     playAmbient,
+    primeAmbient,
     pauseAmbient,
     stopAmbient,
     setBellVolume,
@@ -123,11 +124,13 @@ function MeditationTimerApp() {
     setSettingsRevealed(false); // every start begins quiet
     // Settle in only before a new session - resuming starts right away
     if (!timer.isPaused && state.settleSeconds > 0) {
+      // The ambient sound will start from the countdown's timer: prime it now
+      if (state.selectedAmbient) primeAmbient(state.selectedAmbient);
       beginSettling(state.settleSeconds, () => startTimerRef.current());
     } else {
       startTimer();
     }
-  }, [unlockAudio, timer.isPaused, state.settleSeconds, beginSettling, startTimer]);
+  }, [unlockAudio, timer.isPaused, state.settleSeconds, state.selectedAmbient, primeAmbient, beginSettling, startTimer]);
 
   // Handle reset - stop ambient sound
   const handleReset = useCallback(() => {

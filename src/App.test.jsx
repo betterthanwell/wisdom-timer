@@ -8,6 +8,7 @@ vi.mock('./utils/audioManager', () => ({
   audioManager: {
     init: vi.fn(async () => true),
     unlock: vi.fn(),
+    primeAmbient: vi.fn(),
     cleanup: vi.fn(),
     playBell: vi.fn(async () => {}),
     cancelPendingBells: vi.fn(),
@@ -254,6 +255,30 @@ describe('App', () => {
 
     afterEach(() => {
       vi.useRealTimers();
+    });
+
+    // The ambient sound starts after the countdown, from a timer: iOS only
+    // allows that for an <audio> element already started in a tap
+    it('primes the chosen ambient sound during the tap that begins settling in', async () => {
+      await renderApp();
+      click('Rain');
+      click('Settle in for 10s');
+      click('Start');
+
+      expect(audioManager.primeAmbient).toHaveBeenCalledWith('rain');
+      expect(audioManager.playAmbient).not.toHaveBeenCalled();
+    });
+
+    it('does not prime without an ambient sound, or when starting straight away', async () => {
+      await renderApp();
+      click('Settle in for 10s');
+      click('Start');
+      click('Cancel');
+      click('No settling in');
+      click('Rain');
+      click('Start');
+
+      expect(audioManager.primeAmbient).not.toHaveBeenCalled();
     });
 
     const passSeconds = (seconds) =>

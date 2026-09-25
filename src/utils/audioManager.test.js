@@ -214,6 +214,36 @@ describe('AudioManager', () => {
       vi.useRealTimers();
     });
 
+    it('primes a sound muted and pauses it, so it may be started later without a tap (iOS)', async () => {
+      manager.primeAmbient('rain');
+      expect(manager.ambientAudio.src).toContain('rain');
+      expect(manager.ambientAudio.muted).toBe(true);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(manager.ambientAudio.paused).toBe(true);
+      expect(manager.currentAmbient).toBe(null);
+    });
+
+    it('plays a primed sound audibly when it really starts', async () => {
+      manager.primeAmbient('rain');
+      await vi.advanceTimersByTimeAsync(0);
+
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(600);
+      expect(manager.ambientAudio.paused).toBe(false);
+      expect(manager.ambientAudio.muted).toBe(false);
+      expect(manager.currentAmbient).toBe('rain');
+    });
+
+    it('does not prime over a sound that is already current (e.g. paused mid-session)', async () => {
+      manager.playAmbient('ocean');
+      await vi.advanceTimersByTimeAsync(600);
+      manager.pauseAmbient();
+
+      manager.primeAmbient('rain');
+      expect(manager.ambientAudio.src).toContain('ocean');
+      expect(manager.ambientAudio.muted).not.toBe(true);
+    });
+
     it('changes the volume of ambient sound that is playing', async () => {
       manager.setAmbientVolume(0.5);
       manager.playAmbient('rain');
