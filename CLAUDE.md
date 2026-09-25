@@ -111,7 +111,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - **Bells play through Web Audio** where available: `loadBell()` downloads and decodes each bell once (`bellBuffers`), so bells ring without a network; all bells go through one gain node (`bellGain` = bell volume, which iOS respects). `navigator.audioSession.type = 'playback'` (iOS) keeps the silent switch from muting them.
 - **`unlock()` must be called during a tap or key press** - `App`'s `handleStart` does, for every Start/Space (also before settling in). iOS won't let sound start from a timer unless audio was unlocked by a gesture; on real iPhones, fresh `<audio>` elements started by timers stayed silent (#38, reverted in #41). It resumes the context (`resumeWebAudio()`, remembered in `resuming` so bells join it instead of asking again outside the tap - Safari may refuse that) and starts a silent buffer (older iOS).
 - `strikeBell()` uses Web Audio once the bell is decoded and `unlock()` has run; if the context isn't running (still resuming, or `interrupted` - iOS: a call, another app) it waits up to 1s (`AUDIO_RESUME_WAIT_MS`) for it, else rings on an `<audio>` element rather than late or never. Without Web Audio, before decoding or before the first tap, bells play on a fresh `Audio` element each (overlap allowed; `cloneNode()` didn't reliably keep volume), tracked in `ringingBells` so volume changes reach them.
-- Ambient: one looping element. `fade()` runs a fixed 20 steps over 500ms and always finishes, even where the browser ignores `volume` (iOS); the fade-in reads the target volume every step.
+- Ambient: one looping element. The first `unlock()` routes it through Web Audio (`routeAmbientThroughWebAudio()`: media element source → `ambientGain` → speakers, element volume left at 1), so the slider, fades and gentle ending work on iOS; `ambientOutput()`/`setAmbientOutput()` use the gain once routed, the element's volume before (or without Web Audio). Once routed, its sound needs the audio context running (`playAmbient()` asks it to resume). `fade()` runs a fixed 20 steps over 500ms and always finishes, even where the browser ignores `volume` (iOS); the fade-in reads the target volume every step.
 - `playAmbient(id)`: resumes if `id` is the current (paused) sound, otherwise switches. `currentAmbient` is set before `play()` and cleared as soon as a stop begins, so stopping while starting stays stopped.
 - `playBell(type, strikes)` rings now and schedules later strikes (`pendingStrikes`); `cancelPendingBells()` drops the ones not yet rung. Each strike reads the current bell volume.
 - `cleanup()` stops all playback (and pending strikes) but keeps loaded sounds.
@@ -119,7 +119,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 
 ### Known platform limits
 - iOS pauses JavaScript when the screen locks, so no timer runs until unlock; bells can't ring while locked.
-- iOS ignores `HTMLMediaElement.volume` (confirmed on an iPhone: gentle ending didn't fade). Bells now use a Web Audio gain; the ambient sound (slider, gentle ending) still needs moving to Web Audio.
+- iOS ignores `HTMLMediaElement.volume` (confirmed on an iPhone: gentle ending didn't fade). Bells and the ambient sound now go through Web Audio gains.
 - Locked screen: pre-scheduling bells in Web Audio is the remaining idea. Old attempt: branch `claude/locked-screen-audio-6Q8xo` (PR #7) - keep it.
 
 ### Security headers
