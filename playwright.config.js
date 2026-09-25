@@ -16,17 +16,7 @@ export default defineConfig({
 
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    {
-      name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-        // Playwright's clicks don't count as the user gesture Firefox's
-        // autoplay policy wants, so the audio context's resume() stayed
-        // pending (Firefox doesn't reject it) and Web Audio bells never rang.
-        // Real clicks do unlock audio, so allow autoplay in this profile.
-        launchOptions: { firefoxUserPrefs: { 'media.autoplay.default': 0, 'media.autoplay.block-webaudio': false } },
-      },
-    },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
     // Safari's engine
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
     { name: 'mobile-safari', use: { ...devices['iPhone 15'] } },
