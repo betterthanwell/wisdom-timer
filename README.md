@@ -17,6 +17,7 @@ Free for anyone, anywhere, any time, for ever.
 ### Timer
 - **Any duration** from 0:01 to 99:59 with minute/second inputs; **presets** for 30, 45, 60 and 90 minutes (default 45)
 - **Settling in** (optional) - a silent 5 s to 1 min countdown before the start bell of a new session, so you can put the phone down and get comfortable; Cancel, Space or Reset stop it
+- **Guided meditation** (optional) - pick one of four guided meditations by Thanissaro Bhikkhu (metta 4 min, breath 12, 30 or 40 min) and press Play: the start bell rings, the voice begins 15 seconds later, and the end bell rings the moment the recording ends. Downloaded when chosen, then kept on your device for offline use
 - **Open-ended sitting** (optional) - count up from 00:00 with no set end; interval bells keep ringing, and **Finish** rings the end bell and completes the session
 - **Pause and resume** - the start bell rings again when you resume
 - **Play after a finished session starts the next one** - no need to press Reset
@@ -145,10 +146,15 @@ public/audio/
 │   ├── bell-start.mp3       # Start: singing bowl (~43 s)
 │   ├── bell-interval.mp3    # Interval: woodblock (~0.3 s)
 │   └── bell-end.mp3         # End: gling (~35 s)
-└── ambient/
-    ├── rain.mp3             # ~36 min loop
-    ├── ocean.mp3            # ~27 min loop
-    └── forest.mp3           # ~10 min loop
+├── ambient/
+│   ├── rain.mp3             # ~36 min loop
+│   ├── ocean.mp3            # ~27 min loop
+│   └── forest.mp3           # ~10 min loop
+└── guided/                  # Guided meditations (Thanissaro Bhikkhu), played once
+    ├── metta.mp3            # 4:09
+    ├── breath-12.mp3        # 12:16
+    ├── breath-30.mp3        # 29:32
+    └── breath-40.mp3        # 40:00
 ```
 
 The three bell files are AAC audio in an MP4 container despite their `.mp3` names; browsers identify them by content, so they play normally.
@@ -186,7 +192,7 @@ The gradients are Tailwind classes in `src/App.jsx`: `from-[#FDE68A] to-[#F97316
 
 ## 🙏 Audio Attribution
 
-All audio files used in this project are licensed under **CC0 1.0 Universal (Public Domain)**. While attribution is not legally required, we credit the following creators:
+The bells and ambient sounds are licensed under **CC0 1.0 Universal (Public Domain)**. While attribution is not legally required, we credit the following creators. The guided meditations are not CC0 - see below.
 
 ### Bell Sounds
 - **Start Bell** - "Singing Bell Hit 2" by ryancacophony
@@ -214,13 +220,14 @@ All audio files used in this project are licensed under **CC0 1.0 Universal (Pub
   Source: [Internet Archive](https://archive.org/details/naturesounds-soundtheraphy/Relaxing+Nature+Sounds+-+Birdsong+Sound.mp3)
   License: CC0 1.0 Universal (Public Domain)
 
+### Guided Meditations
+- **Metta Meditation**, **Breath Meditation - Quick Version**, **Breath Meditation - Older Version** and **Breath Meditation with Instructions for Leaving Meditation** by Thanissaro Bhikkhu
+  Source: [dhammatalks.org](https://www.dhammatalks.org/Archive/guided_meditations/guided_meditations.html)
+  License: [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) / for free distribution only - never to be sold. Included unmodified (renamed files only).
+
 ## 🤝 Contributing
 
 Contributions welcome - bug reports, ideas, audio recommendations and pull requests. Please run `npm run lint`, `npm test` and, for UI changes, `npm run test:e2e` before opening a PR; CI runs them too.
-
-## 🌟 Future Enhancements
-
-- [ ] Guided meditation audio
 
 ---
 

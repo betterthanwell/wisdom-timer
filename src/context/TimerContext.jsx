@@ -26,6 +26,8 @@ const initialState = {
   mettaSeconds: 10, // how long each metta phrase shows
   dimScreen: true, // dim the page while sitting (quiet screen)
   dimLevel: 0.25, // how dark: 25% black
+  guidedMode: false, // a guided meditation sets the session (voice + bells only)
+  guidedTrack: 'metta', // which one (AUDIO_SOURCES.guided)
 };
 
 // Reducer: every setting change is { type: 'SET_SETTING', key, value }
@@ -74,6 +76,8 @@ export const TimerProvider = ({ children }) => {
     setMettaSeconds: (seconds) => setSetting('mettaSeconds', seconds),
     setDimScreen: (enabled) => setSetting('dimScreen', enabled),
     setDimLevel: (level) => setSetting('dimLevel', level),
+    setGuidedMode: (enabled) => setSetting('guidedMode', enabled),
+    setGuidedTrack: (track) => setSetting('guidedTrack', track),
   };
 
   return (
