@@ -155,8 +155,8 @@ The gradients are Tailwind classes in `src/App.jsx`: `from-[#FDE68A] to-[#F97316
 
 ### Adding an ambient sound
 1. Put the file in `public/audio/ambient/`.
-2. In `src/constants/audioSources.js`, add it to **both** `AUDIO_SOURCES.ambient` (what plays, and what saved settings are checked against) and `AMBIENT_SOUNDS` (the buttons).
-3. For an icon, add it to `iconMap` in `src/components/Settings/AmbientSoundSelector.jsx`; otherwise a speaker icon is used.
+2. In `src/constants/audioSources.js`, add it to `AUDIO_SOURCES.ambient` (the buttons follow its order).
+3. For an icon, give it an `icon` name and add that to `iconMap` in `src/components/Settings/AmbientSoundSelector.jsx`; otherwise a speaker icon is used.
 
 ## 🐛 Troubleshooting
 
