@@ -177,17 +177,17 @@ describe('App', () => {
   });
 
   describe('settings validation', () => {
-    it('shows that sounds are loading, with Start disabled until they are ready', async () => {
+    it('shows that the bells are loading, with Start disabled until they are ready', async () => {
       audioManager.init.mockImplementationOnce(() => new Promise(() => {}));
       render(<App />);
 
-      expect(screen.getByText('Loading sounds…')).toBeTruthy();
+      expect(screen.getByText('Loading bells…')).toBeTruthy();
       expect(button('Start').disabled).toBe(true);
     });
 
-    it('hides the loading notice once sounds are ready', async () => {
+    it('hides the loading notice once the bells are ready', async () => {
       await renderApp();
-      expect(screen.queryByText('Loading sounds…')).toBe(null);
+      expect(screen.queryByText('Loading bells…')).toBe(null);
     });
 
     it('ignores invalid saved settings', async () => {

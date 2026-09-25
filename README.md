@@ -161,7 +161,7 @@ The gradients are Tailwind classes in `src/App.jsx`: `from-[#FDE68A] to-[#F97316
 ## 🐛 Troubleshooting
 
 ### No sound
-- Sounds load when the page opens; Start stays disabled with "Loading sounds…" until they're ready.
+- The bells load when the page opens; Start stays disabled with "Loading bells…" until they're ready (at most about 2 s). Ambient sounds download when you choose them.
 - Browsers only allow audio after you interact with the page - pressing Start counts.
 - Check the browser console (F12) for loading errors, and that the files exist in `public/audio/`.
 
