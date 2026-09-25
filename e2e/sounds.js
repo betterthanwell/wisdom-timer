@@ -4,6 +4,9 @@
 // says how each played: on an <audio> element, or through Web Audio (with
 // the audio context's state at that moment).
 export const recordSounds = () => {
+  // Once per page, even if the init script runs twice (wrapping twice would
+  // count everything double)
+  if (window.__sounds) return;
   window.__sounds = [];
   window.__soundLog = [];
   window.__decodedSounds = 0;

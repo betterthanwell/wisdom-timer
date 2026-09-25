@@ -43,12 +43,14 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 │   │   ├── useSessionCounter.js # Sessions completed today (memory only, resets daily)
 │   │   ├── useWakeLock.js       # Keeps the screen on (Screen Wake Lock API) while active
 │   │   ├── useSettleCountdown.js # Settling-in countdown before a new session
+│   │   ├── useAmbientDownloads.js # Each ambient sound's download status (useSyncExternalStore)
 │   │   └── useLocalStorage.js   # Persisted state
 │   ├── context/
 │   │   ├── TimerContext.jsx     # TimerProvider: settings reducer + saving to localStorage
 │   │   └── useTimerContext.js   # Context object + useTimerContext hook (own file for fast refresh)
 │   ├── utils/
 │   │   ├── audioManager.js      # AudioManager class + singleton: bells, ambient, fades, volume
+│   │   ├── ambientDownloads.js  # Downloads ambient sounds when chosen, keeps them in Cache Storage
 │   │   ├── intervalBells.js     # countIntervalBellsDue() - pure bell scheduling
 │   │   ├── gentleEnding.js      # gentleEndingLevel() - ambient level over the last minute
 │   │   ├── metta.js             # METTA_PHRASES + mettaStep() - which phrase shows when
@@ -79,6 +81,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - **Interval woodblock** (the UI's name for interval bells): "Hit the woodblock every N minutes" (`intervalDuration`, 1-30 min, default 10) and "Starting after N minutes" (`intervalStart`, 1-60 min, default 5) - the first knock comes at the start time, then every interval (default: 5, 15, 25 …). Code and settings keys still say "interval bell".
 - **Volume sliders** are always usable.
 - **Ambient sound choice** is always usable: *None* stops the sound immediately; another sound switches right away while running, or starts on resume while paused.
+- **Ambient sounds download when chosen** (7-25 MB each; nothing up front, so Start is ready within moments), with a progress ring on the button, and are then kept on the device for good (offline too). A sound plays only once it's kept: until then the selector shows *None* - also for a saved choice at page load, which downloads once the bells have loaded and then shows as selected. The choice itself stays saved. A download finishing mid-session starts the sound if it's still the choice (chosen while running: primed in the tap for iOS, and the previous sound stops). A failed download (offline) shows a crossed-out cloud; choosing it again retries.
 - **Play after a completed session starts a new full session** (no Reset needed).
 - **"Session N"** shows the session you're on today: completed count + 1, or the just-completed number while "Complete" shows. Memory only; starts over on reload and on a new day. Resets don't count.
 - Start is disabled for a 0:00 duration.
@@ -122,11 +125,11 @@ The owner works out the desired behavior by live-testing, so these can change - 
 
 ### Offline (service worker)
 - `src/sw.js` is not bundled: the `serviceWorker()` plugin in `vite.config.js` emits it as `/sw.js` in production builds, prefixed with `VERSION` (a hash of the worker, the page, the built JS/CSS and `OFFLINE_PUBLIC_FILES`) and `PRECACHE` (`/`, the built files, favicon, manifest, icons, bells). The plugin runs `enforce: 'post'` so `index.html` is in the bundle, and fails the build if it isn't.
-- Install caches `PRECACHE` in `wisdom-timer-<VERSION>` and calls `skipWaiting()`; activate deletes older `wisdom-timer-*` caches. Fetch: page loads and `PRECACHE` paths are served from the cache, everything else (ambient sounds) from the network. Range requests for kept files (how `<audio>` elements load) get the requested part of the cached file as a 206 (`partOf()`; Safari won't play a full response to one), so bells that fall back to `<audio>` also ring offline.
+- Install caches `PRECACHE` in `wisdom-timer-<VERSION>` and calls `skipWaiting()`; activate deletes older `wisdom-timer-*` caches. Fetch: page loads and `PRECACHE` paths are served from the cache, kept ambient sounds from `AMBIENT_CACHE` (below), everything else from the network. Range requests for kept files (how `<audio>` elements load) get the requested part of the cached file as a 206 (`partOf()`; Safari won't play a full response to one), so bells that fall back to `<audio>` also ring offline.
 - So after a deploy, the first load still shows the kept version while the new worker installs and takes over; the next load is new. `vercel.json` serves `/sw.js` with `Cache-Control: no-cache` so updates are found.
 - Registered only in production builds (`import.meta.env.PROD`), after `audioManager.init()`, so its downloads don't compete with the bells on a first visit (by then they're revalidations).
 - Kill switch if a bad worker ever ships: deploy a `sw.js` that deletes the `wisdom-timer-*` caches and calls `self.registration.unregister()`.
-- Ambient sounds aren't kept offline yet (planned: downloaded on tap, then kept).
+- Ambient sounds: `ambientDownloads` stores them in the `AMBIENT_CACHE` cache (`constants/audioSources.js`, injected into the worker with `AMBIENT_PATHS`), which isn't versioned or deleted on deploys; the worker plays them from there (Range → 206), else the network. Rename the cache if an ambient file changes. Without Cache Storage every sound counts as kept and streams as before.
 
 ### Known platform limits
 - iOS pauses JavaScript when the screen locks, so no timer runs until unlock; bells can't ring while locked.

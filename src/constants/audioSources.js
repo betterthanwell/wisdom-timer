@@ -11,6 +11,11 @@ export const AUDIO_SOURCES = {
   },
 };
 
+// Cache Storage cache holding the ambient sounds downloaded so far (kept
+// across deploys; the service worker plays them from there when offline).
+// Change the name if an ambient file changes, so devices download it again.
+export const AMBIENT_CACHE = 'ambient-sounds-v1';
+
 export const AMBIENT_SOUNDS = [
   { id: 'rain', name: 'Rain', path: '/audio/ambient/rain.mp3', icon: 'Cloud' },
   { id: 'ocean', name: 'Ocean Waves', path: '/audio/ambient/ocean.mp3', icon: 'Waves' },
