@@ -4,10 +4,11 @@ export const AUDIO_SOURCES = {
     interval: '/audio/bells/bell-interval.mp3',
     end: '/audio/bells/bell-end.mp3',
   },
+  // In the order of their buttons; `icon`: a name in AmbientSoundSelector's iconMap
   ambient: {
-    rain: { path: '/audio/ambient/rain.mp3', name: 'Rain' },
-    ocean: { path: '/audio/ambient/ocean.mp3', name: 'Ocean Waves' },
-    forest: { path: '/audio/ambient/forest.mp3', name: 'Forest' },
+    rain: { path: '/audio/ambient/rain.mp3', name: 'Rain', icon: 'Cloud' },
+    ocean: { path: '/audio/ambient/ocean.mp3', name: 'Ocean Waves', icon: 'Waves' },
+    forest: { path: '/audio/ambient/forest.mp3', name: 'Forest', icon: 'Trees' },
   },
   // Guided meditations by Thanissaro Bhikkhu (dhammatalks.org), unmodified.
   // `seconds`: the recording's length as browsers decode it (measured in
@@ -39,8 +40,5 @@ export const DOWNLOADED_SOUNDS = { ...AUDIO_SOURCES.ambient, ...AUDIO_SOURCES.gu
 // Change the name if an ambient file changes, so devices download it again.
 export const AMBIENT_CACHE = 'ambient-sounds-v1';
 
-export const AMBIENT_SOUNDS = [
-  { id: 'rain', name: 'Rain', path: '/audio/ambient/rain.mp3', icon: 'Cloud' },
-  { id: 'ocean', name: 'Ocean Waves', path: '/audio/ambient/ocean.mp3', icon: 'Waves' },
-  { id: 'forest', name: 'Forest', path: '/audio/ambient/forest.mp3', icon: 'Trees' },
-];
+// The ambient sound buttons
+export const AMBIENT_SOUNDS = Object.entries(AUDIO_SOURCES.ambient).map(([id, sound]) => ({ id, ...sound }));

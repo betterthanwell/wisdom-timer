@@ -73,7 +73,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   │   ├── testingTools.js      # ?speed / ?debug, off on wisdomtimer.app
 │   │   └── timeFormatter.js     # formatTime (MM:SS) etc.
 │   └── constants/
-│       └── audioSources.js      # AUDIO_SOURCES (paths) + AMBIENT_SOUNDS (buttons)
+│       └── audioSources.js      # AUDIO_SOURCES (paths) + AMBIENT_SOUNDS (buttons, built from it)
 ├── e2e/                         # Playwright: session.spec.js, offline.spec.js, darkreader.spec.js, sounds.js (sound recorder)
 ├── public/audio/bells|ambient/  # Sound files (see docs/architecture.md, Audio)
 ├── public/manifest.webmanifest  # Web app manifest (install to home screen) + public/icons/
