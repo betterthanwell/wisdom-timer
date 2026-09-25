@@ -2,14 +2,39 @@ import { test, expect } from '@playwright/test';
 
 // Record which sounds the app plays (by file path), keeping them silent.
 // Real play() still runs so the app's audio logic behaves normally; if a
-// browser can't decode the file, the app just logs an error.
+// browser can't decode the file, the app just logs an error. Whether each
+// play() worked goes to __soundResults. Sounds played from memory (blob:
+// URLs) are recorded by the path they were downloaded from.
 const recordSounds = () => {
   window.__sounds = [];
+  window.__soundResults = [];
+  const downloadedFrom = new WeakMap(); // Blob -> path
+  const blobPaths = new Map(); // blob: URL -> path
+
+  const realBlob = Response.prototype.blob;
+  Response.prototype.blob = async function () {
+    const blob = await realBlob.call(this);
+    downloadedFrom.set(blob, new URL(this.url).pathname);
+    return blob;
+  };
+  const realCreateObjectURL = URL.createObjectURL;
+  URL.createObjectURL = (object) => {
+    const url = realCreateObjectURL.call(URL, object);
+    if (downloadedFrom.has(object)) blobPaths.set(url, downloadedFrom.get(object));
+    return url;
+  };
+
   const realPlay = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function (...args) {
-    window.__sounds.push(new URL(this.src, location.href).pathname);
+    const path = blobPaths.get(this.src) ?? new URL(this.src, location.href).pathname;
+    window.__sounds.push(path);
     this.muted = true;
-    return realPlay.apply(this, args);
+    const result = realPlay.apply(this, args);
+    result.then(
+      () => window.__soundResults.push({ path, ok: true }),
+      (error) => window.__soundResults.push({ path, ok: false, error: error.name })
+    );
+    return result;
   };
 };
 
@@ -60,6 +85,34 @@ test('a full 45-minute session: start bell, countdown, end bell', async ({ page 
   await expect(page.getByText('Complete')).toBeVisible();
   await expect(page.getByText('00:00')).toBeVisible();
   expect(await countSound(page, 'bell-end')).toBe(1);
+});
+
+test('bells still ring when the network drops after the page has loaded', async ({ page }) => {
+  // Let the sound downloads finish, then lose the network (airplane mode,
+  // wifi gone): every request for a sound file fails from here on. (Not
+  // context.setOffline(): in WebKit that also blocks media from memory -
+  // blob: and even data: URLs - most likely an emulation artifact.)
+  await page.waitForLoadState('networkidle');
+  await page.route('**/audio/**', (route) => route.abort('internetdisconnected'));
+
+  await page.getByRole('switch', { name: 'Interval woodblock' }).click();
+  await page.getByLabel('Interval in minutes').fill('1');
+  await page.getByLabel('Starting after, in minutes').fill('1');
+  await setDuration(page, 2);
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await passMinutes(page, 2);
+  await expect(page.getByText('Complete')).toBeVisible();
+
+  // Start, woodblock at 1 min, end - and every one of them actually played
+  // (results arrive in the order playback got going, not the order rung)
+  expect(await soundsPlayed(page)).toEqual([
+    '/audio/bells/bell-start.mp3',
+    '/audio/bells/bell-interval.mp3',
+    '/audio/bells/bell-end.mp3',
+  ]);
+  await expect.poll(() => page.evaluate(() => window.__soundResults.length)).toBe(3);
+  const failed = await page.evaluate(() => window.__soundResults.filter((result) => !result.ok));
+  expect(failed).toEqual([]);
 });
 
 test('the interval woodblock starts after its own time, repeats, and skips the end', async ({ page }) => {
