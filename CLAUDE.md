@@ -26,7 +26,7 @@ npm run dev          # Dev server (http://localhost:5173)
 npm run build        # Production build to dist/
 npm run preview      # Serve the production build
 npm run lint         # ESLint
-npm test             # Vitest, once (~9 s)
+npm test             # Vitest, once (~10 s)
 npm run test:watch   # Vitest, watch mode
 npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iPhone profile
 ```
@@ -49,7 +49,8 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings, GentleEndingSetting, OpenEndedSetting, MettaSetting, DimSetting
 │   │   │                        # (KeepAwakeSetting and BellPatternSettings aren't shown for now)
 │   │   └── UI/                  # GlassCard, Button (`round` for circles), Switch (on/off toggle with accessible name),
-│   │                            # SettingLabel (icon + setting name), ChoiceButton (option with aria-pressed)
+│   │                            # SettingLabel (icon + setting name), ChoiceButton (option with aria-pressed),
+│   │                            # DebugPanel (?debug card)
 │   ├── hooks/
 │   │   ├── useTimer.js          # Countdown from the clock, pause/resume, interval bells, wake-ups
 │   │   ├── useAudio.js          # React wrapper around the audioManager singleton
@@ -68,11 +69,13 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   │   ├── gentleEnding.js      # gentleEndingLevel() - ambient level over the last minute
 │   │   ├── metta.js             # METTA_PHRASES + mettaStep() - which phrase shows when
 │   │   ├── settings.js          # sanitizeSettings() - validates saved settings
+│   │   ├── debugLog.js          # debugLog.add() - audio events for the ?debug panel
+│   │   ├── testingTools.js      # ?speed / ?debug, off on wisdomtimer.app
 │   │   └── timeFormatter.js     # formatTime (MM:SS) etc.
 │   └── constants/
 │       └── audioSources.js      # AUDIO_SOURCES (paths) + AMBIENT_SOUNDS (buttons)
 ├── e2e/                         # Playwright: session.spec.js, offline.spec.js, darkreader.spec.js, sounds.js (sound recorder)
-├── public/audio/bells|ambient/  # Sound files (see Audio below)
+├── public/audio/bells|ambient/  # Sound files (see docs/architecture.md, Audio)
 ├── public/manifest.webmanifest  # Web app manifest (install to home screen) + public/icons/
 ├── .github/workflows/           # ci.yml (lint, test, build), e2e.yml (Playwright)
 ├── index.html                   # HTML shell + CSP meta tags + darkreader-lock
@@ -98,17 +101,11 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 
 ## Adding Features
 
-### New ambient sound
-1. Add the file to `public/audio/ambient/`.
-2. In `src/constants/audioSources.js`, add it to **both** `AUDIO_SOURCES.ambient` (what plays; also what saved settings are validated against) and `AMBIENT_SOUNDS` (the buttons).
-3. Add its icon to `iconMap` in `AmbientSoundSelector.jsx` (otherwise it falls back to a speaker icon).
+New ambient sounds, preset durations and background colors: see README, "Customization".
 
 ### New bell sound
 1. Add the file to `public/audio/bells/`.
 2. Update `AUDIO_SOURCES.bells`, and the `bells` object in `AudioManager` if it's a new bell type.
-
-### Background colors
-The gradients are Tailwind arbitrary-value classes in `App.jsx` (`from-[#FDE68A] to-[#F97316]`, and a brighter one after completion).
 
 ### New setting
 1. Add the default to `initialState` in `TimerContext.jsx`, and an action function that calls `setSetting('key', value)`.
@@ -150,6 +147,6 @@ Never on wisdomtimer.app (`utils/testingTools.js` checks the host):
 
 ## Common Issues
 
-- **No sound**: sounds load on page open (Start disabled until ready); browsers need a user interaction before audio - pressing Start counts. Check the console and `public/audio/`.
-- **Tailwind styles missing**: `npm run dev -- --force`; check `@tailwindcss/postcss` in `postcss.config.js`.
+See also README, "Troubleshooting" (no sound, missing styles).
+
 - **npm `EBADENGINE` warnings on Node 25**: Vitest 5 and jsdom 30 officially support Node 22, 24 and 26+; things work, but Node 24 LTS avoids the warnings.
