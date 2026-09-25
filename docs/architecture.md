@@ -53,6 +53,7 @@ Caching: `/assets/*` (content-hashed build files) is `immutable` for a year; `/s
 - Icon-only buttons and unlabeled inputs have `aria-label`s (Start/Pause/Reset, Minutes, Seconds, "Interval in minutes", "Starting after, in minutes"); the "Interval woodblock" toggle is `role="switch"` with `aria-checked`. Tests rely on these names.
 - Keyboard: Space start/pause, R reset. Ignored while typing in inputs, when Cmd/Ctrl/Alt is held (browser shortcuts like Cmd+R stay working), for key repeat (held down), and until the sounds have loaded (like the Start button). Space on a button reached with Tab presses that button; after a click or tap (`pointerdown`) it stays Start/Pause - `:focus-visible` can't tell them apart, since Chromium makes a clicked button focus-visible once a key is pressed. The hint under the settings (`data-testid="keyboard-hint"`) only shows where the main pointer is fine (`pointer-fine:` - mouse/trackpad), not on touch screens.
 - Volume sliders are named "Bells volume" / "Sound volume"; choice buttons (settle time, strikes, presets, ambient sound) expose selection with `aria-pressed`.
+- Screen readers hear the session status as it changes: the status line under the time (Ready, Settling in…, Meditating..., Paused, Complete) is `role="status"`; the time itself isn't a live region (it would be read out every second). The loud interrupted pause (`InterruptedPause`) replaces the timer, so it's `role="alert"` and announced when it appears.
 
 ## Dependencies
 

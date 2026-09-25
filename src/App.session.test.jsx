@@ -74,6 +74,22 @@ describe('App', () => {
     });
   });
 
+  describe('for screen readers', () => {
+    it('announces the status as it changes, but not the ticking time', async () => {
+      await renderApp();
+      const status = screen.getByRole('status');
+      expect(status.textContent).toBe('Ready');
+
+      click('Start');
+      expect(status.textContent).toBe('Meditating...');
+      click('Pause');
+      expect(status.textContent).toBe('Paused');
+      click('Reset');
+      completeOneSecondSession();
+      expect(screen.getByRole('status').textContent).toBe('Complete');
+    });
+  });
+
   describe('after a session completes', () => {
     it('rings the end bell and stops the ambient sound', async () => {
       await renderApp();
