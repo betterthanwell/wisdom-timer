@@ -332,8 +332,8 @@ function MeditationTimerApp() {
           : 'bg-gradient-to-br from-[#FDE68A] to-[#F97316]'
       }`}
     >
-      {/* Testing tools (previews and local only) */}
-      {testingTools.debug && <DebugPanel />}
+      {/* Testing tools (previews and local only); the ?debug log is a card
+          at the end of the page */}
       {testingTools.speed !== 1 && (
         <div className="fixed top-2 right-2 z-[60] rounded-md bg-black/80 px-2 py-1 font-mono text-xs text-white">
           speed ×{testingTools.speed}
@@ -527,6 +527,8 @@ function MeditationTimerApp() {
             <kbd className={KEY}>R</kbd> reset
           </p>
         )}
+
+        {testingTools.debug && <DebugPanel />}
       </div>
     </div>
   );
