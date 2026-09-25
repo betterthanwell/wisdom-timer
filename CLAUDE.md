@@ -137,7 +137,9 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - Locked screen: pre-scheduling bells in Web Audio is the remaining idea. Old attempt: branch `claude/locked-screen-audio-6Q8xo` (PR #7) - keep it.
 
 ### Security headers
-`vercel.json` sets the real HTTP headers: CSP (incl. `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, Permissions-Policy. `index.html` repeats CSP and others as `<meta>` tags, but browsers ignore `frame-ancestors` and `X-Frame-Options` in meta tags - clickjacking protection comes from `vercel.json`. Keep both CSPs in sync; the CSP allows only same-origin scripts and media.
+`vercel.json` sets the real HTTP headers: CSP (incl. `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, Permissions-Policy. `index.html` repeats CSP and others as `<meta>` tags, but browsers ignore `frame-ancestors` and `X-Frame-Options` in meta tags - clickjacking protection comes from `vercel.json`. Keep both CSPs in sync; the CSP allows only same-origin scripts and media. No `X-XSS-Protection` (deprecated; the CSP covers it) or `interest-cohort` (FLoC is gone; Chrome warns about it).
+
+Caching: `/assets/*` (content-hashed build files) is `immutable` for a year; `/sw.js` is `no-cache`; everything else uses Vercel's default (revalidate).
 
 ### Accessibility
 - `prefers-reduced-motion` disables animations.
