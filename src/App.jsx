@@ -425,20 +425,23 @@ function MeditationTimerApp() {
                   onToggle={handleOpenEndedChange}
                   disabled={durationLocked}
                 />
-                <div className="space-y-3">
-                  <SettingLabel icon={Clock}>Duration</SettingLabel>
-                  <PresetButtons
-                    presets={state.presetDurations}
-                    currentDuration={state.duration}
-                    onSelect={handleDurationChange}
-                    disabled={durationLocked || state.openEnded}
-                  />
-                  <DurationSelector
-                    duration={state.duration}
-                    onChange={handleDurationChange}
-                    disabled={durationLocked || state.openEnded}
-                  />
-                </div>
+                {/* Open-ended sitting has no duration to choose */}
+                {!state.openEnded && (
+                  <div className="space-y-3">
+                    <SettingLabel icon={Clock}>Duration</SettingLabel>
+                    <PresetButtons
+                      presets={state.presetDurations}
+                      currentDuration={state.duration}
+                      onSelect={handleDurationChange}
+                      disabled={durationLocked}
+                    />
+                    <DurationSelector
+                      duration={state.duration}
+                      onChange={handleDurationChange}
+                      disabled={durationLocked}
+                    />
+                  </div>
+                )}
                 <SettleSetting
                   seconds={state.settleSeconds}
                   onChange={actions.setSettleSeconds}

@@ -39,10 +39,10 @@ describe('App', () => {
       expect(screen.queryByRole('button', { name: 'Finish' })).toBe(null);
     });
 
-    it('greys out the duration settings and starts from 00:00', async () => {
+    it('hides the duration settings and starts from 00:00', async () => {
       await startOpenEnded();
-      expect(button('45m').disabled).toBe(true);
-      expect(screen.getByLabelText('Minutes').disabled).toBe(true);
+      expect(screen.queryByRole('button', { name: '45m' })).toBe(null);
+      expect(screen.queryByLabelText('Minutes')).toBe(null);
       expect(screen.getByText('00:00')).toBeTruthy();
       expect(screen.getByText('Counts up until you press Finish.')).toBeTruthy();
     });
