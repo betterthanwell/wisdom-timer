@@ -3,12 +3,13 @@ import { METTA_PHRASES, mettaStep } from '../../utils/metta';
 
 // The current metta phrase in large letters. Each new step remounts the
 // phrase (key), which restarts its fade in - hold - fade out; pausing
-// freezes the fade along with the timer.
+// freezes the fade along with the timer. Like the time, it stays bright
+// above the quiet screen's dim (z-20).
 export const MettaCard = ({ elapsed, seconds, isRunning }) => {
   const { step, phrase } = mettaStep(elapsed, seconds);
 
   return (
-    <GlassCard className="flex h-40 sm:h-36 items-center justify-center px-5">
+    <GlassCard className="relative z-20 flex h-40 sm:h-36 items-center justify-center px-5">
       <p
         key={step}
         data-testid="metta-phrase"

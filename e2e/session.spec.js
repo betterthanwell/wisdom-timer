@@ -148,16 +148,20 @@ test('quiet screen: settings hide while running and come back on request', async
   await expect(page.getByRole('button', { name: /settings$/ })).toBeHidden();
 });
 
-test('quiet screen: the dim covers the whole page, cards and text included - all but the glowing time', async ({ page }) => {
+test('quiet screen: the dim covers the whole page, cards and text included - all but the glowing time and the metta phrase', async ({ page }) => {
+  await page.getByRole('switch', { name: 'Metta mode' }).click();
   await page.getByRole('button', { name: 'Start', exact: true }).click();
 
   // Is the dim layer the topmost thing over the title and the controls? (It
-  // ignores clicks, so let it take part in hit-testing just for the check.)
+  // ignores clicks, so let it take part in hit-testing just for the check.
+  // Hit-testing only sees what's on screen, so bring each element into view.)
   const dimIsOnTop = (name) =>
     page.evaluate((selector) => {
       const dim = document.querySelector('[data-testid="quiet-dim"]');
       dim.style.pointerEvents = 'auto';
-      const box = document.querySelector(selector).getBoundingClientRect();
+      const element = document.querySelector(selector);
+      element.scrollIntoView({ block: 'center' });
+      const box = element.getBoundingClientRect();
       const top = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
       dim.style.pointerEvents = '';
       return top === dim;
@@ -165,8 +169,9 @@ test('quiet screen: the dim covers the whole page, cards and text included - all
 
   expect(await dimIsOnTop('h1')).toBe(true);
   expect(await dimIsOnTop('[aria-label="Pause"]')).toBe(true);
-  // The time and its glow (the nimitta) shine on above it
+  // The time and its glow (the nimitta), and the metta phrase, shine on above it
   expect(await dimIsOnTop('[data-testid="nimitta"]')).toBe(false);
+  expect(await dimIsOnTop('[data-testid="metta-phrase"]')).toBe(false);
 });
 
 test('settling in: a silent countdown, then the start bell', async ({ page }) => {
