@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { sessionClock } from '../utils/testingTools';
 import { countIntervalBellsDue } from '../utils/intervalBells';
 
 // Background wake-ups are scheduled this far ahead at most (open-ended
@@ -30,7 +31,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     setIsPaused(false);
     setIsComplete(false);
     setTimeRemaining(remaining);
-    const now = Date.now();
+    const now = sessionClock.now();
     startTimeRef.current = now;
     expectedEndTimeRef.current = now + (remaining * 1000);
     setEndsAt(expectedEndTimeRef.current);
@@ -54,7 +55,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
 
     // Take the time left from the clock, not the last displayed value, which
     // can be stale if ticks were throttled
-    setTimeRemaining(Math.max(0, Math.ceil((expectedEndTimeRef.current - Date.now()) / 1000)));
+    setTimeRemaining(Math.max(0, Math.ceil((expectedEndTimeRef.current - sessionClock.now()) / 1000)));
     setIsRunning(false);
     setIsPaused(true);
     setEndsAt(null);
@@ -70,7 +71,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     if (!isRunning && !isPaused) return;
 
     if (isRunning) {
-      setTimeRemaining(Math.max(0, Math.ceil((expectedEndTimeRef.current - Date.now()) / 1000)));
+      setTimeRemaining(Math.max(0, Math.ceil((expectedEndTimeRef.current - sessionClock.now()) / 1000)));
     }
     setIsRunning(false);
     setIsPaused(false);
@@ -130,7 +131,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
 
     function tick() {
       if (finished) return;
-      const remaining = Math.max(0, Math.ceil((expectedEndTimeRef.current - Date.now()) / 1000));
+      const remaining = Math.max(0, Math.ceil((expectedEndTimeRef.current - sessionClock.now()) / 1000));
 
       setTimeRemaining(remaining);
 
@@ -154,15 +155,15 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     // minute), but one-off timers much less. So also wake up exactly at the
     // end and at each interval bell, and whenever the tab becomes visible.
     const wakeAt = (time) => {
-      wakeUps.push(setTimeout(tick, Math.max(0, time - Date.now())));
+      wakeUps.push(setTimeout(tick, Math.max(0, sessionClock.realDelay(time - sessionClock.now()))));
     };
     const endTime = expectedEndTimeRef.current;
     wakeAt(endTime);
     if (intervalSeconds > 0) {
       for (let elapsed = firstBellSeconds; elapsed < duration; elapsed += intervalSeconds) {
         const bellTime = endTime - (duration - elapsed) * 1000;
-        if (bellTime - Date.now() > WAKE_UP_HORIZON_MS) break;
-        if (bellTime > Date.now()) wakeAt(bellTime);
+        if (bellTime - sessionClock.now() > WAKE_UP_HORIZON_MS) break;
+        if (bellTime > sessionClock.now()) wakeAt(bellTime);
       }
     }
     document.addEventListener('visibilitychange', tick);

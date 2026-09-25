@@ -187,6 +187,12 @@ The gradients are Tailwind arbitrary-value classes in `App.jsx` (`from-[#FDE68A]
 - After a merge: confirm every pushed commit is on `main` (`git merge-base --is-ancestor <sha> origin/main`) **before** deleting branches - GitHub has lagged registering pushes, and a PR was once merged without its last commit.
 - Keep this file and `README.md` in sync with behavior changes.
 
+## Testing on a phone (previews and local only)
+
+Never on wisdomtimer.app (`utils/testingTools.js` checks the host):
+- `?speed=60` - session time runs 60× faster (1-600; `sessionClock` in `useTimer` and `useSettleCountdown`); a "speed ×N" badge shows while it's on.
+- `?debug` - an on-screen panel (`UI/DebugPanel`) with the audio context state and the latest audio events (`debugLog.add()`: unlock, resume, how each bell played or why it fell back, ambient failures). Use both on a Vercel preview for iPhone checks, e.g. `…vercel.app/?speed=60&debug`.
+
 ## Common Issues
 
 - **No sound**: sounds load on page open (Start disabled until ready); browsers need a user interaction before audio - pressing Start counts. Check the console and `public/audio/`.
