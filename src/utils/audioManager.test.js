@@ -5,6 +5,9 @@ import { AudioManager } from './audioManager';
 class FakeAudio {
   static instances = [];
   static failNextPlay = false;
+  // ms before play() settles (0: at once); a slow start, like a sound
+  // loading or the audio context resuming
+  static startDelay = 0;
 
   constructor(src = '') {
     this.src = src;
@@ -29,11 +32,29 @@ class FakeAudio {
       return Promise.reject(new Error('NotAllowedError'));
     }
     this.paused = false;
-    return Promise.resolve();
+    if (!FakeAudio.startDelay) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.pendingPlay = null;
+        resolve();
+      }, FakeAudio.startDelay);
+      this.pendingPlay = { timer, reject };
+    });
   }
 
   pause() {
     this.paused = true;
+    // Paused while starting: like a browser, in one task the pause event
+    // fires and then play() fails
+    const pending = this.pendingPlay;
+    if (pending) {
+      this.pendingPlay = null;
+      clearTimeout(pending.timer);
+      setTimeout(() => {
+        this.emit('pause');
+        pending.reject(new DOMException('The play() request was interrupted by a call to pause()', 'AbortError'));
+      });
+    }
   }
 
   remove() {}
@@ -64,6 +85,7 @@ describe('AudioManager', () => {
   beforeEach(async () => {
     FakeAudio.instances = [];
     FakeAudio.failNextPlay = false;
+    FakeAudio.startDelay = 0;
     vi.stubGlobal('Audio', FakeAudio);
     manager = new AudioManager();
     await manager.init();
@@ -258,6 +280,50 @@ describe('AudioManager', () => {
       manager.playAmbient('metta', 50.25);
       expect(manager.ambientAudio.currentTime).toBe(50.25);
       expect(manager.ambientAudio.paused).toBe(false);
+    });
+
+    describe('a sound started while the last one is still fading out', () => {
+      beforeEach(async () => {
+        manager.playAmbient('rain');
+        await vi.advanceTimersByTimeAsync(600);
+      });
+
+      it('keeps playing when it starts quickly, and the stop still finishes', async () => {
+        let stopped = false;
+        manager.stopAmbient().then(() => { stopped = true; });
+        manager.playAmbient('ocean');
+        await vi.advanceTimersByTimeAsync(2000);
+
+        expect(stopped).toBe(true);
+        expect(manager.ambientAudio.src).toContain('ocean');
+        expect(manager.ambientAudio.paused).toBe(false);
+        expect(manager.currentAmbient).toBe('ocean');
+        expect(manager.ambientAudio.volume).toBeCloseTo(manager.ambientVolume);
+      });
+
+      it('keeps playing when it starts slowly (after the fade-out would end)', async () => {
+        FakeAudio.startDelay = 1000;
+        manager.stopAmbient();
+        manager.playAmbient('ocean');
+        await vi.advanceTimersByTimeAsync(2000);
+
+        expect(manager.ambientAudio.paused).toBe(false);
+        expect(manager.currentAmbient).toBe('ocean');
+        expect(manager.ambientAudio.volume).toBeCloseTo(manager.ambientVolume);
+      });
+
+      it('is not taken for an interruption when it is a guided voice', async () => {
+        const interruptions = [];
+        manager.setInterruptionListener((position) => interruptions.push(position));
+        FakeAudio.startDelay = 1000;
+        manager.stopAmbient();
+        manager.playAmbient('metta');
+        await vi.advanceTimersByTimeAsync(2000);
+
+        expect(interruptions).toEqual([]);
+        expect(manager.ambientAudio.paused).toBe(false);
+        expect(manager.currentAmbient).toBe('metta');
+      });
     });
 
     describe('a guided voice stopped by something else (a call, Siri, the lock screen)', () => {
