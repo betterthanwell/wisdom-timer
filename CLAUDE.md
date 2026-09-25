@@ -14,7 +14,7 @@ npm run dev          # Dev server (http://localhost:5173)
 npm run build        # Production build to dist/
 npm run preview      # Serve the production build
 npm run lint         # ESLint
-npm test             # Vitest, once (~7 s)
+npm test             # Vitest, once (~9 s)
 npm run test:watch   # Vitest, watch mode
 npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profile
 ```
@@ -24,7 +24,8 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 ```
 ├── src/
 │   ├── App.jsx                  # Session flow, keyboard shortcuts, layout (default export)
-│   ├── App.test.jsx             # Component tests: whole app, audioManager mocked
+│   ├── App.*.test.jsx           # Component tests: whole app, audioManager mocked (session, settle, modes, screen)
+│   ├── test/                    # appTestUtils.jsx (renderApp, click, …), audioManagerMock.js
 │   ├── main.jsx                 # Entry point (StrictMode)
 │   ├── index.css                # Global styles, .glass-card(-strong), keyframes, reduced motion
 │   ├── components/
@@ -168,8 +169,10 @@ The gradients are Tailwind arbitrary-value classes in `App.jsx` (`from-[#FDE68A]
 - Prefer pure functions (like `countIntervalBellsDue`, `sanitizeSettings`) and unit-test them.
 - Hook tests: `renderHook` + `vi.useFakeTimers()`. Advance time in 1-second `act()` steps so React re-renders between ticks (one big `advanceTimersByTime` batches the updates and skips effects). Background throttling is simulated by stubbing `setInterval` out entirely.
 - `audioManager.test.js` uses a `FakeAudio` class via `vi.stubGlobal('Audio', …)`, plus `FixedVolumeAudio` that ignores volume like iOS.
-- `App.test.jsx` renders `<App />` with `audioManager` replaced by `vi.mock` spies and finds controls by accessible name. Some tests run a real 1-second session.
-- Vitest globals are off, so Testing Library doesn't auto-clean: call `cleanup()` in `afterEach`.
+- `App.*.test.jsx` render `<App />` with `audioManager` replaced by spies (`vi.mock('./utils/audioManager', () => import('./test/audioManagerMock'))` in each file) and find controls by accessible name; shared helpers and `setUpAppTests()` are in `src/test/appTestUtils.jsx`. They're split into several files so Vitest runs them in parallel (one file took ~14 s of a 17 s run); keep each under ~5 s. Sessions run on the fake clock (`completeOneSecondSession()`), not in real time.
+- Pure logic tests start with `// @vitest-environment node` (no jsdom to set up).
+- Vitest globals are off, so Testing Library doesn't auto-clean: call `cleanup()` in `afterEach` (`setUpAppTests()` does).
+- While iterating, run just the affected test file (`npx vitest run src/App.settle.test.jsx`) and e2e spec in Chromium (`npx playwright test -g "…" --project=chromium`, ~5-12 s); the full matrix once at the end, and CI on the PR.
 - **Playwright** (`e2e/`): the production build in Chromium, WebKit and an iPhone 15 profile. First time: `npx playwright install chromium webkit`.
   - The page clock is faked **and frozen** (`clock.install()` then `clock.pauseAt()`); an unfrozen fake clock keeps flowing in real time, which made a test flaky on slow CI. Advance with `clock.fastForward` in 1-minute jumps; `runFor` fires every 100ms tick and is far too slow for long sessions.
   - Playwright matches accessible names as **substrings** by default (Testing Library matches whole names): use `exact: true` for short names like `Start` ("Start bell: 3 strikes" also contains it).
