@@ -19,6 +19,12 @@ describe('App', () => {
       vi.useRealTimers();
     });
 
+    it('offers off, 5 s, 10 s, 20 s and 1 min', async () => {
+      await renderApp();
+      const group = screen.getByRole('group', { name: 'Settle in before the start bell' });
+      expect([...group.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Off', '5s', '10s', '20s', '1m']);
+    });
+
     // The ambient sound starts after the countdown, from a timer: iOS only
     // allows that for an <audio> element already started in a tap
     it('primes the chosen ambient sound during the tap that begins settling in', async () => {

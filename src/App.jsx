@@ -28,6 +28,7 @@ import { BellPatternSettings } from './components/Settings/BellPatternSettings';
 import { GentleEndingSetting } from './components/Settings/GentleEndingSetting';
 import { OpenEndedSetting } from './components/Settings/OpenEndedSetting';
 import { MettaSetting } from './components/Settings/MettaSetting';
+import { DimSetting } from './components/Settings/DimSetting';
 import { MettaCard } from './components/Timer/MettaCard';
 
 // Open-ended sitting counts up, as a countdown from 24 hours
@@ -156,6 +157,19 @@ function MeditationTimerApp() {
 
   const inSession = timer.isRunning || isSettling;
   const quiet = inSession && !settingsRevealed;
+
+  // Changing the dimming level shows it for a moment, so it can be chosen
+  // without starting a session
+  const [previewingDim, setPreviewingDim] = useState(false);
+  const dimPreviewTimeoutRef = useRef(null);
+  useEffect(() => () => clearTimeout(dimPreviewTimeoutRef.current), []);
+  const handleDimLevelChange = (level) => {
+    actions.setDimLevel(level);
+    setPreviewingDim(true);
+    clearTimeout(dimPreviewTimeoutRef.current);
+    dimPreviewTimeoutRef.current = setTimeout(() => setPreviewingDim(false), 1500);
+  };
+  const dimmed = state.dimScreen && (quiet || previewingDim);
 
   // Gentle ending: fade the ambient sound out over the last minute, so the
   // end bell arrives into silence. Full level whenever it doesn't apply.
@@ -327,13 +341,14 @@ function MeditationTimerApp() {
         </div>
       )}
 
-      {/* Dims the page while sitting (clicks pass through) */}
+      {/* Dims the page while sitting, if chosen (clicks pass through) */}
       <div
         data-testid="quiet-dim"
         aria-hidden="true"
-        className={`fixed inset-0 z-10 bg-black/25 pointer-events-none transition-opacity duration-[2000ms] ${
-          quiet ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`fixed inset-0 z-10 pointer-events-none transition-opacity ${
+          previewingDim ? 'duration-300' : 'duration-[2000ms]'
+        } ${dimmed ? 'opacity-100' : 'opacity-0'}`}
+        style={{ backgroundColor: `rgba(0, 0, 0, ${state.dimLevel})` }}
       />
 
       <div className="w-full max-w-md sm:max-w-xl space-y-4">
@@ -485,15 +500,22 @@ function MeditationTimerApp() {
                 />
               </section>
 
-              {/* Keep screen awake (only where the browser supports it) */}
-              {isWakeLockSupported() && (
-                <section className={SECTION}>
+              {/* The screen while sitting: dimming, and keeping it awake
+                  (only where the browser supports it) */}
+              <section className={SECTION}>
+                <DimSetting
+                  enabled={state.dimScreen}
+                  level={state.dimLevel}
+                  onToggle={actions.setDimScreen}
+                  onLevelChange={handleDimLevelChange}
+                />
+                {isWakeLockSupported() && (
                   <KeepAwakeSetting
                     enabled={state.keepScreenAwake}
                     onToggle={actions.setKeepScreenAwake}
                   />
-                </section>
-              )}
+                )}
+              </section>
             </div>
 
             {!isInitialized && (

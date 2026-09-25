@@ -24,6 +24,8 @@ const initialState = {
   showBellStrikes: false, // bell strike choices tucked away (UI only)
   mettaMode: false, // show the metta phrases in turn during a session
   mettaSeconds: 10, // how long each metta phrase shows
+  dimScreen: true, // dim the page while sitting (quiet screen)
+  dimLevel: 0.25, // how dark: 25% black
 };
 
 // Reducer: every setting change is { type: 'SET_SETTING', key, value }
@@ -70,6 +72,8 @@ export const TimerProvider = ({ children }) => {
     setShowBellStrikes: (shown) => setSetting('showBellStrikes', shown),
     setMettaMode: (enabled) => setSetting('mettaMode', enabled),
     setMettaSeconds: (seconds) => setSetting('mettaSeconds', seconds),
+    setDimScreen: (enabled) => setSetting('dimScreen', enabled),
+    setDimLevel: (level) => setSetting('dimLevel', level),
   };
 
   return (

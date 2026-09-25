@@ -98,9 +98,23 @@ describe('sanitizeSettings', () => {
 
   it('only accepts the offered settling-in lengths', () => {
     const withDefault = { ...defaults, settleSeconds: 0 };
-    expect(sanitizeSettings({ settleSeconds: 30 }, withDefault).settleSeconds).toBe(30);
+    expect(sanitizeSettings({ settleSeconds: 5 }, withDefault).settleSeconds).toBe(5);
+    expect(sanitizeSettings({ settleSeconds: 60 }, withDefault).settleSeconds).toBe(60);
     expect(sanitizeSettings({ settleSeconds: 15 }, withDefault).settleSeconds).toBe(0);
+    // No longer offered
+    expect(sanitizeSettings({ settleSeconds: 30 }, withDefault).settleSeconds).toBe(0);
     expect(sanitizeSettings({ settleSeconds: '60' }, withDefault).settleSeconds).toBe(0);
+  });
+
+  it('only accepts a boolean for dimming, and a level of 10% to 90%', () => {
+    const withDefault = { ...defaults, dimScreen: true, dimLevel: 0.25 };
+    expect(sanitizeSettings({ dimScreen: false }, withDefault).dimScreen).toBe(false);
+    expect(sanitizeSettings({ dimScreen: 1 }, withDefault).dimScreen).toBe(true);
+    expect(sanitizeSettings({ dimLevel: 0.1 }, withDefault).dimLevel).toBe(0.1);
+    expect(sanitizeSettings({ dimLevel: 0.9 }, withDefault).dimLevel).toBe(0.9);
+    expect(sanitizeSettings({ dimLevel: 0.05 }, withDefault).dimLevel).toBe(0.25);
+    expect(sanitizeSettings({ dimLevel: 1 }, withDefault).dimLevel).toBe(0.25);
+    expect(sanitizeSettings({ dimLevel: '0.5' }, withDefault).dimLevel).toBe(0.25);
   });
 
   it('only accepts 1 to 3 bell strikes', () => {
@@ -120,7 +134,7 @@ describe('sanitizeSettings', () => {
 
 describe('pickSavedSettings', () => {
   it('saves every validated setting, and nothing else', () => {
-    const saved = pickSavedSettings({ ...defaults, keepScreenAwake: false, settleSeconds: 20, startStrikes: 3, intervalStrikes: 1, endStrikes: 2, gentleEnding: true, openEnded: true, showBellStrikes: true, mettaMode: true, mettaSeconds: 20, somethingElse: 1 });
+    const saved = pickSavedSettings({ ...defaults, keepScreenAwake: false, settleSeconds: 20, startStrikes: 3, intervalStrikes: 1, endStrikes: 2, gentleEnding: true, openEnded: true, showBellStrikes: true, mettaMode: true, mettaSeconds: 20, dimScreen: false, dimLevel: 0.5, somethingElse: 1 });
     expect(saved).toEqual({
       duration: 2700,
       intervalBellsEnabled: false,
@@ -139,6 +153,8 @@ describe('pickSavedSettings', () => {
       showBellStrikes: true,
       mettaMode: true,
       mettaSeconds: 20,
+      dimScreen: false,
+      dimLevel: 0.5,
     });
   });
 });
