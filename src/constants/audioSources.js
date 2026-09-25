@@ -24,9 +24,9 @@ export const AUDIO_SOURCES = {
 // Guided mode: the start bell rings, the voice begins this long after it
 export const GUIDED_LEAD_IN_SECONDS = 15;
 
-// Where the guided meditations come from (shown under the choices)
+// Where the guided meditations come from (shown under the choices, one line each)
 export const GUIDED_SOURCE = {
-  credit: 'Guided by Thanissaro Bhikkhu · dhammatalks.org · CC BY-NC 4.0',
+  credit: ['Guided by Thanissaro Bhikkhu', 'dhammatalks.org · CC BY-NC 4.0'],
   url: 'https://www.dhammatalks.org/Archive/guided_meditations/guided_meditations.html',
 };
 
