@@ -204,3 +204,18 @@ test('the keyboard hint shows with a mouse or trackpad, not on a touch screen', 
     await expect(hint).toHaveText(/Space\s*start \/ pause\s*·\s*R\s*reset/);
   }
 });
+
+test('metta mode: the phrases take turns above the timer while sitting', async ({ page }) => {
+  await page.getByRole('switch', { name: 'Metta mode' }).click();
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+
+  const phrase = page.getByTestId('metta-phrase');
+  await expect(phrase).toHaveText('May I be happy.');
+  await page.clock.fastForward(10_000);
+  await expect(phrase).toHaveText('May my loved ones be happy.');
+  await page.clock.fastForward(30_000);
+  await expect(phrase).toHaveText('May I be happy.');
+
+  await page.getByRole('button', { name: 'Reset' }).click();
+  await expect(phrase).toBeHidden();
+});

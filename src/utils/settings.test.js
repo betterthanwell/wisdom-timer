@@ -64,6 +64,15 @@ describe('sanitizeSettings', () => {
     expect(sanitizeSettings({ intervalStart: 90 }, defaults).intervalStart).toBe(300);
   });
 
+  it('only accepts a boolean for metta mode and a listed metta pace', () => {
+    expect(sanitizeSettings({ mettaMode: true }, defaults).mettaMode).toBe(true);
+    expect(sanitizeSettings({ mettaMode: 'yes' }, defaults).mettaMode).toBe(undefined);
+    for (const seconds of [5, 10, 20, 30]) {
+      expect(sanitizeSettings({ mettaSeconds: seconds }, defaults).mettaSeconds).toBe(seconds);
+    }
+    expect(sanitizeSettings({ mettaSeconds: 7 }, defaults).mettaSeconds).toBe(undefined);
+  });
+
   it('only accepts a boolean for interval bells', () => {
     expect(sanitizeSettings({ intervalBellsEnabled: 'yes' }, defaults).intervalBellsEnabled).toBe(false);
   });
@@ -110,7 +119,7 @@ describe('sanitizeSettings', () => {
 
 describe('pickSavedSettings', () => {
   it('saves every validated setting, and nothing else', () => {
-    const saved = pickSavedSettings({ ...defaults, keepScreenAwake: false, settleSeconds: 20, startStrikes: 3, intervalStrikes: 1, endStrikes: 2, gentleEnding: true, openEnded: true, showBellStrikes: true, somethingElse: 1 });
+    const saved = pickSavedSettings({ ...defaults, keepScreenAwake: false, settleSeconds: 20, startStrikes: 3, intervalStrikes: 1, endStrikes: 2, gentleEnding: true, openEnded: true, showBellStrikes: true, mettaMode: true, mettaSeconds: 20, somethingElse: 1 });
     expect(saved).toEqual({
       duration: 2700,
       intervalBellsEnabled: false,
@@ -127,6 +136,8 @@ describe('pickSavedSettings', () => {
       gentleEnding: true,
       openEnded: true,
       showBellStrikes: true,
+      mettaMode: true,
+      mettaSeconds: 20,
     });
   });
 });

@@ -22,6 +22,8 @@ import { SettleSetting } from './components/Settings/SettleSetting';
 import { BellPatternSettings } from './components/Settings/BellPatternSettings';
 import { GentleEndingSetting } from './components/Settings/GentleEndingSetting';
 import { OpenEndedSetting } from './components/Settings/OpenEndedSetting';
+import { MettaSetting } from './components/Settings/MettaSetting';
+import { MettaCard } from './components/Timer/MettaCard';
 
 // Open-ended sitting counts up, as a countdown from 24 hours
 const OPEN_ENDED_SECONDS = 24 * 60 * 60;
@@ -244,6 +246,15 @@ function MeditationTimerApp() {
           {showBrightBg ? 'Wisdom Time!' : 'Wisdom Timer'}
         </h1>
 
+        {/* Metta phrases in their own card, while a session is under way */}
+        {state.mettaMode && (timer.isRunning || timer.isPaused) && (
+          <MettaCard
+            elapsed={timer.duration - timer.timeRemaining}
+            seconds={state.mettaSeconds}
+            isRunning={timer.isRunning}
+          />
+        )}
+
         {/* Main Timer Card */}
         <GlassCard strong className="px-5 py-6 sm:p-10 space-y-3">
           <TimerDisplay
@@ -285,7 +296,7 @@ function MeditationTimerApp() {
           </div>
         )}
 
-        {/* Settings Card, in groups: duration, bells, sound, screen */}
+        {/* Settings Card, in groups: duration, bells, metta, sound, screen */}
         {!quiet && (
           <GlassCard className="px-5 py-5 sm:p-6">
             <div className="flex items-center gap-2 text-white">
@@ -338,6 +349,15 @@ function MeditationTimerApp() {
                   onChange={actions.setBellStrikes}
                   shown={state.showBellStrikes}
                   onShownChange={actions.setShowBellStrikes}
+                />
+              </section>
+
+              <section className={SECTION}>
+                <MettaSetting
+                  enabled={state.mettaMode}
+                  seconds={state.mettaSeconds}
+                  onToggle={actions.setMettaMode}
+                  onSecondsChange={actions.setMettaSeconds}
                 />
               </section>
 
