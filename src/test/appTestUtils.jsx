@@ -18,6 +18,10 @@ export const renderApp = async () => {
   render(<App />);
   // Controls unlock once audio has initialised
   await waitFor(() => expect(button('Start').disabled).toBe(false));
+  // ...and let the effects of that render run too: the keyboard shortcuts'
+  // listener only sees the loaded sounds once its effect has re-run (under
+  // load, a Space pressed right away was sometimes ignored)
+  await act(async () => {});
 };
 
 // Runs a 1-second session to completion on a fake clock
