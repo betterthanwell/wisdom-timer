@@ -126,6 +126,25 @@ test('quiet screen: settings hide while running and come back on request', async
   await expect(page.getByRole('button', { name: /settings$/ })).toBeHidden();
 });
 
+test('quiet screen: the dim covers the whole page, cards and text included', async ({ page }) => {
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+
+  // Is the dim layer the topmost thing over the title and the timer? (It
+  // ignores clicks, so let it take part in hit-testing just for the check.)
+  const dimIsOnTop = (name) =>
+    page.evaluate((selector) => {
+      const dim = document.querySelector('[data-testid="quiet-dim"]');
+      dim.style.pointerEvents = 'auto';
+      const box = document.querySelector(selector).getBoundingClientRect();
+      const top = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+      dim.style.pointerEvents = '';
+      return top === dim;
+    }, name);
+
+  expect(await dimIsOnTop('h1')).toBe(true);
+  expect(await dimIsOnTop('[aria-label="Pause"]')).toBe(true);
+});
+
 test('settling in: a silent countdown, then the start bell', async ({ page }) => {
   await page.getByRole('button', { name: 'Settle in for 20s' }).click();
   await page.getByRole('button', { name: 'Start', exact: true }).click();
