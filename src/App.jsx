@@ -410,7 +410,7 @@ function MeditationTimerApp() {
           </div>
         )}
 
-        {/* Settings Card, in groups: duration, bells, metta, sound, screen */}
+        {/* Settings Card, in groups: duration, bells, metta, ambient sound, screen, volume */}
         {!quiet && (
           <GlassCard className="px-5 py-5 sm:p-6">
             <div className="flex items-center gap-2 text-white">
@@ -479,6 +479,21 @@ function MeditationTimerApp() {
                   enabled={state.gentleEnding}
                   onToggle={actions.setGentleEnding}
                 />
+              </section>
+
+              {/* The screen while sitting (it's always kept awake, where the
+                  browser supports that) */}
+              <section className={SECTION}>
+                <DimSetting
+                  enabled={state.dimScreen}
+                  level={state.dimLevel}
+                  onToggle={actions.setDimScreen}
+                  onLevelChange={handleDimLevelChange}
+                />
+              </section>
+
+              {/* Volume, last */}
+              <section className={SECTION}>
                 <VolumeControls
                   bellVolume={state.bellVolume}
                   ambientVolume={state.ambientVolume}
@@ -490,17 +505,6 @@ function MeditationTimerApp() {
                     actions.setAmbientVolume(vol);
                     setAmbientVolume(vol);
                   }}
-                />
-              </section>
-
-              {/* The screen while sitting (it's always kept awake, where the
-                  browser supports that) */}
-              <section className={SECTION}>
-                <DimSetting
-                  enabled={state.dimScreen}
-                  level={state.dimLevel}
-                  onToggle={actions.setDimScreen}
-                  onLevelChange={handleDimLevelChange}
                 />
               </section>
             </div>

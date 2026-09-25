@@ -28,7 +28,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 - **Ambient sounds** - rain, ocean waves or forest, looping, with a 0.5 s fade in and out
 - **Bell patterns** (not offered for now) - each bell rings once; the choice of 1, 2 or 3 strikes per bell (bowls 5 s apart, woodblock knocks 2 s apart) is hidden for now, and a choice saved earlier still applies
 - **Metta mode** (optional) - the four loving-kindness phrases take turns in large letters above the timer while you sit: *May I be happy. May my loved ones be happy. May those I find difficult be happy. May all beings everywhere be happy.* Each shows for 5, 10, 20 or 30 seconds (default 10), then the cycle starts again
-- **Gentle ending** (on by default) - the ambient sound fades out over the last minute, so the end bell arrives into silence
+- **Gentle ending** (on by default) - the ambient sound fades out over the last minute, so the end bell arrives into silence; the bells themselves never fade
 - **Separate volume sliders** for bells and ambient sound; changes apply immediately, including to a bell that is still ringing
 
 ### While a session is in progress
