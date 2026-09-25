@@ -19,7 +19,7 @@ const initialState = {
   startStrikes: 1,
   intervalStrikes: 1,
   endStrikes: 1,
-  gentleEnding: false, // fade ambient sound out over the last minute
+  gentleEnding: true, // fade ambient sound out over the last minute
   openEnded: false, // count up until Finish instead of counting down
   showBellStrikes: false, // bell strike choices tucked away (UI only)
   mettaMode: false, // show the metta phrases in turn during a session
