@@ -147,6 +147,92 @@ describe('App', () => {
       expect(saved.guidedTrack).toBe('breath-30');
     });
 
+    describe('interrupted from outside (iOS: a call, Siri, the lock screen)', () => {
+      const interrupt = (position) => act(() => audioManager.interruptionListener(position));
+      const carryOn = () => screen.queryByRole('button', { name: 'Carry on' });
+      afterEach(() => {
+        audioManager.cutShortVoicePosition.mockImplementation(() => null);
+      });
+
+      it('pauses where the voice stopped and says so loudly, with a big button to carry on', async () => {
+        await startGuided();
+        click('Start');
+        passMs(40_000);
+        // The page may only hear of it later: the voice's position counts
+        interrupt(20);
+
+        expect(screen.getByText('PAUSED')).toBeTruthy();
+        expect(screen.getByText(/interrupted/i)).toBeTruthy();
+        expect(carryOn()).toBeTruthy();
+        expect(audioManager.pauseAmbient).toHaveBeenCalled();
+        // 263.576 - (15 + 20) s left, rounded up
+        passMs(60_000);
+        expect(screen.getByText('03:49')).toBeTruthy();
+
+        fireEvent.click(carryOn());
+        expect(audioManager.unlock).toHaveBeenCalled();
+        expect(audioManager.playAmbient).toHaveBeenLastCalledWith('metta', 20);
+        expect(startBellCount()).toBe(1);
+        expect(screen.queryByText('PAUSED')).toBe(null);
+      });
+
+      it('holds the rest of the lead-in when it comes before the voice', async () => {
+        await startGuided();
+        click('Start');
+        passMs(5_000);
+        interrupt(null);
+        expect(screen.getByText('PAUSED')).toBeTruthy();
+        passMs(30_000);
+        expect(audioManager.playAmbient).not.toHaveBeenCalled();
+
+        fireEvent.click(carryOn());
+        passMs(10_000);
+        expect(audioManager.playAmbient).toHaveBeenCalledWith('metta', 0);
+      });
+
+      it('rescues the session when the page only wakes up past the end, the voice cut short', async () => {
+        await startGuided();
+        click('Start');
+        passMs(20_000);
+        audioManager.cutShortVoicePosition.mockImplementation(() => 100);
+        passMs(250_000);
+
+        expect(screen.queryByText('Complete')).toBe(null);
+        expect(endBellCount()).toBe(0);
+        expect(screen.getByText('PAUSED')).toBeTruthy();
+        // 263.576 - (15 + 100) s left
+        expect(screen.getByText('02:29')).toBeTruthy();
+      });
+
+      it('goes back to Ready on Reset', async () => {
+        await startGuided();
+        click('Start');
+        passMs(30_000);
+        interrupt(10);
+        click('Reset');
+        expect(screen.queryByText('PAUSED')).toBe(null);
+        expect(screen.getByText('Ready')).toBeTruthy();
+      });
+
+      it('is not how a pause of your own looks', async () => {
+        await startGuided();
+        click('Start');
+        passMs(30_000);
+        click('Pause');
+        expect(screen.queryByText('PAUSED')).toBe(null);
+        expect(carryOn()).toBe(null);
+      });
+
+      it('does not pause a session that is not guided: the sit runs on', async () => {
+        await renderApp();
+        click('Start');
+        passMs(30_000);
+        interrupt(null);
+        expect(screen.queryByText('PAUSED')).toBe(null);
+        expect(screen.getByText('Meditating...')).toBeTruthy();
+      });
+    });
+
     it('cannot be switched or changed during a session', async () => {
       await startGuided();
       click('Start');

@@ -100,6 +100,23 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     }
   }, [isRunning, isPaused, onComplete, stopClock]);
 
+  // Pause at a given point of the session (seconds sat), whatever the clock
+  // says - also taking back a completion (call it from onComplete). Rescues
+  // a guided session after an interruption: it resumes where the voice
+  // stopped, even if the page only woke up later, or past the end.
+  const pauseAt = useCallback((elapsed) => {
+    remainingMsRef.current = Math.max(1, toMs(duration) - toMs(elapsed));
+    setTimeRemaining(shownSeconds(remainingMsRef.current));
+    setIsRunning(false);
+    setIsPaused(true);
+    setIsComplete(false);
+    setEndsAt(null);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, [duration]);
+
   // Reset the timer
   const reset = useCallback(() => {
     setIsRunning(false);
@@ -221,6 +238,7 @@ export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) =
     endsAt,
     start,
     pause,
+    pauseAt,
     finish,
     reset,
     updateDuration,

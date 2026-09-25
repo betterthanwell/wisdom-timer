@@ -256,6 +256,55 @@ describe('AudioManager', () => {
       expect(manager.ambientAudio.paused).toBe(false);
     });
 
+    describe('a guided voice stopped by something else (a call, Siri, the lock screen)', () => {
+      let interruptions;
+      beforeEach(async () => {
+        interruptions = [];
+        manager.setInterruptionListener((position) => interruptions.push(position));
+        manager.playAmbient('metta', 10);
+        await vi.advanceTimersByTimeAsync(600);
+        manager.ambientAudio.currentTime = 42.25;
+      });
+      // What the browser does when the system pauses it
+      const pausedFromOutside = () => {
+        manager.ambientAudio.paused = true;
+        manager.ambientAudio.emit('pause');
+      };
+
+      it('reports where the voice stopped', () => {
+        pausedFromOutside();
+        expect(interruptions).toEqual([42.25]);
+        expect(manager.cutShortVoicePosition()).toBe(42.25);
+      });
+
+      it('is not reported when the app paused it', () => {
+        manager.pauseAmbient();
+        manager.ambientAudio.emit('pause');
+        expect(interruptions).toEqual([]);
+        expect(manager.cutShortVoicePosition()).toBe(null);
+      });
+
+      it('is not reported when the recording ended', () => {
+        manager.ambientAudio.ended = true;
+        pausedFromOutside();
+        expect(interruptions).toEqual([]);
+        expect(manager.cutShortVoicePosition()).toBe(null);
+      });
+
+      it('is no longer cut short once it plays again', () => {
+        pausedFromOutside();
+        manager.playAmbient('metta', 42.25);
+        expect(manager.cutShortVoicePosition()).toBe(null);
+      });
+
+      it('is not about ambient sounds, which just loop on', async () => {
+        manager.playAmbient('rain');
+        await vi.advanceTimersByTimeAsync(1200);
+        pausedFromOutside();
+        expect(interruptions).toEqual([]);
+      });
+    });
+
     it('does not prime over a sound that is already current (e.g. paused mid-session)', async () => {
       manager.playAmbient('ocean');
       await vi.advanceTimersByTimeAsync(600);
@@ -565,6 +614,16 @@ class FakeAudioContext {
     return gain;
   }
 
+  addEventListener(type, fn) {
+    if (type === 'statechange') (this.stateListeners ??= []).push(fn);
+  }
+
+  // Test helper: the system takes the audio away (iOS: a call)
+  interrupt() {
+    this.state = 'interrupted';
+    (this.stateListeners ?? []).forEach((fn) => fn());
+  }
+
   createMediaElementSource(element) {
     const source = new FakeAudioNode();
     source.mediaElement = element;
@@ -749,6 +808,30 @@ describe('AudioManager with Web Audio', () => {
   describe('ambient sound', () => {
     beforeEach(() => {
       vi.useFakeTimers();
+    });
+
+    it('reports an interruption of the audio during a guided voice, pausing it where it was', async () => {
+      const interruptions = [];
+      await initAndUnlock();
+      await vi.advanceTimersByTimeAsync(0);
+      manager.setInterruptionListener((position) => interruptions.push(position));
+      manager.playAmbient('metta', 30);
+      await vi.advanceTimersByTimeAsync(600);
+
+      context().interrupt();
+      expect(interruptions).toEqual([30]);
+      expect(manager.ambientAudio.paused).toBe(true);
+      expect(manager.cutShortVoicePosition()).toBe(30);
+    });
+
+    it('reports an interruption before the voice has started (the lead-in), without a position', async () => {
+      const interruptions = [];
+      await initAndUnlock();
+      await vi.advanceTimersByTimeAsync(0);
+      manager.setInterruptionListener((position) => interruptions.push(position));
+
+      context().interrupt();
+      expect(interruptions).toEqual([null]);
     });
 
     it('is routed through its own gain once audio is unlocked (iOS ignores <audio> volume)', async () => {

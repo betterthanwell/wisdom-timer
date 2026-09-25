@@ -74,6 +74,15 @@ export const useAudio = () => {
     audioManager.cancelPendingBells();
   }, []);
 
+  // Told when something outside the app (iOS: a call) stops a guided voice
+  // or takes the audio away: (position in the recording, or null) => void
+  const setInterruptionListener = useCallback((listener) => {
+    audioManager.setInterruptionListener(listener);
+  }, []);
+
+  // Where a guided voice was cut short (seconds), or null
+  const cutShortVoicePosition = useCallback(() => audioManager.cutShortVoicePosition(), []);
+
   // Set bell volume (0.0 to 1.0)
   const setBellVolume = useCallback((volume) => {
     audioManager.setBellVolume(volume);
@@ -104,5 +113,7 @@ export const useAudio = () => {
     setBellVolume,
     setAmbientVolume,
     setAmbientLevel,
+    setInterruptionListener,
+    cutShortVoicePosition,
   };
 };

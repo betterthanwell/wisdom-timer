@@ -317,10 +317,42 @@ test('guided meditation: start bell, the voice after the lead-in, end bell exact
   expect(await page.evaluate(() => [...document.querySelectorAll('audio')].length)).toBe(0); // (not in the DOM)
 
   await passSeconds(page, 248);
+  // Headless WebKit can interrupt audio by itself; a guided session then
+  // rightly pauses (see the next test) instead of reaching its end
+  const states = await page.evaluate(() => window.__audioStates);
+  test.skip(states.includes('interrupted'), `WebKit interrupted audio during the test (${states.join(' → ')})`);
   await page.clock.fastForward(575);
   await expect(page.getByText('Complete')).not.toBeVisible();
   expect(await countSound(page, 'bell-end')).toBe(0);
   await page.clock.fastForward(1);
   await expect(page.getByText('Complete')).toBeVisible();
   await expect.poll(() => countSound(page, 'bell-end')).toBe(1);
+});
+
+test('guided meditation: a voice paused from outside (iOS: a call) pauses the session, and Carry on resumes it', async ({ page }) => {
+  await page.getByRole('switch', { name: 'Guided meditation' }).click();
+  const start = page.getByRole('button', { name: 'Start', exact: true });
+  await expect(start).toBeEnabled({ timeout: 30_000 });
+  await start.click();
+  await expect.poll(() => countSound(page, 'bell-start')).toBe(1);
+  const primed = await countSound(page, 'guided/metta');
+  await page.clock.fastForward(15_000);
+  await expect.poll(() => countSound(page, 'guided/metta')).toBe(primed + 1);
+
+  // Something outside the app pauses the voice
+  await page.evaluate(() => window.__lastMediaElement.pause());
+  await expect(page.getByText('PAUSED', { exact: true })).toBeVisible();
+  const carryOn = page.getByRole('button', { name: 'Carry on' });
+  await expect(carryOn).toBeVisible();
+
+  await carryOn.click();
+  await expect(page.getByText('PAUSED', { exact: true })).not.toBeVisible();
+  await expect(page.getByText('Meditating...')).toBeVisible();
+  expect(await countSound(page, 'bell-start')).toBe(1);
+  // Headless WebKit can interrupt audio by itself (see the Web Audio test
+  // above); the app then rightly pauses again
+  const states = await page.evaluate(() => window.__audioStates);
+  test.skip(states.includes('interrupted'), `WebKit interrupted audio during the test (${states.join(' → ')})`);
+  // The voice plays on
+  await expect.poll(() => page.evaluate(() => window.__lastMediaElement.paused)).toBe(false);
 });

@@ -15,4 +15,10 @@ export const audioManager = {
   setBellVolume: vi.fn(),
   setAmbientVolume: vi.fn(),
   setAmbientLevel: vi.fn(),
+  // Keeps the listener, so tests can play an interruption
+  setInterruptionListener: vi.fn((listener) => {
+    audioManager.interruptionListener = listener;
+  }),
+  interruptionListener: null,
+  cutShortVoicePosition: vi.fn(() => null),
 };

@@ -47,6 +47,13 @@ export class AudioManager {
     this.ambientVolume = 0.5;
     // Extra 0-1 multiplier on the ambient volume (gentle ending)
     this.ambientLevel = 1;
+    // Told when something outside the app (iOS: a call, Siri, the lock
+    // screen's controls) stops a guided voice or takes the audio away
+    this.interruptionListener = null;
+    // The ambient element was paused by the app itself (pauseAmbient)
+    this.ambientPausedByApp = false;
+    // This stop of the voice has been reported already
+    this.interruptionReported = false;
     this.isInitialized = false;
     this.initPromise = null;
     this.fadeInterval = null;
@@ -77,6 +84,10 @@ export class AudioManager {
       this.ambientAudio.loop = true;
       this.ambientAudio.volume = 0; // Start at 0 for fade in
       this.ambientAudio.preload = 'auto';
+      this.ambientAudio.addEventListener('pause', () => {
+        const position = this.cutShortVoicePosition();
+        if (position !== null) this.reportInterruption(position, 'voice paused from outside');
+      });
 
       this.isInitialized = true;
       return true;
@@ -96,7 +107,10 @@ export class AudioManager {
       this.bellGain = this.context.createGain();
       this.bellGain.gain.value = this.bellVolume;
       this.bellGain.connect(this.context.destination);
-      this.context.addEventListener?.('statechange', () => debugLog.add(`audio → ${this.context.state}`));
+      this.context.addEventListener?.('statechange', () => {
+        debugLog.add(`audio → ${this.context.state}`);
+        if (this.context.state === 'interrupted') this.audioInterrupted();
+      });
       debugLog.add(`audio created (${this.context.state})`);
     } catch (error) {
       debugLog.add(`no Web Audio: ${error.name}`);
@@ -314,6 +328,51 @@ export class AudioManager {
     }
   }
 
+  setInterruptionListener(listener) {
+    this.interruptionListener = listener;
+  }
+
+  isGuidedVoice(soundId) {
+    return soundId !== null && Object.hasOwn(AUDIO_SOURCES.guided, soundId);
+  }
+
+  // Where a guided voice was stopped by something outside the app (seconds
+  // into the recording), or null if it wasn't: it's paused, but not by the
+  // app, and not because the recording ended
+  cutShortVoicePosition() {
+    const audio = this.ambientAudio;
+    if (!audio || !this.isGuidedVoice(this.currentAmbient) || this.ambientPausedByApp) return null;
+    return audio.paused && !audio.ended ? audio.currentTime : null;
+  }
+
+  // Once per stop: the element's pause event and the context's interruption
+  // can both report the same one
+  reportInterruption(position, reason) {
+    if (this.interruptionReported) return;
+    this.interruptionReported = true;
+    debugLog.add(`INTERRUPTED: ${reason}${position === null ? '' : ` at ${position.toFixed(2)}s`}`);
+    this.interruptionListener?.(position);
+  }
+
+  // The system took the audio away (iOS: a call). A guided voice is paused
+  // where it was (it can't be heard anyway, and must not run on); the
+  // listener decides what the session does.
+  audioInterrupted() {
+    const audio = this.ambientAudio;
+    if (audio && this.isGuidedVoice(this.currentAmbient) && !this.ambientPausedByApp) {
+      if (!audio.paused) audio.pause();
+      this.reportInterruption(audio.currentTime, 'audio interrupted');
+    } else {
+      this.reportInterruption(null, 'audio interrupted');
+    }
+  }
+
+  // Playing again: a later stop is a new one
+  clearInterruption() {
+    this.ambientPausedByApp = false;
+    this.interruptionReported = false;
+  }
+
   // Play ambient sound with fade in. Also plays a guided meditation's
   // recording (ambient sounds don't play in guided mode): once, not looped,
   // from `from` seconds in.
@@ -334,6 +393,7 @@ export class AudioManager {
     // recording from exactly where the session is)
     if (this.currentAmbient === soundId) {
       if (guided) this.ambientAudio.currentTime = from;
+      this.clearInterruption();
       this.resumeAmbient();
       return;
     }
@@ -345,6 +405,7 @@ export class AudioManager {
       }
 
       // Set new source and play (unmuted: it may have been primed)
+      this.clearInterruption();
       this.ambientAudio.src = sound.path;
       this.ambientAudio.loop = !guided;
       if (from > 0) this.ambientAudio.currentTime = from;
@@ -397,9 +458,10 @@ export class AudioManager {
 
   // Pause ambient sound (without resetting position)
   pauseAmbient() {
-    if (!this.ambientAudio || this.ambientAudio.paused) {
-      return;
-    }
+    if (!this.ambientAudio) return;
+    // Also when something else paused it first: the app has taken note
+    this.ambientPausedByApp = true;
+    if (this.ambientAudio.paused) return;
     this.ambientAudio.pause();
   }
 
@@ -408,6 +470,7 @@ export class AudioManager {
     if (!this.ambientAudio || !this.ambientAudio.paused || !this.currentAmbient) {
       return;
     }
+    this.clearInterruption();
     this.ambientAudio.play().catch((error) => {
       console.error('Failed to resume ambient sound:', error);
     });
