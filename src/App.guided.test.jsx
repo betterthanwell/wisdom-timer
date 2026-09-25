@@ -51,7 +51,9 @@ describe('App', () => {
       // Lengths in words, not mm:ss
       expect(button(/^Metta/).textContent).toBe('MettaFour minutes');
       expect(button(/^Breath, older/).textContent).toBe('Breath, olderHalf an hour');
-      expect(screen.getByRole('link', { name: /Thanissaro Bhikkhu/ })).toBeTruthy();
+      // The credit breaks before the site, so it doesn't wrap mid-link on a phone
+      const credit = screen.getByRole('link', { name: 'Guided by Thanissaro Bhikkhu dhammatalks.org · CC BY-NC 4.0' });
+      expect(credit.innerHTML).toMatch(/<br>dhammatalks\.org/);
 
       expect(screen.queryByRole('button', { name: '45m' })).toBe(null);
       expect(screen.queryByRole('switch', { name: 'Open-ended sitting' })).toBe(null);

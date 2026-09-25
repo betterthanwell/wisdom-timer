@@ -70,7 +70,9 @@ export const GuidedSetting = ({ enabled, track, downloads = {}, onToggle, onTrac
           })}
           <p className="text-xs text-white/70">
             <a href={GUIDED_SOURCE.url} target="_blank" rel="noreferrer" className="underline decoration-white/40 hover:text-white">
-              {GUIDED_SOURCE.credit}
+              {/* The space keeps the link's name from running the lines together */}
+              {GUIDED_SOURCE.credit[0]} <br />
+              {GUIDED_SOURCE.credit[1]}
             </a>
           </p>
         </>
