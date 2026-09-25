@@ -188,9 +188,10 @@ test('settling in: a silent countdown, then the start bell', async ({ page }) =>
 });
 
 test('bell patterns: three strikes to begin, five seconds apart', async ({ page }) => {
-  // The strike choices are tucked away behind a switch
-  await page.getByRole('switch', { name: 'Show bell strikes' }).click();
-  await page.getByRole('button', { name: 'Start bell: 3 strikes' }).click();
+  // No strike choices on screen for now, but a saved choice still applies
+  await page.evaluate(() => localStorage.setItem('wisdomTimerSettings', JSON.stringify({ startStrikes: 3 })));
+  await page.reload();
+  await page.clock.runFor(2500); // sound loading fallback timeouts
   await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect.poll(() => countSound(page, 'bell-start')).toBe(1);
 

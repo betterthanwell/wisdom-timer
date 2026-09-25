@@ -149,62 +149,27 @@ describe('App', () => {
   });
 
   describe('bell patterns', () => {
-    const strikesSwitch = () => screen.getByRole('switch', { name: 'Show bell strikes' });
-
-    // Bell strike choices live behind the show switch
-    const showStrikes = () => fireEvent.click(strikesSwitch());
-
     it('rings each bell once by default', async () => {
       await renderApp();
       click('Start');
       expect(audioManager.playBell).toHaveBeenCalledWith('start', 1);
     });
 
-    it('offers the bell strikes section even with interval bells off, choices tucked away', async () => {
+    it('does not show the bell strikes settings, for now', async () => {
       await renderApp();
-      expect(screen.getByRole('switch', { name: 'Interval woodblock' }).getAttribute('aria-checked')).toBe('false');
-      expect(screen.getByText('Bell strikes')).toBeTruthy();
-      expect(strikesSwitch().getAttribute('aria-checked')).toBe('false');
-      expect(screen.queryByRole('button', { name: 'Start bell: 1 strike' })).toBe(null);
+      expect(screen.queryByText('Bell strikes')).toBe(null);
+      expect(screen.queryByRole('switch', { name: 'Show bell strikes' })).toBe(null);
     });
 
-    it('shows the choices with the switch, and remembers that', async () => {
+    // Chosen before the choices were hidden
+    it('still rings saved strike counts', async () => {
+      localStorage.setItem('wisdomTimerSettings', JSON.stringify({ startStrikes: 3, endStrikes: 2 }));
       await renderApp();
-      showStrikes();
-
-      expect(button('End bell: 1 strike').getAttribute('aria-pressed')).toBe('true');
-      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).showBellStrikes).toBe(true);
-
-      fireEvent.click(strikesSwitch());
-      expect(screen.queryByRole('button', { name: 'End bell: 1 strike' })).toBe(null);
-    });
-
-    it('rings the start bell as many times as chosen, and remembers it', async () => {
-      await renderApp();
-      showStrikes();
-      click('Start bell: 3 strikes');
       click('Start');
-
       expect(audioManager.playBell).toHaveBeenCalledWith('start', 3);
-      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).startStrikes).toBe(3);
-    });
 
-    it('keeps using chosen strikes after the section is hidden', async () => {
-      await renderApp();
-      showStrikes();
-      click('Start bell: 2 strikes');
-      fireEvent.click(strikesSwitch()); // choices tucked away
-      click('Start');
-
-      expect(audioManager.playBell).toHaveBeenCalledWith('start', 2);
-    });
-
-    it('uses the chosen end bell pattern when a session completes', async () => {
-      await renderApp();
-      showStrikes();
-      click('End bell: 2 strikes');
+      click('Reset');
       completeOneSecondSession();
-
       expect(audioManager.playBell).toHaveBeenCalledWith('end', 2);
     });
 
