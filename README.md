@@ -32,7 +32,6 @@ Free for anyone, anywhere, any time, for ever.
 - **Interval woodblock** - a short woodblock knock every 1-30 minutes (optional), the first one after its own delay of 1-60 minutes (default: every 10 minutes, starting after 5); never at the very end, which belongs to the end bell
 - **End bell** - resonant "gling" (~35 s)
 - **Ambient sounds** - rain, ocean waves or forest, looping, with a 0.5 s fade in and out
-- **Bell patterns** (not offered for now) - each bell rings once; the choice of 1, 2 or 3 strikes per bell (bowls 5 s apart, woodblock knocks 2 s apart) is hidden for now, and a choice saved earlier still applies
 - **Metta mode** (optional) - the four loving-kindness phrases take turns in large letters above the timer while you sit: *May I be happy. May my loved ones be happy. May those I find difficult be happy. May all beings everywhere be happy.* Each shows for 5, 10, 20 or 30 seconds (default 10), then the cycle starts again
 - **Gentle ending** (on by default) - the ambient sound fades out over the last minute, so the end bell arrives into silence; the bells themselves never fade
 - **Separate volume sliders** for bells and ambient sound; changes apply immediately, including to a bell that is still ringing
@@ -80,7 +79,7 @@ npm run dev          # http://localhost:5173
 | `npm run build` | Production build to `dist/` |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | ESLint |
-| `npm test` | Unit and component tests (Vitest), about 7 s |
+| `npm test` | Unit and component tests (Vitest), about 10 s |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run test:e2e` | End-to-end tests (Playwright) in Chromium, Firefox, WebKit and an iPhone profile; builds first. One-time setup: `npx playwright install chromium firefox webkit` |
 
@@ -106,36 +105,19 @@ Bugs are fixed test-first: a test that fails on the old code, then the fix.
 
 ```
 src/
-├── App.jsx                     # Main app: session flow, keyboard shortcuts, layout
-├── main.jsx                    # Entry point
-├── sw.js                       # Service worker: keeps the app and bells offline
-├── index.css                   # Global styles, glass-morphism, animations
-├── components/
-│   ├── Timer/                  # TimerDisplay, TimerControls, CircularProgress, MettaCard
-│   ├── Settings/               # PresetButtons, DurationSelector, IntervalSettings,
-│   │                           # AmbientSoundSelector, VolumeControls, MettaSetting, ...
-│   └── UI/                     # GlassCard, Button, Switch, SettingLabel, ChoiceButton
-├── hooks/
-│   ├── useTimer.js             # Countdown from the clock, pause/resume, bells, background wake-ups
-│   ├── useAudio.js             # React wrapper around the audio manager
-│   ├── useSessionCounter.js    # Sessions completed today
-│   ├── useWakeLock.js          # Keeps the screen on during a session
-│   └── useLocalStorage.js      # Persisted state
-├── context/
-│   ├── TimerContext.jsx        # Settings state (reducer) + saving
-│   └── useTimerContext.js      # Context object and hook
-├── utils/
-│   ├── audioManager.js         # Bells, ambient sound, fades, volume
-│   ├── ambientDownloads.js     # Downloads ambient sounds when chosen, keeps them offline
-│   ├── intervalBells.js        # When interval bells are due
-│   ├── settings.js             # Validation of saved settings
-│   └── timeFormatter.js        # MM:SS formatting
-└── constants/
-    └── audioSources.js         # Sound file paths and ambient sound list
-e2e/                            # Playwright end-to-end tests
-public/audio/                   # Bell and ambient sound files
-public/manifest.webmanifest     # Web app manifest (+ public/icons/)
+├── App.jsx          # Session flow, keyboard shortcuts, layout
+├── sw.js            # Service worker: keeps the app and bells offline
+├── components/      # Timer/, Settings/, UI/
+├── hooks/           # useTimer (the clock), useAudio, useWakeLock, ...
+├── context/         # Settings state (reducer) + saving
+├── utils/           # audioManager, ambient downloads, bell scheduling, settings validation, ...
+└── constants/       # Sound file paths and the ambient sound list
+e2e/                 # Playwright end-to-end tests
+public/audio/        # Bell and ambient sound files
+docs/                # Session behavior and architecture notes
 ```
+
+The file-by-file map is in [CLAUDE.md](CLAUDE.md).
 
 ## 🔊 Audio Files
 
