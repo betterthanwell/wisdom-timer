@@ -1,26 +1,38 @@
 import { useState, useEffect, useCallback } from 'react';
 import { audioManager } from '../utils/audioManager';
 
+// Straight calls on the audioManager singleton: defined once, so they're
+// stable across renders without useCallback
+const passThrough = {
+  // Call during a tap or key press: lets sounds started later (by timers) play
+  unlock: () => audioManager.unlock(),
+  // Stop strikes of a bell pattern that haven't rung yet
+  cancelPendingBells: () => audioManager.cancelPendingBells(),
+  // Call during a tap when the ambient sound will start later (settling in)
+  primeAmbient: (soundId) => audioManager.primeAmbient(soundId),
+  pauseAmbient: () => audioManager.pauseAmbient(),
+  stopAmbient: () => audioManager.stopAmbient(),
+  // Volumes are 0.0 to 1.0
+  setBellVolume: (volume) => audioManager.setBellVolume(volume),
+  setAmbientVolume: (volume) => audioManager.setAmbientVolume(volume),
+  // Scale the ambient volume by a 0-1 level (gentle ending)
+  setAmbientLevel: (level) => audioManager.setAmbientLevel(level),
+  // Told when something outside the app (iOS: a call) stops a guided voice
+  // or takes the audio away: (position in the recording, or null) => void
+  setInterruptionListener: (listener) => audioManager.setInterruptionListener(listener),
+  // Where a guided voice was cut short (seconds), or null
+  cutShortVoicePosition: () => audioManager.cutShortVoicePosition(),
+};
+
 export const useAudio = () => {
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentAmbient, setCurrentAmbient] = useState(null);
 
-  // Initialize audio on mount
+  // Load the sounds on mount
   useEffect(() => {
-    const initAudio = async () => {
-      const success = await audioManager.init();
-      setIsInitialized(success);
-    };
-
-    initAudio();
-
-    return () => {
-      audioManager.cleanup();
-    };
+    audioManager.init().then(setIsInitialized);
+    return () => audioManager.cleanup();
   }, []);
 
-  // Play a bell sound
   const playBell = useCallback(async (type, strikes = 1) => {
     if (!isInitialized) {
       console.warn('Audio not initialized yet');
@@ -29,91 +41,14 @@ export const useAudio = () => {
     await audioManager.playBell(type, strikes);
   }, [isInitialized]);
 
-  // Play ambient sound
+  // An ambient sound, or a guided recording `from` seconds in
   const playAmbient = useCallback(async (soundId, ...from) => {
     if (!isInitialized) {
       console.warn('Audio not initialized yet');
       return;
     }
     await audioManager.playAmbient(soundId, ...from);
-    setCurrentAmbient(soundId);
-    setIsPlaying(true);
   }, [isInitialized]);
 
-  // Call during a tap when the ambient sound will start later (settling in)
-  const primeAmbient = useCallback((soundId) => {
-    audioManager.primeAmbient(soundId);
-  }, []);
-
-  // Pause ambient sound
-  const pauseAmbient = useCallback(() => {
-    audioManager.pauseAmbient();
-    setIsPlaying(false);
-  }, []);
-
-  // Resume ambient sound
-  const resumeAmbient = useCallback(() => {
-    audioManager.resumeAmbient();
-    setIsPlaying(true);
-  }, []);
-
-  // Stop ambient sound
-  const stopAmbient = useCallback(async () => {
-    await audioManager.stopAmbient();
-    setCurrentAmbient(null);
-    setIsPlaying(false);
-  }, []);
-
-  // Call during a tap or key press: lets sounds started later (by timers) play
-  const unlock = useCallback(() => {
-    audioManager.unlock();
-  }, []);
-
-  // Stop strikes of a bell pattern that haven't rung yet
-  const cancelPendingBells = useCallback(() => {
-    audioManager.cancelPendingBells();
-  }, []);
-
-  // Told when something outside the app (iOS: a call) stops a guided voice
-  // or takes the audio away: (position in the recording, or null) => void
-  const setInterruptionListener = useCallback((listener) => {
-    audioManager.setInterruptionListener(listener);
-  }, []);
-
-  // Where a guided voice was cut short (seconds), or null
-  const cutShortVoicePosition = useCallback(() => audioManager.cutShortVoicePosition(), []);
-
-  // Set bell volume (0.0 to 1.0)
-  const setBellVolume = useCallback((volume) => {
-    audioManager.setBellVolume(volume);
-  }, []);
-
-  // Scale the ambient volume by a 0-1 level (gentle ending)
-  const setAmbientLevel = useCallback((level) => {
-    audioManager.setAmbientLevel(level);
-  }, []);
-
-  // Set ambient volume (0.0 to 1.0)
-  const setAmbientVolume = useCallback((volume) => {
-    audioManager.setAmbientVolume(volume);
-  }, []);
-
-  return {
-    isInitialized,
-    isPlaying,
-    currentAmbient,
-    unlock,
-    playBell,
-    cancelPendingBells,
-    playAmbient,
-    primeAmbient,
-    pauseAmbient,
-    resumeAmbient,
-    stopAmbient,
-    setBellVolume,
-    setAmbientVolume,
-    setAmbientLevel,
-    setInterruptionListener,
-    cutShortVoicePosition,
-  };
+  return { isInitialized, playBell, playAmbient, ...passThrough };
 };
