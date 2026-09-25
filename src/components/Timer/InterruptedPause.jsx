@@ -8,8 +8,9 @@ const OUTLINED = { WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' };
 // Shown in place of the time when something outside the app (iOS: a call,
 // Siri, the lock screen's controls) stopped a guided session. One big
 // button - easy to hit with a thumb - carries on exactly where it stopped.
+// An alert, so a screen reader announces it as soon as it appears.
 export const InterruptedPause = ({ timeRemaining, onCarryOn }) => (
-  <div data-testid="interrupted" className="relative z-20 flex flex-col items-center gap-5 py-4 sm:py-8">
+  <div data-testid="interrupted" role="alert" className="relative z-20 flex flex-col items-center gap-5 py-4 sm:py-8">
     <p className="text-6xl sm:text-7xl font-black tracking-wider text-white" style={OUTLINED}>
       PAUSED
     </p>

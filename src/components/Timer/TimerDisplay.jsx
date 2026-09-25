@@ -59,7 +59,9 @@ export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = fa
             <div className="text-5xl sm:text-6xl font-semibold tabular-nums tracking-tight text-white">
               {formatTime(isSettling ? settleRemaining : timeRemaining)}
             </div>
-            <div className="mt-1 text-sm font-semibold text-white">
+            {/* Announced by screen readers when it changes (the time isn't:
+                it would be read out every second) */}
+            <div role="status" className="mt-1 text-sm font-semibold text-white">
               {getStatusText()}
             </div>
             <div className="text-xs font-medium text-white/85">

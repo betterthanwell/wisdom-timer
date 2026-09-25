@@ -165,6 +165,8 @@ describe('App', () => {
 
         expect(screen.getByText('PAUSED')).toBeTruthy();
         expect(screen.getByText(/interrupted/i)).toBeTruthy();
+        // Announced at once to a screen reader
+        expect(screen.getByRole('alert').textContent).toMatch(/PAUSED.*Interrupted from outside the app/);
         expect(carryOn()).toBeTruthy();
         expect(audioManager.pauseAmbient).toHaveBeenCalled();
         // 263.576 - (15 + 20) s left, rounded up
