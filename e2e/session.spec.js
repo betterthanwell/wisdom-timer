@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { recordSounds, countSound, soundLog } from './sounds';
+import { recordSounds, countSound, soundLog, reportSoundsOnFailure } from './sounds';
 
 // Advance the fake clock in 1-minute jumps. fastForward fires each due timer
 // once per jump (like a throttled background tab) instead of every 100ms
@@ -15,6 +15,8 @@ const setDuration = async (page, minutes, seconds = 0) => {
   await page.getByLabel('Minutes', { exact: true }).fill(String(minutes));
   await page.getByLabel('Seconds', { exact: true }).fill(String(seconds));
 };
+
+reportSoundsOnFailure(test);
 
 const START = new Date('2026-09-24T08:00:00');
 
