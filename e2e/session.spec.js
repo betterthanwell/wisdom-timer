@@ -1,45 +1,5 @@
 import { test, expect } from '@playwright/test';
-
-// Record which sounds the app plays (by file path), keeping them silent.
-// Real play() still runs so the app's audio logic behaves normally; if a
-// browser can't decode the file, the app just logs an error. Whether each
-// play() worked goes to __soundResults. Sounds played from memory (blob:
-// URLs) are recorded by the path they were downloaded from.
-const recordSounds = () => {
-  window.__sounds = [];
-  window.__soundResults = [];
-  const downloadedFrom = new WeakMap(); // Blob -> path
-  const blobPaths = new Map(); // blob: URL -> path
-
-  const realBlob = Response.prototype.blob;
-  Response.prototype.blob = async function () {
-    const blob = await realBlob.call(this);
-    downloadedFrom.set(blob, new URL(this.url).pathname);
-    return blob;
-  };
-  const realCreateObjectURL = URL.createObjectURL;
-  URL.createObjectURL = (object) => {
-    const url = realCreateObjectURL.call(URL, object);
-    if (downloadedFrom.has(object)) blobPaths.set(url, downloadedFrom.get(object));
-    return url;
-  };
-
-  const realPlay = HTMLMediaElement.prototype.play;
-  HTMLMediaElement.prototype.play = function (...args) {
-    const path = blobPaths.get(this.src) ?? new URL(this.src, location.href).pathname;
-    window.__sounds.push(path);
-    this.muted = true;
-    const result = realPlay.apply(this, args);
-    result.then(
-      () => window.__soundResults.push({ path, ok: true }),
-      (error) => window.__soundResults.push({ path, ok: false, error: error.name })
-    );
-    return result;
-  };
-};
-
-const soundsPlayed = (page) => page.evaluate(() => window.__sounds);
-const countSound = async (page, name) => (await soundsPlayed(page)).filter((path) => path.includes(name)).length;
+import { recordSounds, soundsPlayed, countSound, failedPlays } from './sounds';
 
 // Advance the fake clock in 1-minute jumps. fastForward fires each due timer
 // once per jump (like a throttled background tab) instead of every 100ms
@@ -110,9 +70,7 @@ test('bells still ring when the network drops after the page has loaded', async 
     '/audio/bells/bell-interval.mp3',
     '/audio/bells/bell-end.mp3',
   ]);
-  await expect.poll(() => page.evaluate(() => window.__soundResults.length)).toBe(3);
-  const failed = await page.evaluate(() => window.__soundResults.filter((result) => !result.ok));
-  expect(failed).toEqual([]);
+  expect(await failedPlays(page, 3)).toEqual([]);
 });
 
 test('the interval woodblock starts after its own time, repeats, and skips the end', async ({ page }) => {

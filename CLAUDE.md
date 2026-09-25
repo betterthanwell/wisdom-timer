@@ -25,7 +25,9 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 ├── src/
 │   ├── App.jsx                  # Session flow, keyboard shortcuts, layout (default export)
 │   ├── App.test.jsx             # Component tests: whole app, audioManager mocked
-│   ├── main.jsx                 # Entry point (StrictMode)
+│   ├── main.jsx                 # Entry point (StrictMode); registers the service worker once bells load
+│   ├── sw.js                    # Service worker source (offline use) - emitted as /sw.js by vite.config.js
+│   ├── registerServiceWorker.js # Registers /sw.js (production builds only)
 │   ├── index.css                # Global styles, .glass-card(-strong), keyframes, reduced motion
 │   ├── components/
 │   │   ├── Timer/               # TimerDisplay (time, status, "Session N", burst),
@@ -53,12 +55,13 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 │   │   └── timeFormatter.js     # formatTime (MM:SS) etc.
 │   └── constants/
 │       └── audioSources.js      # AUDIO_SOURCES (paths) + AMBIENT_SOUNDS (buttons)
-├── e2e/session.spec.js          # Playwright end-to-end tests
+├── e2e/                         # Playwright: session.spec.js, offline.spec.js, sounds.js (sound recorder)
 ├── public/audio/bells|ambient/  # Sound files (see Audio below)
+├── public/manifest.webmanifest  # Web app manifest (install to home screen) + public/icons/
 ├── .github/workflows/           # ci.yml (lint, test, build), e2e.yml (Playwright)
 ├── index.html                   # HTML shell + CSP meta tags
 ├── vercel.json                  # HTTP security headers (the effective ones)
-├── vite.config.js               # Vite + Vitest config
+├── vite.config.js               # Vite + Vitest config; serviceWorker() plugin builds /sw.js
 ├── playwright.config.js         # Playwright config (vite preview on :4173)
 ├── eslint.config.js             # Flat config; Node globals for Playwright files
 ├── postcss.config.js            # @tailwindcss/postcss
@@ -114,6 +117,14 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - `playBell(type, strikes)` rings now and schedules later strikes (`pendingStrikes`); `cancelPendingBells()` drops the ones not yet rung. Each strike reads the current bell volume.
 - `cleanup()` stops all playback (and pending strikes) but keeps loaded sounds.
 - Sound files: bells are AAC in an MP4 container despite the `.mp3` names (browsers sniff content). Ambient files are long real recordings (10-36 min).
+
+### Offline (service worker)
+- `src/sw.js` is not bundled: the `serviceWorker()` plugin in `vite.config.js` emits it as `/sw.js` in production builds, prefixed with `VERSION` (a hash of the worker, the page, the built JS/CSS and `OFFLINE_PUBLIC_FILES`) and `PRECACHE` (`/`, the built files, favicon, manifest, icons, bells). The plugin runs `enforce: 'post'` so `index.html` is in the bundle, and fails the build if it isn't.
+- Install caches `PRECACHE` in `wisdom-timer-<VERSION>` and calls `skipWaiting()`; activate deletes older `wisdom-timer-*` caches. Fetch: page loads and `PRECACHE` paths are served from the cache, everything else (ambient sounds) from the network; Range requests are never answered from the cache (Safari won't play a full response to one).
+- So after a deploy, the first load still shows the kept version while the new worker installs and takes over; the next load is new. `vercel.json` serves `/sw.js` with `Cache-Control: no-cache` so updates are found.
+- Registered only in production builds (`import.meta.env.PROD`), after `audioManager.init()`, so its downloads don't compete with the bells on a first visit (by then they're revalidations).
+- Kill switch if a bad worker ever ships: deploy a `sw.js` that deletes the `wisdom-timer-*` caches and calls `self.registration.unregister()`.
+- Ambient sounds aren't kept offline yet (planned: downloaded on tap, then kept).
 
 ### Known platform limits
 - iOS pauses JavaScript when the screen locks, so no timer runs until unlock; bells can't ring while locked.
@@ -173,7 +184,7 @@ The gradients are Tailwind arbitrary-value classes in `App.jsx` (`from-[#FDE68A]
   - The page clock is faked **and frozen** (`clock.install()` then `clock.pauseAt()`); an unfrozen fake clock keeps flowing in real time, which made a test flaky on slow CI. Advance with `clock.fastForward` in 1-minute jumps; `runFor` fires every 100ms tick and is far too slow for long sessions.
   - Playwright matches accessible names as **substrings** by default (Testing Library matches whole names): use `exact: true` for short names like `Start` ("Start bell: 3 strikes" also contains it).
   - Sounds are recorded, not heard: an init script wraps `HTMLMediaElement.prototype.play` and pushes file paths to `window.__sounds` (`blob:` URLs are mapped back to the path they were downloaded from); whether each `play()` worked goes to `window.__soundResults`.
-  - To simulate losing the network, abort requests with `page.route('**/audio/**', …)`, not `context.setOffline()`: WebKit's offline emulation also blocks media from memory (`blob:` and even `data:` URLs), most likely an emulation artifact - still to be confirmed on a real iPhone in airplane mode.
+  - Don't simulate losing the network with `context.setOffline()` or `route()` in WebKit: its offline emulation also blocks media from memory (`blob:` and even `data:` URLs), and both cut WebKit off before its service worker can answer. With the server really gone, WebKit plays `blob:` bells fine, so this is an emulation artifact. Instead: abort `**/audio/**` with `page.route()` after loading (network drop mid-session), or have the test serve a build itself with Vite's `preview()` and stop that server (`offline.spec.js`).
 - **CI**: `ci.yml` (npm ci, lint, test, build) and `e2e.yml` (Playwright, report uploaded on failure), both on Node 24, on every PR and push to `main`.
 - **Bug fixes are test-first**: write a test, confirm it fails on the old code, then fix. When a new test passes immediately, check it against the old code before trusting it.
 - Still manual: real audio in different browsers, iPhone (locked screen, volume), layout on real devices, long real-time sessions.
