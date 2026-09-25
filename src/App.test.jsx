@@ -7,6 +7,7 @@ import { audioManager } from './utils/audioManager';
 vi.mock('./utils/audioManager', () => ({
   audioManager: {
     init: vi.fn(async () => true),
+    unlock: vi.fn(),
     cleanup: vi.fn(),
     playBell: vi.fn(async () => {}),
     cancelPendingBells: vi.fn(),
@@ -70,6 +71,36 @@ describe('App', () => {
       expect(startBellCount()).toBe(2);
       // audioManager resumes (rather than restarts) a sound that is already current
       expect(audioManager.playAmbient.mock.calls).toEqual([['rain'], ['rain']]);
+    });
+  });
+
+  // Browsers (iOS strictly) only let sound start without a tap once audio has
+  // been unlocked by one; interval and end bells are started by timers
+  describe('unlocking audio', () => {
+    it('unlocks audio during the Start tap, before the start bell', async () => {
+      await renderApp();
+      click('Start');
+
+      expect(audioManager.unlock).toHaveBeenCalledTimes(1);
+      expect(audioManager.unlock.mock.invocationCallOrder[0]).toBeLessThan(
+        audioManager.playBell.mock.invocationCallOrder[0]
+      );
+    });
+
+    it('unlocks audio when Space starts a session', async () => {
+      await renderApp();
+      fireEvent.keyDown(window, { code: 'Space', key: ' ' });
+
+      expect(audioManager.unlock).toHaveBeenCalledTimes(1);
+    });
+
+    it('unlocks audio on the tap that begins settling in, not later when the countdown ends', async () => {
+      await renderApp();
+      click('Settle in for 10s');
+      click('Start');
+
+      expect(audioManager.unlock).toHaveBeenCalledTimes(1);
+      expect(audioManager.playBell).not.toHaveBeenCalled();
     });
   });
 

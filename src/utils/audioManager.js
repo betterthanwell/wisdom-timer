@@ -3,16 +3,39 @@ import { AUDIO_SOURCES } from '../constants/audioSources';
 // Time between strikes when a bell rings several times: the bowls get room
 // to ring out, the short woodblock knocks come quicker
 const BELL_STRIKE_SPACING_MS = { start: 5000, interval: 2000, end: 5000 };
+// Longest wait for the bells before Start is enabled
+const BELL_LOAD_WAIT_MS = 2000;
+// Longest wait for Web Audio to resume before a bell rings on an <audio>
+// element instead
+const AUDIO_RESUME_WAIT_MS = 1000;
 
+// Bells play through the Web Audio API where the browser has it: each bell is
+// downloaded and decoded once, so it rings without a network, and one
+// unlock() during a tap lets every later bell play - including the ones
+// started by timers (interval, end), which iOS doesn't allow for a fresh
+// <audio> element. Bell volume is a gain node, which iOS respects (it ignores
+// HTMLMediaElement.volume). Without Web Audio, or until a bell is decoded and
+// audio is unlocked, bells play on <audio> elements as before.
 export class AudioManager {
   constructor() {
+    // Preloaded <audio> elements, only used without Web Audio
     this.bells = {
       start: null,
       interval: null,
       end: null,
     };
+    // Web Audio: the context, decoded bells, and the gain all bells go through
+    this.context = null;
+    this.bellBuffers = {};
+    this.bellGain = null;
+    // unlock() has been called during a tap, so Web Audio may play
+    this.unlocked = false;
+    // A resume() in progress, so bells wait for it rather than asking again
+    this.resuming = null;
     // Bells that are currently ringing, so volume changes reach them too
+    // (<audio> elements) and cleanup can stop them (Web Audio sources)
     this.ringingBells = new Set();
+    this.ringingSources = new Set();
     // Timeouts for strikes of a bell pattern that haven't rung yet
     this.pendingStrikes = new Set();
     this.ambientAudio = null;
@@ -40,29 +63,11 @@ export class AudioManager {
 
   async loadSounds() {
     try {
-      // Create and preload bell audio elements FIRST (they're critical and small)
-      this.bells.start = new Audio(AUDIO_SOURCES.bells.start);
-      this.bells.interval = new Audio(AUDIO_SOURCES.bells.interval);
-      this.bells.end = new Audio(AUDIO_SOURCES.bells.end);
-
-      // Set bell volumes and preload
-      const bellLoadPromises = Object.values(this.bells).map(audio => {
-        if (audio) {
-          audio.volume = this.bellVolume;
-          audio.preload = 'auto';
-          audio.load(); // Force loading
-          // Return a promise that resolves when audio can play
-          return new Promise((resolve) => {
-            audio.addEventListener('canplaythrough', () => resolve(), { once: true });
-            // Timeout fallback in case loading takes too long
-            setTimeout(resolve, 2000);
-          });
-        }
-        return Promise.resolve();
-      });
-
-      // Wait for bells to load before creating ambient audio
-      await Promise.all(bellLoadPromises);
+      // Bells FIRST (they're critical and small). Loading waits at most 2s,
+      // so a slow network can't hold up Start for long.
+      this.setUpWebAudio();
+      const deadline = new Promise((resolve) => setTimeout(resolve, BELL_LOAD_WAIT_MS));
+      await Promise.all(Object.keys(AUDIO_SOURCES.bells).map((type) => this.loadBell(type, deadline)));
 
       // Create ambient audio element AFTER bells are ready
       this.ambientAudio = new Audio();
@@ -78,7 +83,119 @@ export class AudioManager {
     }
   }
 
-  // Play a bell sound
+  setUpWebAudio() {
+    const AudioContextClass = globalThis.AudioContext ?? globalThis.webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    try {
+      // Created suspended; unlock() starts it during a tap
+      this.context = new AudioContextClass();
+      this.bellGain = this.context.createGain();
+      this.bellGain.gain.value = this.bellVolume;
+      this.bellGain.connect(this.context.destination);
+    } catch (error) {
+      console.warn('Web Audio not available, bells play on <audio> elements:', error);
+      this.context = null;
+      return;
+    }
+
+    // iOS: treat the sound as media playback, like <audio>, so the ring/silent
+    // switch doesn't mute the bells
+    if (navigator.audioSession) {
+      navigator.audioSession.type = 'playback';
+    }
+  }
+
+  // With Web Audio: download and decode the bell (waiting until `deadline` at
+  // most; a bell decoded later is used from then on). Without: preload an
+  // <audio> element.
+  async loadBell(type, deadline) {
+    const path = AUDIO_SOURCES.bells[type];
+
+    if (this.context) {
+      const decoded = this.decodeBell(path).then((buffer) => {
+        if (buffer) this.bellBuffers[type] = buffer;
+      });
+      await Promise.race([decoded, deadline]);
+      return;
+    }
+
+    const audio = new Audio(path);
+    audio.volume = this.bellVolume;
+    audio.preload = 'auto';
+    audio.load();
+    this.bells[type] = audio;
+    const canPlay = new Promise((resolve) => {
+      audio.addEventListener('canplaythrough', () => resolve(), { once: true });
+    });
+    await Promise.race([canPlay, deadline]);
+  }
+
+  // The decoded bell, or null if it couldn't be downloaded or decoded
+  async decodeBell(path) {
+    try {
+      const response = await fetch(path);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await this.context.decodeAudioData(await response.arrayBuffer());
+    } catch (error) {
+      console.warn(`Could not load bell ${path} for Web Audio, it will play on an <audio> element:`, error);
+      return null;
+    }
+  }
+
+  // Call during a tap or key press (a user gesture). Browsers - iOS strictly -
+  // only let sound start without a tap once audio has been unlocked by one.
+  unlock() {
+    if (!this.context) return;
+
+    this.unlocked = true;
+    if (this.context.state !== 'running') {
+      this.resumeWebAudio();
+    }
+    // Older iOS versions also need a sound started within the gesture
+    const silence = this.context.createBufferSource();
+    silence.buffer = this.context.createBuffer(1, 1, 22050);
+    silence.connect(this.context.destination);
+    silence.start();
+  }
+
+  // Whether Web Audio is running, resuming it if needed: it may still be
+  // resuming from unlock() (the start bell rings in the same tap), or have
+  // been interrupted (iOS: a call, Siri, another app's sound). Gives up after
+  // a moment, so the bell rings on an <audio> element instead of late or not
+  // at all.
+  async webAudioRunning() {
+    if (this.context.state === 'running') return true;
+
+    // Join a resume already asked for (the tap's own, from unlock()): Safari
+    // may refuse one asked for outside a tap
+    const resumed = this.resuming ?? this.resumeWebAudio();
+    let timeout;
+    const gaveUp = new Promise((resolve) => {
+      timeout = setTimeout(() => resolve(false), AUDIO_RESUME_WAIT_MS);
+    });
+    const running = await Promise.race([resumed, gaveUp]);
+    clearTimeout(timeout);
+    return running && this.context.state === 'running';
+  }
+
+  // Resume Web Audio; resolves to whether it worked
+  resumeWebAudio() {
+    this.resuming = this.context
+      .resume()
+      .then(
+        () => true,
+        (error) => {
+          console.warn('Could not resume audio:', error);
+          return false;
+        }
+      )
+      .finally(() => {
+        this.resuming = null;
+      });
+    return this.resuming;
+  }
+
   // Ring a bell, optionally several times (a traditional pattern, e.g. three
   // strikes to begin). Later strikes are spaced out and can be cancelled.
   async playBell(type, strikes = 1) {
@@ -105,14 +222,27 @@ export class AudioManager {
       return;
     }
 
-    const bell = this.bells[type];
-    if (!bell) {
+    const path = AUDIO_SOURCES.bells[type];
+    if (!path) {
       console.warn(`Bell type "${type}" not found`);
       return;
     }
 
-    // Create a new Audio element instead of cloning to ensure volume is applied correctly
-    const bellAudio = new Audio(bell.src);
+    // Web Audio once the bell is decoded and audio has been unlocked
+    const buffer = this.bellBuffers[type];
+    if (buffer && this.unlocked && (await this.webAudioRunning())) {
+      const source = this.context.createBufferSource();
+      source.buffer = buffer;
+      source.connect(this.bellGain);
+      source.onended = () => this.ringingSources.delete(source);
+      this.ringingSources.add(source);
+      source.start();
+      return;
+    }
+
+    // Otherwise an <audio> element. A new element each time (not a clone,
+    // which didn't reliably keep the volume)
+    const bellAudio = new Audio(path);
     bellAudio.volume = this.bellVolume;
     this.ringingBells.add(bellAudio);
 
@@ -268,6 +398,9 @@ export class AudioManager {
   // Set bell volume
   setBellVolume(volume) {
     this.bellVolume = Math.max(0, Math.min(1, volume));
+    if (this.bellGain) {
+      this.bellGain.gain.value = this.bellVolume;
+    }
     this.ringingBells.forEach(audio => {
       audio.volume = this.bellVolume;
     });
@@ -305,6 +438,8 @@ export class AudioManager {
     this.cancelPendingBells();
     this.ringingBells.forEach(audio => audio.pause());
     this.ringingBells.clear();
+    this.ringingSources.forEach((source) => source.stop());
+    this.ringingSources.clear();
     if (this.ambientAudio) {
       this.ambientAudio.pause();
       this.ambientAudio.currentTime = 0;

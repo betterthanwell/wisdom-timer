@@ -51,7 +51,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 ## ⚠️ Known limitations
 
 - **iPhone with the screen locked:** iOS pauses web pages when the phone locks, so bells can't ring until you unlock it. "Keep screen awake" (on by default) prevents the automatic lock; locking the phone yourself still pauses the page.
-- **iPhone volume sliders:** iOS Safari has historically ignored volume set by web pages, so the sliders may have no effect there (the ambient sound still stops properly). Fixing both needs the Web Audio API and is planned.
+- **iPhone ambient volume:** iOS ignores volume set on web page audio, so the ambient sound's slider and the gentle ending's fade don't work there yet (the bells' slider does: bells play through the Web Audio API). Moving the ambient sound to Web Audio is planned.
 
 ## 🚀 Getting Started
 

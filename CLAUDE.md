@@ -106,8 +106,10 @@ The owner works out the desired behavior by live-testing, so these can change - 
 
 ### Audio (`audioManager`)
 - Singleton `AudioManager`; the class is also exported so tests can create isolated instances.
-- `init()` is idempotent (React StrictMode mounts twice in dev) and delegates to `loadSounds()`: bells preload first (up to 2s each), then the ambient element is created. "Loading sounds…" shows and Start stays disabled until it's done.
-- Each bell plays on a fresh `Audio` element (overlap allowed; `cloneNode()` didn't reliably keep volume). Ringing bells are tracked in `ringingBells`, so bell volume changes reach bells that are still ringing.
+- `init()` is idempotent (React StrictMode mounts twice in dev) and delegates to `loadSounds()`: bells load first (waiting at most 2s in total, `BELL_LOAD_WAIT_MS`), then the ambient element is created. "Loading sounds…" shows and Start stays disabled until it's done.
+- **Bells play through Web Audio** where available: `loadBell()` downloads and decodes each bell once (`bellBuffers`), so bells ring without a network; all bells go through one gain node (`bellGain` = bell volume, which iOS respects). `navigator.audioSession.type = 'playback'` (iOS) keeps the silent switch from muting them.
+- **`unlock()` must be called during a tap or key press** - `App`'s `handleStart` does, for every Start/Space (also before settling in). iOS won't let sound start from a timer unless audio was unlocked by a gesture; on real iPhones, fresh `<audio>` elements started by timers stayed silent (#38, reverted in #41). It resumes the context (`resumeWebAudio()`, remembered in `resuming` so bells join it instead of asking again outside the tap - Safari may refuse that) and starts a silent buffer (older iOS).
+- `strikeBell()` uses Web Audio once the bell is decoded and `unlock()` has run; if the context isn't running (still resuming, or `interrupted` - iOS: a call, another app) it waits up to 1s (`AUDIO_RESUME_WAIT_MS`) for it, else rings on an `<audio>` element rather than late or never. Without Web Audio, before decoding or before the first tap, bells play on a fresh `Audio` element each (overlap allowed; `cloneNode()` didn't reliably keep volume), tracked in `ringingBells` so volume changes reach them.
 - Ambient: one looping element. `fade()` runs a fixed 20 steps over 500ms and always finishes, even where the browser ignores `volume` (iOS); the fade-in reads the target volume every step.
 - `playAmbient(id)`: resumes if `id` is the current (paused) sound, otherwise switches. `currentAmbient` is set before `play()` and cleared as soon as a stop begins, so stopping while starting stays stopped.
 - `playBell(type, strikes)` rings now and schedules later strikes (`pendingStrikes`); `cancelPendingBells()` drops the ones not yet rung. Each strike reads the current bell volume.
@@ -116,8 +118,8 @@ The owner works out the desired behavior by live-testing, so these can change - 
 
 ### Known platform limits
 - iOS pauses JavaScript when the screen locks, so no timer runs until unlock; bells can't ring while locked.
-- iOS Safari has historically ignored `HTMLMediaElement.volume`, so the sliders may do nothing there.
-- The planned fix for both is the Web Audio API (pre-scheduled bells, gain nodes), pending a real-device check. Old attempt: branch `claude/locked-screen-audio-6Q8xo` (PR #7) - keep it.
+- iOS ignores `HTMLMediaElement.volume` (confirmed on an iPhone: gentle ending didn't fade). Bells now use a Web Audio gain; the ambient sound (slider, gentle ending) still needs moving to Web Audio.
+- Locked screen: pre-scheduling bells in Web Audio is the remaining idea. Old attempt: branch `claude/locked-screen-audio-6Q8xo` (PR #7) - keep it.
 
 ### Security headers
 `vercel.json` sets the real HTTP headers: CSP (incl. `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, Permissions-Policy. `index.html` repeats CSP and others as `<meta>` tags, but browsers ignore `frame-ancestors` and `X-Frame-Options` in meta tags - clickjacking protection comes from `vercel.json`. Keep both CSPs in sync; the CSP allows only same-origin scripts and media.
@@ -171,10 +173,12 @@ The gradients are Tailwind arbitrary-value classes in `App.jsx` (`from-[#FDE68A]
 - **Playwright** (`e2e/`): the production build in Chromium, WebKit and an iPhone 15 profile. First time: `npx playwright install chromium webkit`.
   - The page clock is faked **and frozen** (`clock.install()` then `clock.pauseAt()`); an unfrozen fake clock keeps flowing in real time, which made a test flaky on slow CI. Advance with `clock.fastForward` in 1-minute jumps; `runFor` fires every 100ms tick and is far too slow for long sessions.
   - Playwright matches accessible names as **substrings** by default (Testing Library matches whole names): use `exact: true` for short names like `Start` ("Start bell: 3 strikes" also contains it).
-  - Sounds are recorded, not heard: an init script wraps `HTMLMediaElement.prototype.play` and pushes file paths to `window.__sounds`.
+  - Sounds are recorded, not heard: an init script wraps `HTMLMediaElement.prototype.play` (muted) and Web Audio (`decodeAudioData` mapped back to file paths, `AudioBufferSourceNode.start`; output routed through a muted gain) and pushes file paths to `window.__sounds`; `window.__soundLog` says how each played (`element` / `webaudio` + context state), `window.__decodedSounds` counts decoded bells, `window.__audioStates` records context state changes.
+  - Bells now start a moment after the tap (they wait for audio to resume), so poll sound counts (`expect.poll(() => countSound(…))`), and wait for the start bell before `fastForward` - otherwise the fake clock jumps past the 1s resume wait.
+  - Headless WebKit pages in parallel runs interrupt each other's Web Audio (context state `interrupted`) even when muted; bells then rightly fall back to `<audio>`. Tests that insist on Web Audio skip when an interruption was recorded (they pass with `--workers=1`).
 - **CI**: `ci.yml` (npm ci, lint, test, build) and `e2e.yml` (Playwright, report uploaded on failure), both on Node 24, on every PR and push to `main`.
 - **Bug fixes are test-first**: write a test, confirm it fails on the old code, then fix. When a new test passes immediately, check it against the old code before trusting it.
-- Still manual: real audio in different browsers, iPhone (locked screen, volume), layout on real devices, long real-time sessions.
+- Still manual: real audio in different browsers, **iPhone (every bell - start, woodblock, end - after a real session; emulators don't enforce iOS's no-sound-without-a-tap rule)**, locked screen, volume, layout on real devices, long real-time sessions.
 
 ## Workflow
 

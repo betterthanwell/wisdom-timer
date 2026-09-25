@@ -1,20 +1,75 @@
 import { test, expect } from '@playwright/test';
 
 // Record which sounds the app plays (by file path), keeping them silent.
-// Real play() still runs so the app's audio logic behaves normally; if a
-// browser can't decode the file, the app just logs an error.
+// Sounds still really play so the app's audio logic behaves normally; if a
+// browser can't decode the file, the app just logs an error. __soundLog also
+// says how each played: on an <audio> element, or through Web Audio (with
+// the audio context's state at that moment).
 const recordSounds = () => {
   window.__sounds = [];
+  window.__soundLog = [];
+  window.__decodedSounds = 0;
+  window.__audioStates = [];
+  const record = (path, entry) => {
+    window.__sounds.push(path);
+    window.__soundLog.push({ path, ...entry });
+  };
+
   const realPlay = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function (...args) {
-    window.__sounds.push(new URL(this.src, location.href).pathname);
+    record(new URL(this.src, location.href).pathname, { via: 'element' });
     this.muted = true;
     return realPlay.apply(this, args);
+  };
+
+  // Web Audio: remember which file each decoded bell came from
+  const downloadedFrom = new WeakMap(); // ArrayBuffer -> path
+  const decodedFrom = new WeakMap(); // AudioBuffer -> path
+  const realArrayBuffer = Response.prototype.arrayBuffer;
+  Response.prototype.arrayBuffer = async function () {
+    const data = await realArrayBuffer.call(this);
+    downloadedFrom.set(data, new URL(this.url).pathname);
+    return data;
+  };
+  const realDecode = BaseAudioContext.prototype.decodeAudioData;
+  BaseAudioContext.prototype.decodeAudioData = async function (data, ...args) {
+    const path = downloadedFrom.get(data);
+    const buffer = await realDecode.call(this, data, ...args);
+    if (path) {
+      decodedFrom.set(buffer, path);
+      window.__decodedSounds++;
+    }
+    return buffer;
+  };
+  // Keep Web Audio silent too: anything connected to the speakers goes
+  // through a muted gain. (Audible pages in parallel test runs take WebKit's
+  // audio from each other - the context turns "interrupted".)
+  const muted = new WeakMap(); // context -> muted gain
+  const realConnect = AudioNode.prototype.connect;
+  AudioNode.prototype.connect = function (destination, ...args) {
+    if (destination !== this.context.destination) return realConnect.call(this, destination, ...args);
+    if (!muted.has(this.context)) {
+      const context = this.context;
+      context.addEventListener('statechange', () => window.__audioStates.push(context.state));
+      const gain = context.createGain();
+      gain.gain.value = 0;
+      realConnect.call(gain, this.context.destination);
+      muted.set(this.context, gain);
+    }
+    return realConnect.call(this, muted.get(this.context), ...args);
+  };
+
+  const realStart = AudioBufferSourceNode.prototype.start;
+  AudioBufferSourceNode.prototype.start = function (...args) {
+    const path = this.buffer && decodedFrom.get(this.buffer);
+    if (path) record(path, { via: 'webaudio', state: this.context.state });
+    return realStart.apply(this, args);
   };
 };
 
 const soundsPlayed = (page) => page.evaluate(() => window.__sounds);
 const countSound = async (page, name) => (await soundsPlayed(page)).filter((path) => path.includes(name)).length;
+const soundLog = (page) => page.evaluate(() => window.__soundLog);
 
 // Advance the fake clock in 1-minute jumps. fastForward fires each due timer
 // once per jump (like a throttled background tab) instead of every 100ms
@@ -39,9 +94,11 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
   // Freeze the clock so time only moves when a test moves it - otherwise real
   // time keeps flowing on top, and slow CI machines see e.g. 08:59 for 09:00.
-  // Jumping ahead also lets sound loading's 2s fallback timeouts fire.
+  // Jumping ahead also lets sound loading's 2s fallback timeouts fire -
+  // unless the app set them up after the jump; then Start waits for the bells
+  // to be decoded, which can take several seconds in busy parallel runs.
   await page.clock.pauseAt(new Date(START.getTime() + 60 * 60 * 1000));
-  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Start', exact: true })).toBeEnabled({ timeout: 20_000 });
 });
 
 test('a full 45-minute session: start bell, countdown, end bell', async ({ page }) => {
@@ -49,7 +106,7 @@ test('a full 45-minute session: start bell, countdown, end bell', async ({ page 
 
   await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect(page.getByText('Meditating...')).toBeVisible();
-  expect(await countSound(page, 'bell-start')).toBe(1);
+  await expect.poll(() => countSound(page, 'bell-start')).toBe(1);
   // The frozen clock reads 09:00 at Start
   await expect(page.getByText(/^Ends at 09:45/)).toBeVisible();
 
@@ -59,7 +116,42 @@ test('a full 45-minute session: start bell, countdown, end bell', async ({ page 
   await passMinutes(page, 25);
   await expect(page.getByText('Complete')).toBeVisible();
   await expect(page.getByText('00:00')).toBeVisible();
-  expect(await countSound(page, 'bell-end')).toBe(1);
+  await expect.poll(() => countSound(page, 'bell-end')).toBe(1);
+});
+
+test('after the Start tap, the woodblock and end bell ring through unlocked Web Audio', async ({ page }) => {
+  // Bells decoded (until then they'd ring on <audio> elements)
+  await expect.poll(() => page.evaluate(() => window.__decodedSounds), { timeout: 30_000 }).toBe(3);
+  await page.getByRole('switch', { name: 'Interval woodblock' }).click();
+  await page.getByLabel('Interval in minutes').fill('1');
+  await page.getByLabel('Starting after, in minutes').fill('1');
+  await setDuration(page, 2);
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  // (The start bell waits a moment for audio to resume, in real time; don't
+  // let the fake clock jump past that)
+  await expect.poll(() => countSound(page, 'bell-start')).toBe(1);
+  await passMinutes(page, 2);
+  await expect(page.getByText('Complete')).toBeVisible();
+
+  const log = await soundLog(page);
+  expect(log.map((entry) => entry.path)).toEqual([
+    '/audio/bells/bell-start.mp3',
+    '/audio/bells/bell-interval.mp3',
+    '/audio/bells/bell-end.mp3',
+  ]);
+  // WebKit can take audio away from a page (iOS: a call, another app; in
+  // parallel test runs: other test pages) - the context turns "interrupted"
+  // and bells rightly fall back to <audio> elements. Otherwise:
+  const states = await page.evaluate(() => window.__audioStates);
+  test.skip(states.includes('interrupted'), `WebKit interrupted audio during the test (${states.join(' → ')})`);
+
+  // Bells started by timers (no tap) must not depend on <audio> elements,
+  // which iOS won't start without a tap
+  expect(log).toEqual([
+    { path: '/audio/bells/bell-start.mp3', via: 'webaudio', state: expect.stringMatching(/^(suspended|running)$/) },
+    { path: '/audio/bells/bell-interval.mp3', via: 'webaudio', state: 'running' },
+    { path: '/audio/bells/bell-end.mp3', via: 'webaudio', state: 'running' },
+  ]);
 });
 
 test('the interval woodblock starts after its own time, repeats, and skips the end', async ({ page }) => {
@@ -72,8 +164,8 @@ test('the interval woodblock starts after its own time, repeats, and skips the e
   await passMinutes(page, 17);
 
   await expect(page.getByText('Complete')).toBeVisible();
-  expect(await countSound(page, 'bell-interval')).toBe(3); // 2, 7 and 12 min - not 17
-  expect(await countSound(page, 'bell-end')).toBe(1);
+  await expect.poll(() => countSound(page, 'bell-interval')).toBe(3); // 2, 7 and 12 min - not 17
+  await expect.poll(() => countSound(page, 'bell-end')).toBe(1);
 });
 
 test('pausing holds the time; resuming rings the start bell and finishes on schedule', async ({ page }) => {
@@ -92,7 +184,7 @@ test('pausing holds the time; resuming rings the start bell and finishes on sche
   await expect(page.getByRole('button', { name: '30m' })).toBeDisabled();
 
   await page.getByRole('button', { name: 'Start', exact: true }).click();
-  expect(await countSound(page, 'bell-start')).toBe(2);
+  await expect.poll(() => countSound(page, 'bell-start')).toBe(2);
 
   await passMinutes(page, 9);
   await expect(page.getByText('Complete')).toBeVisible();
@@ -151,11 +243,11 @@ test('settling in: a silent countdown, then the start bell', async ({ page }) =>
 
   await expect(page.getByText('Settling in…')).toBeVisible();
   await expect(page.getByText('00:20')).toBeVisible();
-  expect(await countSound(page, 'bell-start')).toBe(0);
+  await expect.poll(() => countSound(page, 'bell-start')).toBe(0);
 
   await passSeconds(page, 20);
   await expect(page.getByText('Meditating...')).toBeVisible();
-  expect(await countSound(page, 'bell-start')).toBe(1);
+  await expect.poll(() => countSound(page, 'bell-start')).toBe(1);
 });
 
 test('bell patterns: three strikes to begin, five seconds apart', async ({ page }) => {
@@ -163,12 +255,12 @@ test('bell patterns: three strikes to begin, five seconds apart', async ({ page 
   await page.getByRole('switch', { name: 'Show bell strikes' }).click();
   await page.getByRole('button', { name: 'Start bell: 3 strikes' }).click();
   await page.getByRole('button', { name: 'Start', exact: true }).click();
-  expect(await countSound(page, 'bell-start')).toBe(1);
+  await expect.poll(() => countSound(page, 'bell-start')).toBe(1);
 
   await page.clock.runFor(5_000);
-  expect(await countSound(page, 'bell-start')).toBe(2);
+  await expect.poll(() => countSound(page, 'bell-start')).toBe(2);
   await page.clock.runFor(5_000);
-  expect(await countSound(page, 'bell-start')).toBe(3);
+  await expect.poll(() => countSound(page, 'bell-start')).toBe(3);
 });
 
 test('open-ended sitting: counts up until Finish', async ({ page }) => {
@@ -182,7 +274,7 @@ test('open-ended sitting: counts up until Finish', async ({ page }) => {
   await page.getByRole('button', { name: 'Finish' }).click();
   await expect(page.getByText('Complete')).toBeVisible();
   await expect(page.getByText('20:00')).toBeVisible();
-  expect(await countSound(page, 'bell-end')).toBe(1);
+  await expect.poll(() => countSound(page, 'bell-end')).toBe(1);
 });
 
 test('ambient sound starts with the session', async ({ page }) => {
@@ -190,7 +282,7 @@ test('ambient sound starts with the session', async ({ page }) => {
   await page.getByRole('button', { name: 'Start', exact: true }).click();
   await passSeconds(page, 1);
 
-  expect(await countSound(page, 'ambient/rain')).toBe(1);
+  await expect.poll(() => countSound(page, 'ambient/rain')).toBe(1);
 });
 
 test('keyboard: Space starts and pauses, R resets', async ({ page }) => {
