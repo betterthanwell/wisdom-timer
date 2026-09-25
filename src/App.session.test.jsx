@@ -110,6 +110,26 @@ describe('App', () => {
       expect(screen.getByText('Session 2')).toBeTruthy();
     });
 
+    it('a new session cancels end-bell strikes still to ring, before its start bell', async () => {
+      await renderApp();
+      completeOneSecondSession();
+      vi.clearAllMocks();
+      click('Start');
+
+      const [cancelled] = audioManager.cancelPendingBells.mock.invocationCallOrder;
+      const [startBell] = audioManager.playBell.mock.invocationCallOrder;
+      expect(cancelled).toBeLessThan(startBell);
+    });
+
+    it("resuming doesn't cancel the start bell's strikes", async () => {
+      await renderApp();
+      click('Start');
+      vi.clearAllMocks();
+      click('Pause');
+      click('Start');
+      expect(audioManager.cancelPendingBells).not.toHaveBeenCalled();
+    });
+
     it('does not count a session that was reset before finishing', async () => {
       await renderApp();
       click('Start');
