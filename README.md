@@ -6,6 +6,12 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 
 ![React](https://img.shields.io/badge/React-19.3-blue) ![Vite](https://img.shields.io/badge/Vite-8.3-purple) ![Tailwind](https://img.shields.io/badge/Tailwind-4.3-cyan) ![Tests](https://img.shields.io/badge/tests-Vitest%20%2B%20Playwright-green)
 
+## 🕊️ Free, for good
+
+No streaks, no stats, no accounts, no ads, no analytics, no payments - not even micropayments. Nothing to nudge you back, nothing to buy, no evil whatsoever: just a timer, some bells and a quiet screen.
+
+Free for anyone, anywhere, any time, for ever.
+
 ## ✨ Features
 
 ### Timer
