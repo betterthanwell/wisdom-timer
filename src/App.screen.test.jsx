@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen, waitFor, render } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, render } from '@testing-library/react';
 import App from './App';
 import { audioManager } from './utils/audioManager';
 import { button, click, renderApp, setUpAppTests } from './test/appTestUtils';
@@ -40,6 +40,51 @@ describe('App', () => {
       expect(dimmed()).toBe(true);
     });
 
+    const dimColor = () => screen.getByTestId('quiet-dim').style.backgroundColor;
+    const dimLevel = () => screen.getByRole('slider', { name: 'Dimming level' });
+
+    it('dims to the chosen level', async () => {
+      await renderApp();
+      expect(dimColor()).toBe('rgba(0, 0, 0, 0.25)');
+
+      fireEvent.change(dimLevel(), { target: { value: '60' } });
+      expect(dimColor()).toBe('rgba(0, 0, 0, 0.6)');
+      click('Start');
+      expect(dimmed()).toBe(true);
+    });
+
+    it('with dimming off, still hides the settings but leaves the page bright', async () => {
+      await renderApp();
+      fireEvent.click(screen.getByRole('switch', { name: 'Dim the screen' }));
+      expect(screen.queryByRole('slider', { name: 'Dimming level' })).toBe(null);
+
+      click('Start');
+      expect(settingsVisible()).toBe(false);
+      expect(dimmed()).toBe(false);
+    });
+
+    // So the level can be chosen without starting a session
+    it('shows the dimming for a moment while its level is changed', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      await renderApp();
+      fireEvent.change(dimLevel(), { target: { value: '50' } });
+      expect(dimmed()).toBe(true);
+
+      act(() => {
+        vi.advanceTimersByTime(1600);
+      });
+      expect(dimmed()).toBe(false);
+    });
+
+    it('remembers dimming and its level', async () => {
+      await renderApp();
+      fireEvent.change(dimLevel(), { target: { value: '40' } });
+      fireEvent.click(screen.getByRole('switch', { name: 'Dim the screen' }));
+      const saved = JSON.parse(localStorage.getItem('wisdomTimerSettings'));
+      expect(saved.dimScreen).toBe(false);
+      expect(saved.dimLevel).toBe(0.4);
+    });
+
     it('shows everything again when paused, and is quiet again on the next start', async () => {
       await renderApp();
       click('Start');
@@ -51,6 +96,41 @@ describe('App', () => {
 
       click('Start');
       expect(settingsVisible()).toBe(false);
+    });
+  });
+
+  describe('the glow around the time (nimitta)', () => {
+    // How each glow layer's breathing animation is set to play
+    const breath = () => [
+      ...new Set(
+        [...screen.getByTestId('nimitta').querySelectorAll('.nimitta-breath')].map((el) => el.style.animationPlayState)
+      ),
+    ];
+
+    it('breathes while a session runs, and holds still when paused or reset', async () => {
+      await renderApp();
+      expect(breath()).toEqual(['paused']);
+
+      click('Start');
+      expect(breath()).toEqual(['running']);
+
+      click('Pause');
+      expect(breath()).toEqual(['paused']);
+
+      click('Start');
+      click('Reset');
+      expect(breath()).toEqual(['paused']);
+    });
+
+    it('breathes while settling in, too', async () => {
+      await renderApp();
+      click('Settle in for 10s');
+      click('Start');
+      expect(screen.getByText('Settling in…')).toBeTruthy();
+      expect(breath()).toEqual(['running']);
+
+      click('Cancel');
+      expect(breath()).toEqual(['paused']);
     });
   });
 

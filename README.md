@@ -10,12 +10,13 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 
 ### Timer
 - **Any duration** from 0:01 to 99:59 with minute/second inputs; **presets** for 30, 45, 60 and 90 minutes (default 45)
-- **Settling in** (optional) - a silent 10 s to 1 min countdown before the start bell of a new session, so you can put the phone down and get comfortable; Cancel, Space or Reset stop it
+- **Settling in** (optional) - a silent 5 s to 1 min countdown before the start bell of a new session, so you can put the phone down and get comfortable; Cancel, Space or Reset stop it
 - **Open-ended sitting** (optional) - count up from 00:00 with no set end; interval bells keep ringing, and **Finish** rings the end bell and completes the session
 - **Pause and resume** - the start bell rings again when you resume
 - **Play after a finished session starts the next one** - no need to press Reset
+- **The time as a soft light** - no box around it: the time sits in a warm glow (think *nimitta*) that breathes slowly while you sit - 4 s swelling, 4 s settling - and holds still when paused. The session's progress is a thin trail of light around it; Play, Pause and Reset sit on the card below
 - **"Ends at 07:45"** under the timer while a session runs (in your device's time format)
-- **Quiet screen while sitting** - while the timer runs, the settings and hints are hidden and the page dims slightly; "Show settings" brings them back
+- **Quiet screen while sitting** - while the timer runs, the settings and hints are hidden and the page dims around the glowing time and the metta phrase (on by default; how dark is up to you, 10-90%); "Show settings" brings them back
 - **Session counter** - "Session 1", "Session 2", … for sessions completed today (kept in memory: it starts over on reload and on a new day)
 - **Keeps the screen awake** while a session runs (on by default, can be turned off), so your phone doesn't lock mid-session - in browsers that support it
 - **Stays on time in background tabs** - the end and interval bells are scheduled directly, so they ring on time even when the browser slows down timers for a hidden tab
