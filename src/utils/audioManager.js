@@ -113,11 +113,18 @@ export class AudioManager {
     this.needsFreshAudio = false;
     debugLog.add(`fresh audio after an interruption (was ${this.context.state})`);
     this.clearFade();
+    // Silence and unload the old element first: a closing context may hand
+    // it back to the speakers, and iOS may resume what played before a call
+    // (a second voice, briefly, on an iPhone)
+    const oldElement = this.ambientAudio;
+    oldElement.muted = true;
+    oldElement.pause();
+    oldElement.removeAttribute('src');
+    oldElement.load();
     this.context.close?.().catch(() => {});
     this.ringingSources.clear();
     this.ambientGain = null;
     this.resuming = null;
-    this.ambientAudio.pause();
     this.currentAmbient = null;
     this.clearInterruption();
     this.createAmbientElement();

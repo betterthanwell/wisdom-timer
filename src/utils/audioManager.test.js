@@ -19,6 +19,10 @@ class FakeAudio {
 
   load() {}
 
+  removeAttribute(name) {
+    if (name === 'src') this.src = '';
+  }
+
   play() {
     if (FakeAudio.failNextPlay) {
       FakeAudio.failNextPlay = false;
@@ -842,6 +846,11 @@ describe('AudioManager with Web Audio', () => {
 
       // Carry on
       manager.unlock();
+      // The old element is silenced and unloaded, so neither the closing
+      // context nor iOS (resuming what played before a call) can play it
+      expect(oldElement.paused).toBe(true);
+      expect(oldElement.muted).toBe(true);
+      expect(oldElement.src).toBe('');
       expect(oldContext.state).toBe('closed');
       expect(context()).not.toBe(oldContext);
       expect(manager.ambientAudio).not.toBe(oldElement);
