@@ -12,11 +12,12 @@ export const AUDIO_SOURCES = {
   // Guided meditations by Thanissaro Bhikkhu (dhammatalks.org), unmodified.
   // `seconds`: the recording's length as browsers decode it (measured in
   // Chromium; the session lasts exactly this long after the lead-in).
+  // `length`: how it's described in the settings - roughly, in words.
   guided: {
-    metta: { path: '/audio/guided/metta.mp3', name: 'Metta', seconds: 248.576 },
-    'breath-12': { path: '/audio/guided/breath-12.mp3', name: 'Breath, short', seconds: 736.311 },
-    'breath-30': { path: '/audio/guided/breath-30.mp3', name: 'Breath, older', seconds: 1772.022 },
-    'breath-40': { path: '/audio/guided/breath-40.mp3', name: 'Breath, with leaving', seconds: 2399.985 },
+    metta: { path: '/audio/guided/metta.mp3', name: 'Metta', length: 'Four minutes', seconds: 248.576 },
+    'breath-12': { path: '/audio/guided/breath-12.mp3', name: 'Breath, short', length: '12 minutes', seconds: 736.311 },
+    'breath-30': { path: '/audio/guided/breath-30.mp3', name: 'Breath, older', length: 'Half an hour', seconds: 1772.022 },
+    'breath-40': { path: '/audio/guided/breath-40.mp3', name: 'Breath, with leaving', length: '40 minutes', seconds: 2399.985 },
   },
 };
 

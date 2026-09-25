@@ -1,6 +1,5 @@
 import { Headphones, CloudDownload, CloudOff, Check } from 'lucide-react';
 import { AUDIO_SOURCES, GUIDED_SOURCE } from '../../constants/audioSources';
-import { formatTime } from '../../utils/timeFormatter';
 import { Switch } from '../UI/Switch';
 import { SettingLabel } from '../UI/SettingLabel';
 import { ChoiceButton } from '../UI/ChoiceButton';
@@ -28,7 +27,7 @@ export const GuidedSetting = ({ enabled, track, downloads = {}, onToggle, onTrac
       {enabled && (
         <>
           <div role="group" aria-label="Guided meditations" className="grid grid-cols-2 gap-2">
-            {TRACKS.map(({ id, name, seconds }) => {
+            {TRACKS.map(({ id, name, length }) => {
               const { state, progress = 0 } = downloads[id] ?? {};
               const StatusIcon = state === 'failed' ? CloudOff : state === 'kept' ? Check : CloudDownload;
               return (
@@ -52,7 +51,7 @@ export const GuidedSetting = ({ enabled, track, downloads = {}, onToggle, onTrac
                   </span>
                   <span className="leading-tight">
                     <span className="block">{name}</span>
-                    <span className="block text-xs text-white/70">{formatTime(Math.round(seconds))}</span>
+                    <span className="block text-xs text-white/70">{length}</span>
                   </span>
                 </ChoiceButton>
               );

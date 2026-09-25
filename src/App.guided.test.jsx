@@ -48,6 +48,9 @@ describe('App', () => {
       expect(button(/^Breath, short/)).toBeTruthy();
       expect(button(/^Breath, older/)).toBeTruthy();
       expect(button(/^Breath, with leaving/)).toBeTruthy();
+      // Lengths in words, not mm:ss
+      expect(button(/^Metta/).textContent).toBe('MettaFour minutes');
+      expect(button(/^Breath, older/).textContent).toBe('Breath, olderHalf an hour');
       expect(screen.getByRole('link', { name: /Thanissaro Bhikkhu/ })).toBeTruthy();
 
       expect(screen.queryByRole('button', { name: '45m' })).toBe(null);
