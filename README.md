@@ -14,8 +14,9 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 - **Open-ended sitting** (optional) - count up from 00:00 with no set end; interval bells keep ringing, and **Finish** rings the end bell and completes the session
 - **Pause and resume** - the start bell rings again when you resume
 - **Play after a finished session starts the next one** - no need to press Reset
+- **The time as a soft light** - no box around it: the time sits in a warm glow (think *nimitta*) that breathes slowly while you sit - 4 s swelling, 4 s settling - and holds still when paused. The session's progress is a thin trail of light around it; Play, Pause and Reset sit on the card below
 - **"Ends at 07:45"** under the timer while a session runs (in your device's time format)
-- **Quiet screen while sitting** - while the timer runs, the settings and hints are hidden and the page dims slightly; "Show settings" brings them back
+- **Quiet screen while sitting** - while the timer runs, the settings and hints are hidden and the page dims slightly around the glowing time; "Show settings" brings them back
 - **Session counter** - "Session 1", "Session 2", … for sessions completed today (kept in memory: it starts over on reload and on a new day)
 - **Keeps the screen awake** while a session runs (on by default, can be turned off), so your phone doesn't lock mid-session - in browsers that support it
 - **Stays on time in background tabs** - the end and interval bells are scheduled directly, so they ring on time even when the browser slows down timers for a hidden tab
@@ -26,7 +27,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 - **End bell** - resonant "gling" (~35 s)
 - **Ambient sounds** - rain, ocean waves or forest, looping, with a 0.5 s fade in and out
 - **Bell patterns** - each bell (start, interval, end) can ring 1, 2 or 3 times, e.g. three strikes to begin and end; bowls 5 s apart, woodblock knocks 2 s apart. The choices sit behind a "Bell strikes" switch; your choices keep applying when they're hidden
-- **Metta mode** (optional) - the four loving-kindness phrases take turns in large letters above the timer while you sit: *May I be happy. May my loved ones be happy. May those I find difficult be happy. May all beings everywhere be happy.* Each shows for 5, 10, 20 or 30 seconds (default 10), then the cycle starts again
+- **Metta mode** (optional) - the four loving-kindness phrases take turns in large letters below the controls while you sit: *May I be happy. May my loved ones be happy. May those I find difficult be happy. May all beings everywhere be happy.* Each shows for 5, 10, 20 or 30 seconds (default 10), then the cycle starts again
 - **Gentle ending** (on by default) - the ambient sound fades out over the last minute, so the end bell arrives into silence
 - **Separate volume sliders** for bells and ambient sound; changes apply immediately, including to a bell that is still ringing
 

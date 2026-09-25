@@ -54,6 +54,41 @@ describe('App', () => {
     });
   });
 
+  describe('the glow around the time (nimitta)', () => {
+    // How each glow layer's breathing animation is set to play
+    const breath = () => [
+      ...new Set(
+        [...screen.getByTestId('nimitta').querySelectorAll('.nimitta-breath')].map((el) => el.style.animationPlayState)
+      ),
+    ];
+
+    it('breathes while a session runs, and holds still when paused or reset', async () => {
+      await renderApp();
+      expect(breath()).toEqual(['paused']);
+
+      click('Start');
+      expect(breath()).toEqual(['running']);
+
+      click('Pause');
+      expect(breath()).toEqual(['paused']);
+
+      click('Start');
+      click('Reset');
+      expect(breath()).toEqual(['paused']);
+    });
+
+    it('breathes while settling in, too', async () => {
+      await renderApp();
+      click('Settle in for 10s');
+      click('Start');
+      expect(screen.getByText('Settling in…')).toBeTruthy();
+      expect(breath()).toEqual(['running']);
+
+      click('Cancel');
+      expect(breath()).toEqual(['paused']);
+    });
+  });
+
   describe('keep screen awake', () => {
     let wakeLock;
 

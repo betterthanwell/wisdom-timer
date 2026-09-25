@@ -1,9 +1,5 @@
 @import "tailwindcss";
 
-@theme {
-  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
 @keyframes enlightenmentBurst {
   0%, 100% {
     opacity: 0;
@@ -78,6 +74,23 @@
   animation-fill-mode: both;
 }
 
+/* The nimitta's glow breathes: 4 s swelling, 4 s settling. Small enough that
+   the light stays steady; paused (animation-play-state) when not sitting. */
+@keyframes nimittaBreath {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.nimitta-breath {
+  animation: nimittaBreath 8s ease-in-out infinite;
+}
+
 /* Glass-morphism utility classes */
 .glass-card {
   background: rgba(255, 255, 255, 0.1);
@@ -124,8 +137,9 @@
     transition-duration: 0.01ms !important;
   }
 
-  /* No flashing: just show each phrase */
-  .metta-phrase {
+  /* No flashing: just show each phrase; a still glow */
+  .metta-phrase,
+  .nimitta-breath {
     animation: none !important;
   }
 }

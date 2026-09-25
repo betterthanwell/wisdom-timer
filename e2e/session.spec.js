@@ -148,10 +148,10 @@ test('quiet screen: settings hide while running and come back on request', async
   await expect(page.getByRole('button', { name: /settings$/ })).toBeHidden();
 });
 
-test('quiet screen: the dim covers the whole page, cards and text included', async ({ page }) => {
+test('quiet screen: the dim covers the whole page, cards and text included - all but the glowing time', async ({ page }) => {
   await page.getByRole('button', { name: 'Start', exact: true }).click();
 
-  // Is the dim layer the topmost thing over the title and the timer? (It
+  // Is the dim layer the topmost thing over the title and the controls? (It
   // ignores clicks, so let it take part in hit-testing just for the check.)
   const dimIsOnTop = (name) =>
     page.evaluate((selector) => {
@@ -165,6 +165,8 @@ test('quiet screen: the dim covers the whole page, cards and text included', asy
 
   expect(await dimIsOnTop('h1')).toBe(true);
   expect(await dimIsOnTop('[aria-label="Pause"]')).toBe(true);
+  // The time and its glow (the nimitta) shine on above it
+  expect(await dimIsOnTop('[data-testid="nimitta"]')).toBe(false);
 });
 
 test('settling in: a silent countdown, then the start bell', async ({ page }) => {
@@ -269,7 +271,7 @@ test('the keyboard hint shows with a mouse or trackpad, not on a touch screen', 
   }
 });
 
-test('metta mode: the phrases take turns above the timer while sitting', async ({ page }) => {
+test('metta mode: the phrases take turns below the controls while sitting', async ({ page }) => {
   await page.getByRole('switch', { name: 'Metta mode' }).click();
   await page.getByRole('button', { name: 'Start', exact: true }).click();
 

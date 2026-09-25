@@ -313,7 +313,7 @@ function MeditationTimerApp() {
 
   return (
     <div
-      className={`min-h-dvh flex justify-center px-4 py-6 sm:py-12 transition-colors duration-[3000ms] ease-in-out ${
+      className={`min-h-dvh flex justify-center overflow-x-clip px-4 py-6 sm:py-12 transition-colors duration-[3000ms] ease-in-out ${
         showBrightBg
           ? 'bg-gradient-to-br from-[#FFFBEB] via-[#FEF3C7] to-[#FDE047]'
           : 'bg-gradient-to-br from-[#FDE68A] to-[#F97316]'
@@ -344,27 +344,20 @@ function MeditationTimerApp() {
           {showBrightBg ? 'Wisdom Time!' : 'Wisdom Timer'}
         </h1>
 
-        {/* Metta phrases in their own card, while a session is under way */}
-        {state.mettaMode && (timer.isRunning || timer.isPaused) && (
-          <MettaCard
-            elapsed={timer.duration - timer.timeRemaining}
-            seconds={state.mettaSeconds}
-            isRunning={timer.isRunning}
-          />
-        )}
+        {/* The time, shining free of any card */}
+        <TimerDisplay
+          timeRemaining={displaySeconds}
+          progress={state.openEnded ? 0 : timer.progress}
+          isRunning={timer.isRunning}
+          isPaused={timer.isPaused}
+          isComplete={timer.isComplete}
+          sessionNumber={sessionNumber}
+          endsAt={state.openEnded ? null : timer.endsAt}
+          settleRemaining={isSettling ? settleRemaining : null}
+        />
 
-        {/* Main Timer Card */}
-        <GlassCard strong className="px-5 py-6 sm:p-10 space-y-3">
-          <TimerDisplay
-            timeRemaining={displaySeconds}
-            progress={state.openEnded ? 0 : timer.progress}
-            isRunning={timer.isRunning}
-            isPaused={timer.isPaused}
-            isComplete={timer.isComplete}
-            sessionNumber={sessionNumber}
-            endsAt={state.openEnded ? null : timer.endsAt}
-            settleRemaining={isSettling ? settleRemaining : null}
-          />
+        {/* The controls, on the topmost card */}
+        <GlassCard strong className="px-5 py-5">
           <TimerControls
             isRunning={timer.isRunning}
             isSettling={isSettling}
@@ -378,6 +371,15 @@ function MeditationTimerApp() {
             startDisabled={timer.timeRemaining === 0 && !timer.isComplete}
           />
         </GlassCard>
+
+        {/* Metta phrases in their own card, while a session is under way */}
+        {state.mettaMode && (timer.isRunning || timer.isPaused) && (
+          <MettaCard
+            elapsed={timer.duration - timer.timeRemaining}
+            seconds={state.mettaSeconds}
+            isRunning={timer.isRunning}
+          />
+        )}
 
         {/* While running, settings stay out of the way until asked for */}
         {inSession && (
