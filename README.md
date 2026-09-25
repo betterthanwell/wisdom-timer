@@ -42,7 +42,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 - **Enlightenment burst** - a 9-second light animation in three waves, and the title briefly reads "Wisdom Time!"
 
 ### Everything else
-- **Keyboard shortcuts** - Space to start/pause, R to reset (browser shortcuts like Cmd/Ctrl+R are left alone, and typing in a field never triggers them); the hint is shown only with a mouse or trackpad, not on touch screens
+- **Keyboard shortcuts** - Space to start/pause, R to reset (browser shortcuts like Cmd/Ctrl+R are left alone, typing in a field never triggers them, and Space on a button reached with Tab presses that button); the hint is shown only with a mouse or trackpad, not on touch screens
 - **Settings are remembered** in the browser (localStorage) and checked when loaded, so old or damaged saved values fall back to the defaults
 - **Accessible** - labelled controls for screen readers, and animations are switched off when your system asks for reduced motion
 - **Responsive** - works on phones, tablets and desktops

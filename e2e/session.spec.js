@@ -230,6 +230,26 @@ test('keyboard: Space starts and pauses, R resets', async ({ page }) => {
   await expect(page.getByText('45:00')).toBeVisible();
 });
 
+test('keyboard: Space presses a button reached with Tab, but starts the session after a click', async ({ page, browserName }) => {
+  // Tabbed to the next preset: Space chooses it and doesn't start. (Safari's
+  // Tab skips buttons unless "Press Tab to highlight each item" is on.)
+  if (browserName !== 'webkit') {
+    await page.getByRole('button', { name: '30m' }).click();
+    await page.keyboard.press('Tab');
+    const focused = page.locator(':focus');
+    await expect(focused).toHaveAttribute('aria-pressed', 'false');
+    await page.keyboard.press('Space');
+    await expect(focused).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByText('Ready')).toBeVisible();
+  }
+
+  // Clicked: Space is still Start
+  await page.getByRole('button', { name: '30m' }).click();
+  await page.keyboard.press('Space');
+  await expect(page.getByText('Meditating...')).toBeVisible();
+  await expect(page.getByText('30:00')).toBeVisible();
+});
+
 test('settings survive a reload', async ({ page }) => {
   await page.getByRole('button', { name: '30m' }).click();
   await expect(page.getByText('30:00')).toBeVisible();
