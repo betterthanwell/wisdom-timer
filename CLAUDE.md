@@ -106,7 +106,8 @@ The owner works out the desired behavior by live-testing, so these can change - 
 
 ### Audio (`audioManager`)
 - Singleton `AudioManager`; the class is also exported so tests can create isolated instances.
-- `init()` is idempotent (React StrictMode mounts twice in dev) and delegates to `loadSounds()`: bells preload first (up to 2s each), then the ambient element is created. "Loading sounds…" shows and Start stays disabled until it's done.
+- `init()` is idempotent (React StrictMode mounts twice in dev) and delegates to `loadSounds()`: bells load first (waiting at most 2s in total, `BELL_LOAD_WAIT_MS`), then the ambient element is created. "Loading sounds…" shows and Start stays disabled until it's done.
+- Bells are held in memory: `loadBell()` downloads each file once (`fetch`) and plays it from a `blob:` URL, so bells keep ringing when the network drops mid-session (airplane mode, lost wifi). If a download is slow it rings from the file and switches to memory when the download arrives; if a download fails it keeps ringing from the file.
 - Each bell plays on a fresh `Audio` element (overlap allowed; `cloneNode()` didn't reliably keep volume). Ringing bells are tracked in `ringingBells`, so bell volume changes reach bells that are still ringing.
 - Ambient: one looping element. `fade()` runs a fixed 20 steps over 500ms and always finishes, even where the browser ignores `volume` (iOS); the fade-in reads the target volume every step.
 - `playAmbient(id)`: resumes if `id` is the current (paused) sound, otherwise switches. `currentAmbient` is set before `play()` and cleared as soon as a stop begins, so stopping while starting stays stopped.
@@ -120,7 +121,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - The planned fix for both is the Web Audio API (pre-scheduled bells, gain nodes), pending a real-device check. Old attempt: branch `claude/locked-screen-audio-6Q8xo` (PR #7) - keep it.
 
 ### Security headers
-`vercel.json` sets the real HTTP headers: CSP (incl. `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, Permissions-Policy. `index.html` repeats CSP and others as `<meta>` tags, but browsers ignore `frame-ancestors` and `X-Frame-Options` in meta tags - clickjacking protection comes from `vercel.json`. Keep both CSPs in sync; the CSP allows only same-origin scripts and media.
+`vercel.json` sets the real HTTP headers: CSP (incl. `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, Permissions-Policy. `index.html` repeats CSP and others as `<meta>` tags, but browsers ignore `frame-ancestors` and `X-Frame-Options` in meta tags - clickjacking protection comes from `vercel.json`. Keep both CSPs in sync; the CSP allows only same-origin scripts, and same-origin plus `blob:` media (the in-memory bells).
 
 ### Accessibility
 - `prefers-reduced-motion` disables animations.
@@ -171,7 +172,8 @@ The gradients are Tailwind arbitrary-value classes in `App.jsx` (`from-[#FDE68A]
 - **Playwright** (`e2e/`): the production build in Chromium, WebKit and an iPhone 15 profile. First time: `npx playwright install chromium webkit`.
   - The page clock is faked **and frozen** (`clock.install()` then `clock.pauseAt()`); an unfrozen fake clock keeps flowing in real time, which made a test flaky on slow CI. Advance with `clock.fastForward` in 1-minute jumps; `runFor` fires every 100ms tick and is far too slow for long sessions.
   - Playwright matches accessible names as **substrings** by default (Testing Library matches whole names): use `exact: true` for short names like `Start` ("Start bell: 3 strikes" also contains it).
-  - Sounds are recorded, not heard: an init script wraps `HTMLMediaElement.prototype.play` and pushes file paths to `window.__sounds`.
+  - Sounds are recorded, not heard: an init script wraps `HTMLMediaElement.prototype.play` and pushes file paths to `window.__sounds` (`blob:` URLs are mapped back to the path they were downloaded from); whether each `play()` worked goes to `window.__soundResults`.
+  - To simulate losing the network, abort requests with `page.route('**/audio/**', …)`, not `context.setOffline()`: WebKit's offline emulation also blocks media from memory (`blob:` and even `data:` URLs), most likely an emulation artifact - still to be confirmed on a real iPhone in airplane mode.
 - **CI**: `ci.yml` (npm ci, lint, test, build) and `e2e.yml` (Playwright, report uploaded on failure), both on Node 24, on every PR and push to `main`.
 - **Bug fixes are test-first**: write a test, confirm it fails on the old code, then fix. When a new test passes immediately, check it against the old code before trusting it.
 - Still manual: real audio in different browsers, iPhone (locked screen, volume), layout on real devices, long real-time sessions.

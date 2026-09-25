@@ -3,6 +3,20 @@ import { AUDIO_SOURCES } from '../constants/audioSources';
 // Time between strikes when a bell rings several times: the bowls get room
 // to ring out, the short woodblock knocks come quicker
 const BELL_STRIKE_SPACING_MS = { start: 5000, interval: 2000, end: 5000 };
+// Longest wait for the bells before Start is enabled
+const BELL_LOAD_WAIT_MS = 2000;
+
+// Download a file and keep it in memory. Returns a blob: URL for it, or null
+// if the download failed.
+const downloadToMemory = async (path) => {
+  try {
+    const response = await fetch(path);
+    if (!response.ok) return null;
+    return URL.createObjectURL(await response.blob());
+  } catch {
+    return null;
+  }
+};
 
 export class AudioManager {
   constructor() {
@@ -40,29 +54,10 @@ export class AudioManager {
 
   async loadSounds() {
     try {
-      // Create and preload bell audio elements FIRST (they're critical and small)
-      this.bells.start = new Audio(AUDIO_SOURCES.bells.start);
-      this.bells.interval = new Audio(AUDIO_SOURCES.bells.interval);
-      this.bells.end = new Audio(AUDIO_SOURCES.bells.end);
-
-      // Set bell volumes and preload
-      const bellLoadPromises = Object.values(this.bells).map(audio => {
-        if (audio) {
-          audio.volume = this.bellVolume;
-          audio.preload = 'auto';
-          audio.load(); // Force loading
-          // Return a promise that resolves when audio can play
-          return new Promise((resolve) => {
-            audio.addEventListener('canplaythrough', () => resolve(), { once: true });
-            // Timeout fallback in case loading takes too long
-            setTimeout(resolve, 2000);
-          });
-        }
-        return Promise.resolve();
-      });
-
-      // Wait for bells to load before creating ambient audio
-      await Promise.all(bellLoadPromises);
+      // Bells FIRST (they're critical and small). Loading waits at most 2s,
+      // so a slow network can't hold up Start for long.
+      const deadline = new Promise((resolve) => setTimeout(resolve, BELL_LOAD_WAIT_MS));
+      await Promise.all(Object.keys(AUDIO_SOURCES.bells).map((type) => this.loadBell(type, deadline)));
 
       // Create ambient audio element AFTER bells are ready
       this.ambientAudio = new Audio();
@@ -78,7 +73,37 @@ export class AudioManager {
     }
   }
 
-  // Play a bell sound
+  // Each strike plays on a fresh Audio element, which would load the file
+  // again - and fail once the network is gone (airplane mode, lost wifi).
+  // So each bell is downloaded once and played from memory (a blob: URL).
+  // Until the download is done (or if it fails), the bell plays from its file.
+  async loadBell(type, deadline) {
+    const path = AUDIO_SOURCES.bells[type];
+    const download = downloadToMemory(path);
+    const inMemory = await Promise.race([download, deadline.then(() => null)]);
+
+    this.bells[type] = this.createBell(inMemory ?? path);
+    if (!inMemory) {
+      // Slow network: switch to the memory copy once it arrives
+      download.then((url) => {
+        if (url) this.bells[type] = this.createBell(url);
+      });
+    }
+
+    const canPlay = new Promise((resolve) => {
+      this.bells[type].addEventListener('canplaythrough', () => resolve(), { once: true });
+    });
+    await Promise.race([canPlay, deadline]);
+  }
+
+  createBell(src) {
+    const audio = new Audio(src);
+    audio.volume = this.bellVolume;
+    audio.preload = 'auto';
+    audio.load();
+    return audio;
+  }
+
   // Ring a bell, optionally several times (a traditional pattern, e.g. three
   // strikes to begin). Later strikes are spaced out and can be cancelled.
   async playBell(type, strikes = 1) {

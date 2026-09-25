@@ -52,6 +52,10 @@ class FakeAudio {
 
 const bellElements = () => FakeAudio.instances.filter((a) => a.src.includes('/bells/'));
 
+// Most tests don't download anything: bells then play from their files (as
+// when a download fails)
+const stubFailingDownloads = () => vi.stubGlobal('fetch', () => Promise.reject(new TypeError('Failed to fetch')));
+
 describe('AudioManager', () => {
   let manager;
 
@@ -59,6 +63,7 @@ describe('AudioManager', () => {
     FakeAudio.instances = [];
     FakeAudio.failNextPlay = false;
     vi.stubGlobal('Audio', FakeAudio);
+    stubFailingDownloads();
     manager = new AudioManager();
     await manager.init();
   });
@@ -355,6 +360,7 @@ describe('AudioManager in a browser that ignores volume (iOS)', () => {
   beforeEach(async () => {
     FakeAudio.instances = [];
     vi.stubGlobal('Audio', FixedVolumeAudio);
+    stubFailingDownloads();
     manager = new AudioManager();
     await manager.init();
     vi.useFakeTimers();
@@ -387,6 +393,7 @@ describe('AudioManager set up twice (React StrictMode)', () => {
   beforeEach(() => {
     FakeAudio.instances = [];
     vi.stubGlobal('Audio', FakeAudio);
+    stubFailingDownloads();
   });
 
   afterEach(() => {
@@ -431,5 +438,86 @@ describe('AudioManager set up twice (React StrictMode)', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+// Bells are downloaded once and played from memory, so they still ring when
+// the network is gone mid-session
+describe('AudioManager bells in memory', () => {
+  const realCreateObjectURL = URL.createObjectURL;
+  let downloads; // path -> { resolve } for downloads the test finishes itself
+
+  // fetch() stand-in: `failing` paths answer 404, `slow` ones wait for the test
+  const stubDownloads = ({ failing = [], slow = [] } = {}) => {
+    downloads = {};
+    vi.stubGlobal('fetch', vi.fn((path) => {
+      const response = { ok: !failing.includes(path), blob: async () => ({ downloadedFrom: path }) };
+      if (!slow.includes(path)) return Promise.resolve(response);
+      return new Promise((resolve) => {
+        downloads[path] = { resolve: () => resolve(response) };
+      });
+    }));
+    URL.createObjectURL = (blob) => `blob:${blob.downloadedFrom}`;
+  };
+
+  // The element the most recent strike played on
+  const lastStrike = () => FakeAudio.instances.at(-1);
+
+  beforeEach(() => {
+    FakeAudio.instances = [];
+    vi.stubGlobal('Audio', FakeAudio);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    URL.createObjectURL = realCreateObjectURL;
+    vi.unstubAllGlobals();
+  });
+
+  it('downloads each bell once and rings it from memory', async () => {
+    stubDownloads();
+    const manager = new AudioManager();
+    await manager.init();
+
+    expect(fetch).toHaveBeenCalledTimes(3);
+    await manager.playBell('start');
+    expect(lastStrike().src).toBe('blob:/audio/bells/bell-start.mp3');
+    await manager.playBell('end');
+    expect(lastStrike().src).toBe('blob:/audio/bells/bell-end.mp3');
+  });
+
+  it('rings a bell from its file if its download fails', async () => {
+    stubDownloads({ failing: ['/audio/bells/bell-end.mp3'] });
+    const manager = new AudioManager();
+    await manager.init();
+
+    await manager.playBell('end');
+    expect(lastStrike().src).toBe('/audio/bells/bell-end.mp3');
+    await manager.playBell('interval');
+    expect(lastStrike().src).toBe('blob:/audio/bells/bell-interval.mp3');
+  });
+
+  it('waits at most 2 seconds for a slow download, then switches to memory when it arrives', async () => {
+    vi.useFakeTimers();
+    stubDownloads({ slow: ['/audio/bells/bell-start.mp3'] });
+    const manager = new AudioManager();
+    let ready = false;
+    manager.init().then(() => {
+      ready = true;
+    });
+
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(ready).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(ready).toBe(true);
+
+    // Not downloaded yet: rings from the file
+    await manager.playBell('start');
+    expect(lastStrike().src).toBe('/audio/bells/bell-start.mp3');
+
+    downloads['/audio/bells/bell-start.mp3'].resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    await manager.playBell('start');
+    expect(lastStrike().src).toBe('blob:/audio/bells/bell-start.mp3');
   });
 });
