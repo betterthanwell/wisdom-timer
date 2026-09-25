@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   playwright:
-    name: Playwright (Chromium, WebKit, mobile Safari)
+    name: Playwright (Chromium, Firefox, WebKit, mobile Safari)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -28,7 +28,16 @@ jobs:
 
       - run: npm ci
 
-      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright install --with-deps chromium firefox webkit
+
+      # Firefox's Web Audio needs a sound device to run (without one its
+      # audio context stays suspended and resume() never settles); the
+      # runner has none, so give it a PulseAudio server with a silent sink
+      - run: |
+          sudo apt-get install -y --no-install-recommends pulseaudio
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=silent
+          pactl set-default-sink silent
 
       # Builds the app and serves it with `vite preview` (see playwright.config.js)
       - run: npm run test:e2e

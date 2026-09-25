@@ -16,7 +16,7 @@ npm run preview      # Serve the production build
 npm run lint         # ESLint
 npm test             # Vitest, once (~9 s)
 npm run test:watch   # Vitest, watch mode
-npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profile
+npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iPhone profile
 ```
 
 ## Project Structure
@@ -192,12 +192,13 @@ The gradients are Tailwind arbitrary-value classes in `App.jsx` (`from-[#FDE68A]
 - Pure logic tests start with `// @vitest-environment node` (no jsdom to set up).
 - Vitest globals are off, so Testing Library doesn't auto-clean: call `cleanup()` in `afterEach` (`setUpAppTests()` does).
 - While iterating, run just the affected test file (`npx vitest run src/App.settle.test.jsx`) and e2e spec in Chromium (`npx playwright test -g "…" --project=chromium`, ~5-12 s); the full matrix once at the end, and CI on the PR.
-- **Playwright** (`e2e/`): the production build in Chromium, WebKit and an iPhone 15 profile. First time: `npx playwright install chromium webkit`.
+- **Playwright** (`e2e/`): the production build in Chromium, Firefox, WebKit and an iPhone 15 profile. First time: `npx playwright install chromium firefox webkit`.
   - The page clock is faked **and frozen** (`clock.install()` then `clock.pauseAt()`); an unfrozen fake clock keeps flowing in real time, which made a test flaky on slow CI. Advance with `clock.fastForward` in 1-minute jumps; `runFor` fires every 100ms tick and is far too slow for long sessions.
   - Playwright matches accessible names as **substrings** by default (Testing Library matches whole names): use `exact: true` for short names like `Start` ("Start bell: 3 strikes" also contains it).
   - Sounds are recorded, not heard: an init script (`e2e/sounds.js`, shared by both specs) wraps `HTMLMediaElement.prototype.play` (muted) and Web Audio (`decodeAudioData` mapped back to file paths, `AudioBufferSourceNode.start`; output routed through a muted gain) and pushes file paths to `window.__sounds`; `window.__soundLog` says how each played (`element` / `webaudio` + context state), `window.__decodedSounds` counts decoded bells, `window.__audioStates` records context state changes.
   - Bells now start a moment after the tap (they wait for audio to resume), so poll sound counts (`expect.poll(() => countSound(…))`), and wait for the start bell before `fastForward` - otherwise the fake clock jumps past the 1s resume wait.
   - Headless WebKit pages in parallel runs interrupt each other's Web Audio (context state `interrupted`) even when muted; bells then rightly fall back to `<audio>`. Tests that insist on Web Audio skip when an interruption was recorded (they pass with `--workers=1`).
+  - Firefox's Web Audio needs a sound device: without one its audio context stays `suspended` and `resume()` never settles, so bells wait on the frozen clock's 1s fallback forever. `e2e.yml` starts PulseAudio with a null sink; locally, have a sound server running. A failed session test prints its audio state, sounds and console to the log (`reportSoundsOnFailure()` in `e2e/sounds.js`).
   - Don't simulate losing the network with `context.setOffline()` or `route()` in WebKit: both cut WebKit off before its service worker can answer (and its offline emulation also blocks media from memory). `offline.spec.js` serves a build itself with Vite's `preview()` and stops that server.
 - **CI**: `ci.yml` (npm ci, lint, test, build) and `e2e.yml` (Playwright, report uploaded on failure), both on Node 24, on every PR and push to `main`.
 - **Bug fixes are test-first**: write a test, confirm it fails on the old code, then fix. When a new test passes immediately, check it against the old code before trusting it.

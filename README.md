@@ -76,7 +76,7 @@ npm run dev          # http://localhost:5173
 | `npm run lint` | ESLint |
 | `npm test` | Unit and component tests (Vitest), about 7 s |
 | `npm run test:watch` | Vitest in watch mode |
-| `npm run test:e2e` | End-to-end tests (Playwright) in Chromium, WebKit and an iPhone profile; builds first. One-time setup: `npx playwright install chromium webkit` |
+| `npm run test:e2e` | End-to-end tests (Playwright) in Chromium, Firefox, WebKit and an iPhone profile; builds first. One-time setup: `npx playwright install chromium firefox webkit` |
 
 ## 🧪 Testing
 
