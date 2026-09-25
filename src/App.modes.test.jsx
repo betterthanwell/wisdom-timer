@@ -207,6 +207,22 @@ describe('App', () => {
       expect(button('10 seconds per phrase').getAttribute('aria-pressed')).toBe('true');
     });
 
+    it('hides the title while it is on, and brings it back when switched off', async () => {
+      await renderApp();
+      const title = () => screen.queryByRole('heading', { name: 'Wisdom Timer' });
+      expect(title()).toBeTruthy();
+
+      fireEvent.click(mettaSwitch());
+      expect(title()).toBe(null);
+      click('Start');
+      expect(title()).toBe(null);
+      click('Reset');
+      expect(title()).toBe(null);
+
+      fireEvent.click(mettaSwitch());
+      expect(title()).toBeTruthy();
+    });
+
     it('stays visible on the quiet screen', async () => {
       await renderApp();
       fireEvent.click(mettaSwitch());

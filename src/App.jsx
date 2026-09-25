@@ -351,12 +351,15 @@ function MeditationTimerApp() {
       />
 
       <div className="w-full max-w-md sm:max-w-xl space-y-4">
-        <h1
-          className="text-3xl sm:text-5xl font-bold tracking-tight text-white text-center"
-          style={{ textShadow: '0 1px 3px rgba(120, 53, 15, 0.3), 0 0 24px rgba(255, 255, 255, 0.35)' }}
-        >
-          {showBrightBg ? 'Wisdom Time!' : 'Wisdom Timer'}
-        </h1>
+        {/* No title in metta mode: the phrases take its place at the top */}
+        {!state.mettaMode && (
+          <h1
+            className="text-3xl sm:text-5xl font-bold tracking-tight text-white text-center"
+            style={{ textShadow: '0 1px 3px rgba(120, 53, 15, 0.3), 0 0 24px rgba(255, 255, 255, 0.35)' }}
+          >
+            {showBrightBg ? 'Wisdom Time!' : 'Wisdom Timer'}
+          </h1>
+        )}
 
         {/* Metta phrases in their own card, above everything while a session is under way */}
         {state.mettaMode && (timer.isRunning || timer.isPaused) && (
