@@ -36,7 +36,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 ```
 ├── src/
 │   ├── App.jsx                  # Session flow, keyboard shortcuts, layout (default export)
-│   ├── App.*.test.jsx           # Component tests: whole app, audioManager mocked (session, settle, modes, screen)
+│   ├── App.*.test.jsx           # Component tests: whole app, audioManager mocked (session, settle, modes, screen, lockscreen, …)
 │   ├── test/                    # appTestUtils.jsx (renderApp, click, …), audioManagerMock.js
 │   ├── main.jsx                 # Entry point (StrictMode); registers the service worker once bells load
 │   ├── sw.js                    # Service worker source (offline use) - emitted as /sw.js by vite.config.js
@@ -56,6 +56,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   │   ├── useAudio.js          # React wrapper around the audioManager singleton
 │   │   ├── useSessionCounter.js # Sessions completed today (memory only, resets daily)
 │   │   ├── useWakeLock.js       # Keeps the screen on (Screen Wake Lock API) while active
+│   │   ├── useMediaSession.js   # Lock screen play/pause act on the session (Media Session API)
 │   │   ├── useSettleCountdown.js # Settling-in countdown before a new session
 │   │   ├── useAmbientDownloads.js # Each ambient sound's download status (useSyncExternalStore)
 │   │   └── useLocalStorage.js   # Persisted state

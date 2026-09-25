@@ -4,6 +4,7 @@ import { TimerProvider } from './context/TimerContext';
 import { useTimerContext } from './context/useTimerContext';
 import { useTimer } from './hooks/useTimer';
 import { useAudio } from './hooks/useAudio';
+import { useMediaSession } from './hooks/useMediaSession';
 import { useSessionCounter } from './hooks/useSessionCounter';
 import { useWakeLock } from './hooks/useWakeLock';
 import { useSettleCountdown } from './hooks/useSettleCountdown';
@@ -434,6 +435,20 @@ function MeditationTimerApp() {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [isInitialized, timer.isRunning, isSettling, cancelSettling, handleStart, handlePause, handleReset]);
+
+  // The lock screen's play/pause act on the whole session. Pause is like
+  // Space; play only resumes - a new session starts in the app.
+  useMediaSession({
+    status: inSession ? 'playing' : timer.isPaused ? 'paused' : null,
+    title: isSettling ? 'Settling in' : timer.isRunning ? 'Meditating' : 'Paused',
+    onPause: () => {
+      if (isSettling) cancelSettling();
+      else if (timer.isRunning) handlePause();
+    },
+    onPlay: () => {
+      if (timer.isPaused) handleStart();
+    },
+  });
 
   return (
     <div
