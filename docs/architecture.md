@@ -41,7 +41,7 @@
 - iOS pauses JavaScript when the screen locks, so no timer runs until unlock; bells can't ring while locked.
 - Dark Reader (the extension, and Firefox for iOS's night mode built on it) repainted the page near-black and hid the switches and slider tracks (faint white tints). `index.html` opts out with `<meta name="darkreader-lock">`; the app has its own dimming. `e2e/darkreader.spec.js` runs Dark Reader against the page.
 - iOS ignores `HTMLMediaElement.volume` (confirmed on an iPhone: gentle ending didn't fade). Bells and the ambient sound now go through Web Audio gains.
-- Locked screen: pre-scheduling bells in Web Audio is the remaining idea. Old attempt: branch `claude/locked-screen-audio-6Q8xo` (PR #7) - keep it.
+- Lock screen controls go through the Media Session API (`hooks/useMediaSession.js`: `play`/`pause` action handlers, registered once and calling the latest App handlers through a ref; `playbackState` and `metadata` follow the session). Without handlers, iOS's lock-screen pause paused only the `<audio>` element and the clock ran on. Where the API is missing it does nothing.
 
 ## Security headers
 `vercel.json` sets the real HTTP headers: CSP (incl. `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, Permissions-Policy. `index.html` repeats CSP and others as `<meta>` tags, but browsers ignore `frame-ancestors` and `X-Frame-Options` in meta tags - clickjacking protection comes from `vercel.json`. Keep both CSPs in sync; the CSP allows only same-origin scripts and media. No `X-XSS-Protection` (deprecated; the CSP covers it) or `interest-cohort` (FLoC is gone; Chrome warns about it).

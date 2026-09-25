@@ -149,7 +149,7 @@ describe('App', () => {
       expect(saved.guidedTrack).toBe('breath-30');
     });
 
-    describe('interrupted from outside (iOS: a call, Siri, the lock screen)', () => {
+    describe('interrupted from outside (iOS: a call, Siri, headphones unplugged)', () => {
       const interrupt = (position) => act(() => audioManager.interruptionListener(position));
       const carryOn = () => screen.queryByRole('button', { name: 'Carry on' });
       afterEach(() => {

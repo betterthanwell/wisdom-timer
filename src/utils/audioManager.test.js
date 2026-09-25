@@ -326,7 +326,7 @@ describe('AudioManager', () => {
       });
     });
 
-    describe('a guided voice stopped by something else (a call, Siri, the lock screen)', () => {
+    describe('a guided voice stopped by something else (a call, Siri, headphones unplugged)', () => {
       let interruptions;
       beforeEach(async () => {
         interruptions = [];

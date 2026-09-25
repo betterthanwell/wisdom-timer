@@ -6,7 +6,7 @@ import { formatTime } from '../../utils/timeFormatter';
 const OUTLINED = { WebkitTextStroke: '2px #000', paintOrder: 'stroke fill' };
 
 // Shown in place of the time when something outside the app (iOS: a call,
-// Siri, the lock screen's controls) stopped a guided session. One big
+// Siri, headphones unplugged) stopped a guided session. One big
 // button - easy to hit with a thumb - carries on exactly where it stopped.
 // An alert, so a screen reader announces it as soon as it appears.
 export const InterruptedPause = ({ timeRemaining, onCarryOn }) => (
