@@ -29,6 +29,8 @@ export class AudioManager {
     this.context = null;
     this.bellBuffers = {};
     this.bellGain = null;
+    // The ambient <audio> element's output, once routed through Web Audio
+    this.ambientGain = null;
     // unlock() has been called during a tap, so Web Audio may play
     this.unlocked = false;
     // A resume() in progress, so bells wait for it rather than asking again
@@ -160,11 +162,48 @@ export class AudioManager {
     if (this.context.state !== 'running') {
       this.resumeWebAudio();
     }
+    this.routeAmbientThroughWebAudio();
     // Older iOS versions also need a sound started within the gesture
     const silence = this.context.createBufferSource();
     silence.buffer = this.context.createBuffer(1, 1, 22050);
     silence.connect(this.context.destination);
     silence.start();
+  }
+
+  // Route the ambient <audio> element through a Web Audio gain (once, in a
+  // tap), so its volume, fades and gentle ending work on iOS, which ignores
+  // <audio> volume. From then on its sound depends on the audio context.
+  routeAmbientThroughWebAudio() {
+    if (this.ambientGain || !this.ambientAudio || !this.context.createMediaElementSource) return;
+
+    try {
+      const source = this.context.createMediaElementSource(this.ambientAudio);
+      const gain = this.context.createGain();
+      // The level moves from the element to the gain
+      gain.gain.value = this.ambientAudio.volume;
+      this.ambientAudio.volume = 1;
+      source.connect(gain);
+      gain.connect(this.context.destination);
+      this.ambientGain = gain;
+      debugLog.add('ambient routed through Web Audio');
+    } catch (error) {
+      debugLog.add(`ambient routing FAILED: ${error.name}`);
+      console.warn('Ambient sound stays on its <audio> element volume:', error);
+    }
+  }
+
+  // The ambient sound's output level: its Web Audio gain once routed, else
+  // the element's volume
+  ambientOutput() {
+    return this.ambientGain ? this.ambientGain.gain.value : this.ambientAudio.volume;
+  }
+
+  setAmbientOutput(level) {
+    if (this.ambientGain) {
+      this.ambientGain.gain.value = level;
+    } else {
+      this.ambientAudio.volume = level;
+    }
   }
 
   // Whether Web Audio is running, resuming it if needed: it may still be
@@ -303,7 +342,11 @@ export class AudioManager {
       // Set new source and play (unmuted: it may have been primed)
       this.ambientAudio.src = sound.path;
       this.ambientAudio.muted = false;
-      this.ambientAudio.volume = 0;
+      this.setAmbientOutput(0);
+      // Routed through Web Audio, the sound needs the audio context running
+      if (this.ambientGain && this.context.state !== 'running') {
+        this.webAudioRunning();
+      }
       this.currentAmbient = soundId;
       await this.ambientAudio.play();
 
@@ -401,13 +444,13 @@ export class AudioManager {
     this.clearFade();
 
     const steps = 20;
-    const from = this.ambientAudio.volume;
+    const from = this.ambientOutput();
     let step = 0;
 
     this.fadeInterval = setInterval(() => {
       step++;
       const target = getTarget();
-      this.ambientAudio.volume = step >= steps ? target : from + (target - from) * (step / steps);
+      this.setAmbientOutput(step >= steps ? target : from + (target - from) * (step / steps));
 
       if (step >= steps) {
         this.clearFade();
@@ -465,7 +508,7 @@ export class AudioManager {
   // reads the target on every step, so it picks the change up itself)
   applyAmbientVolume() {
     if (this.isInitialized && this.ambientAudio && !this.fadeInterval) {
-      this.ambientAudio.volume = this.effectiveAmbientVolume();
+      this.setAmbientOutput(this.effectiveAmbientVolume());
     }
   }
 

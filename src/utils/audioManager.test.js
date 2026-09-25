@@ -542,6 +542,13 @@ class FakeAudioContext {
     gain.gain = { value: 1 };
     return gain;
   }
+
+  createMediaElementSource(element) {
+    const source = new FakeAudioNode();
+    source.mediaElement = element;
+    this.mediaSources = [...(this.mediaSources ?? []), source];
+    return source;
+  }
 }
 
 describe('AudioManager with Web Audio', () => {
@@ -715,6 +722,56 @@ describe('AudioManager with Web Audio', () => {
     expect(bellsRung()).toEqual([]);
     expect(bellElements().at(-1).src).toBe('/audio/bells/bell-end.mp3');
     expect(bellElements().at(-1).paused).toBe(false);
+  });
+
+  describe('ambient sound', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    it('is routed through its own gain once audio is unlocked (iOS ignores <audio> volume)', async () => {
+      await manager.init();
+      expect(context().mediaSources).toBeUndefined();
+
+      manager.unlock();
+      const [source] = context().mediaSources;
+      expect(source.mediaElement).toBe(manager.ambientAudio);
+      expect(source.connectedTo).toBe(manager.ambientGain);
+      expect(manager.ambientGain.connectedTo).toBe(context().destination);
+
+      // Routed once, however often audio is unlocked
+      manager.unlock();
+      expect(context().mediaSources).toHaveLength(1);
+    });
+
+    it('fades in, follows the volume slider and gentle ending through the gain, leaving the element at full volume', async () => {
+      await initAndUnlock();
+      manager.setAmbientVolume(0.5);
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(0);
+      expect(manager.ambientGain.gain.value).toBe(0);
+
+      await vi.advanceTimersByTimeAsync(600);
+      expect(manager.ambientGain.gain.value).toBeCloseTo(0.5);
+      expect(manager.ambientAudio.volume).toBe(1);
+
+      manager.setAmbientVolume(0.8);
+      expect(manager.ambientGain.gain.value).toBeCloseTo(0.8);
+      manager.setAmbientLevel(0.5);
+      expect(manager.ambientGain.gain.value).toBeCloseTo(0.4);
+      expect(manager.ambientAudio.volume).toBe(1);
+    });
+
+    it('fades out through the gain and stops', async () => {
+      await initAndUnlock();
+      manager.playAmbient('rain');
+      await vi.advanceTimersByTimeAsync(600);
+
+      manager.stopAmbient();
+      await vi.advanceTimersByTimeAsync(600);
+      expect(manager.ambientGain.gain.value).toBe(0);
+      expect(manager.ambientAudio.paused).toBe(true);
+    });
   });
 
   it('waits at most 2 seconds for a slow bell, and rings it through Web Audio once decoded', async () => {
