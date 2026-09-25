@@ -60,6 +60,7 @@ export class AudioManager {
     this.isInitialized = false;
     this.initPromise = null;
     this.fadeInterval = null;
+    this.fadeEnded = null;
   }
 
   // Load the sounds. Safe to call more than once (React StrictMode mounts
@@ -449,6 +450,9 @@ export class AudioManager {
       this.ambientAudio.loop = !guided;
       if (from > 0) this.ambientAudio.currentTime = from;
       this.ambientAudio.muted = false;
+      // The last sound may still be fading out: that fade mustn't pause
+      // this one when it ends
+      this.clearFade();
       this.setAmbientOutput(0);
       // Routed through Web Audio, the sound needs the audio context running
       if (this.ambientGain && this.context.state !== 'running') {
@@ -537,9 +541,11 @@ export class AudioManager {
       return;
     }
 
+    // Cut short (a new sound started, or a stop while paused), the fade
+    // leaves the element to whoever cut it short
     return new Promise((resolve) => {
-      this.fadeOut(() => {
-        finishStop();
+      this.fadeOut((finished) => {
+        if (finished) finishStop();
         resolve();
       });
     });
@@ -548,8 +554,9 @@ export class AudioManager {
   // Fade the ambient volume towards getTarget() over 500ms in 20 steps.
   // Always finishes after the last step, even if the browser ignores volume
   // changes (iOS Safari). The target is read on every step, so volume
-  // changes made during a fade are applied.
-  fade(getTarget, onDone) {
+  // changes made during a fade are applied. onEnd(finished) is called once:
+  // true after the last step, false if the fade is cleared first.
+  fade(getTarget, onEnd) {
     this.clearFade();
 
     const steps = 20;
@@ -562,10 +569,12 @@ export class AudioManager {
       this.setAmbientOutput(step >= steps ? target : from + (target - from) * (step / steps));
 
       if (step >= steps) {
+        this.fadeEnded = null;
         this.clearFade();
-        if (onDone) onDone();
+        onEnd?.(true);
       }
     }, 500 / steps);
+    if (onEnd) this.fadeEnded = () => onEnd(false);
   }
 
   clearFade() {
@@ -573,6 +582,9 @@ export class AudioManager {
       clearInterval(this.fadeInterval);
       this.fadeInterval = null;
     }
+    const ended = this.fadeEnded;
+    this.fadeEnded = null;
+    ended?.();
   }
 
   // Fade in effect
@@ -581,8 +593,8 @@ export class AudioManager {
   }
 
   // Fade out effect
-  fadeOut(callback) {
-    this.fade(() => 0, callback);
+  fadeOut(onEnd) {
+    this.fade(() => 0, onEnd);
   }
 
   // Set bell volume
