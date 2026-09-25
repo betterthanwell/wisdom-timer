@@ -2,6 +2,8 @@ import { AUDIO_SOURCES } from '../constants/audioSources';
 
 // Settling-in countdown choices, in seconds (0 = off)
 export const SETTLE_SECONDS = [0, 10, 20, 30, 60];
+// Metta mode: how long each phrase shows, in seconds
+export const METTA_SECONDS = [5, 10, 20, 30];
 
 const isWholeNumber = (value, min, max) => Number.isInteger(value) && value >= min && value <= max;
 const isVolume = (value) => typeof value === 'number' && value >= 0 && value <= 1;
@@ -23,6 +25,8 @@ const validators = {
   gentleEnding: (value) => typeof value === 'boolean',
   openEnded: (value) => typeof value === 'boolean',
   showBellStrikes: (value) => typeof value === 'boolean',
+  mettaMode: (value) => typeof value === 'boolean',
+  mettaSeconds: (value) => METTA_SECONDS.includes(value),
 };
 
 // The settings that are saved: exactly those with a validator

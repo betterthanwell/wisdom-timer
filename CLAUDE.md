@@ -29,9 +29,9 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 │   ├── index.css                # Global styles, .glass-card(-strong), keyframes, reduced motion
 │   ├── components/
 │   │   ├── Timer/               # TimerDisplay (time, status, "Session N", burst),
-│   │   │                        # TimerControls (Start/Pause|Cancel/Finish/Reset), CircularProgress
+│   │   │                        # TimerControls (Start/Pause|Cancel/Finish/Reset), CircularProgress, MettaCard
 │   │   ├── Settings/            # PresetButtons, DurationSelector, IntervalSettings,
-│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings, GentleEndingSetting, OpenEndedSetting
+│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings, GentleEndingSetting, OpenEndedSetting, MettaSetting
 │   │   └── UI/                  # GlassCard, Button (`round` for circles), Switch (on/off toggle with accessible name),
 │   │                            # SettingLabel (icon + setting name), ChoiceButton (option with aria-pressed)
 │   ├── hooks/
@@ -48,6 +48,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / WebKit / iPhone profi
 │   │   ├── audioManager.js      # AudioManager class + singleton: bells, ambient, fades, volume
 │   │   ├── intervalBells.js     # countIntervalBellsDue() - pure bell scheduling
 │   │   ├── gentleEnding.js      # gentleEndingLevel() - ambient level over the last minute
+│   │   ├── metta.js             # METTA_PHRASES + mettaStep() - which phrase shows when
 │   │   ├── settings.js          # sanitizeSettings() - validates saved settings
 │   │   └── timeFormatter.js     # formatTime (MM:SS) etc.
 │   └── constants/
@@ -82,6 +83,7 @@ The owner works out the desired behavior by live-testing, so these can change - 
 - **Settling in** (`settleSeconds`: 0/10/20/30/60, default 0 = off): only before a *new* session (from Ready or after completion), never on resume. Silent countdown ("Settling in…"), then the normal start. Counts as in-session: quiet screen, wake lock, duration locked. The main button becomes **Cancel**; Cancel, Space and Reset return to Ready. On completion it calls the *latest* `startTimer` via a ref, so changes made while settling (e.g. ambient sound) apply.
 - **Bell patterns**: `startStrikes`, `intervalStrikes`, `endStrikes` (1-3, default 1). Strikes are 5 s apart for start/end bowls, 2 s for the interval woodblock (`BELL_STRIKE_SPACING_MS`). Reset cancels strikes not yet rung; pause doesn't. The "Bell strikes" section is always shown (whether interval bells are on or off); its switch (`showBellStrikes`, default off, saved) shows/hides the 1×/2×/3× choices. Hiding is UI only: saved strike counts - including start/end - keep applying.
 - **Gentle ending** (`gentleEnding`, default off): while running, the ambient level follows `gentleEndingLevel()` - full until the last minute (or the last half of sessions under 2 min), then linearly to 0. Applied as `audioManager.setAmbientLevel()`, a multiplier separate from the volume slider; back to 1 whenever it doesn't apply.
+- **Metta mode** (`mettaMode`, default off; `mettaSeconds` 5/10/20/30, default 10): while a session is running or paused, a separate `MettaCard` above the timer card shows one of the four `METTA_PHRASES` (oneself → loved ones → those I find difficult → all beings everywhere), then back to the first. Which phrase is derived from the time sat (`mettaStep()`), so pause holds it and resume carries on. Each phrase fades in, holds and fades out over its time (`mettaFlash` keyframes, frozen while paused; no animation with reduced motion). Hidden when Ready, settling in and after Reset. The card has a fixed height so the timer doesn't jump between one- and three-line phrases.
 - **Open-ended sitting** (`openEnded`, default off): the timer runs as a countdown from 24 h (`OPEN_ENDED_SECONDS` in `App.jsx`) but displays the time sat (counting up); no progress ring, "Ends at" or gentle ending. **Finish** (`useTimer.finish()`) completes early - end bell, burst, session counted - and keeps the time sat on screen; Play then starts from 00:00. Presets/custom duration are greyed out while it's on; the switch itself is locked during a session.
 - **Keep screen awake** (default on): a wake lock is held only while the timer is *running* (or settling in), not while paused. The toggle is hidden where the Wake Lock API isn't supported.
 - Product direction: functional meditation features only - no streaks, stats, social sharing or similar engagement features.

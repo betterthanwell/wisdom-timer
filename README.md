@@ -26,6 +26,7 @@ A calm, focused meditation timer with singing-bowl bells, interval bells, ambien
 - **End bell** - resonant "gling" (~35 s)
 - **Ambient sounds** - rain, ocean waves or forest, looping, with a 0.5 s fade in and out
 - **Bell patterns** - each bell (start, interval, end) can ring 1, 2 or 3 times, e.g. three strikes to begin and end; bowls 5 s apart, woodblock knocks 2 s apart. The choices sit behind a "Bell strikes" switch; your choices keep applying when they're hidden
+- **Metta mode** (optional) - the four loving-kindness phrases take turns in large letters above the timer while you sit: *May I be happy. May my loved ones be happy. May those I find difficult be happy. May all beings everywhere be happy.* Each shows for 5, 10, 20 or 30 seconds (default 10), then the cycle starts again
 - **Gentle ending** (optional) - the ambient sound fades out over the last minute, so the end bell arrives into silence
 - **Separate volume sliders** for bells and ambient sound; changes apply immediately, including to a bell that is still ringing
 
@@ -101,9 +102,9 @@ src/
 ├── main.jsx                    # Entry point
 ├── index.css                   # Global styles, glass-morphism, animations
 ├── components/
-│   ├── Timer/                  # TimerDisplay, TimerControls, CircularProgress
+│   ├── Timer/                  # TimerDisplay, TimerControls, CircularProgress, MettaCard
 │   ├── Settings/               # PresetButtons, DurationSelector, IntervalSettings,
-│   │                           # AmbientSoundSelector, VolumeControls
+│   │                           # AmbientSoundSelector, VolumeControls, MettaSetting, ...
 │   └── UI/                     # GlassCard, Button, Switch, SettingLabel, ChoiceButton
 ├── hooks/
 │   ├── useTimer.js             # Countdown from the clock, pause/resume, bells, background wake-ups

@@ -557,6 +557,100 @@ describe('App', () => {
     });
   });
 
+  describe('metta mode', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const passSeconds = (seconds) => {
+      for (let i = 0; i < seconds; i++) {
+        act(() => {
+          vi.advanceTimersByTime(1000);
+        });
+      }
+    };
+    const mettaSwitch = () => screen.getByRole('switch', { name: 'Metta mode' });
+    const phrase = () => screen.queryByTestId('metta-phrase')?.textContent ?? null;
+
+    it('is off by default: no phrases during a session', async () => {
+      await renderApp();
+      expect(mettaSwitch().getAttribute('aria-checked')).toBe('false');
+      expect(screen.queryByRole('group', { name: 'Metta pace' })).toBe(null);
+      click('Start');
+      passSeconds(15);
+      expect(phrase()).toBe(null);
+    });
+
+    it('shows the phrases in turn while running, from oneself to all beings, then again', async () => {
+      await renderApp();
+      fireEvent.click(mettaSwitch());
+      expect(phrase()).toBe(null); // only during a session
+
+      click('Start');
+      expect(phrase()).toBe('May I be happy.');
+      passSeconds(10);
+      expect(phrase()).toBe('May my loved ones be happy.');
+      passSeconds(10);
+      expect(phrase()).toBe('May those I find difficult be happy.');
+      passSeconds(10);
+      expect(phrase()).toBe('May all beings everywhere be happy.');
+      passSeconds(10);
+      expect(phrase()).toBe('May I be happy.');
+    });
+
+    it('holds the phrase while paused and carries on after resuming', async () => {
+      await renderApp();
+      fireEvent.click(mettaSwitch());
+      click('Start');
+      passSeconds(15);
+      click('Pause');
+      passSeconds(60);
+      expect(phrase()).toBe('May my loved ones be happy.');
+
+      click('Start');
+      passSeconds(5);
+      expect(phrase()).toBe('May those I find difficult be happy.');
+    });
+
+    it('goes away on Reset', async () => {
+      await renderApp();
+      fireEvent.click(mettaSwitch());
+      click('Start');
+      click('Reset');
+      expect(phrase()).toBe(null);
+    });
+
+    it('follows the chosen pace, and remembers it', async () => {
+      await renderApp();
+      fireEvent.click(mettaSwitch());
+      click('5 seconds per phrase');
+      expect(button('5 seconds per phrase').getAttribute('aria-pressed')).toBe('true');
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings'))).toMatchObject({ mettaMode: true, mettaSeconds: 5 });
+
+      click('Start');
+      passSeconds(5);
+      expect(phrase()).toBe('May my loved ones be happy.');
+    });
+
+    it('offers 10 seconds per phrase by default', async () => {
+      await renderApp();
+      fireEvent.click(mettaSwitch());
+      expect(button('10 seconds per phrase').getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('stays visible on the quiet screen', async () => {
+      await renderApp();
+      fireEvent.click(mettaSwitch());
+      click('Start');
+      expect(screen.queryByRole('heading', { name: 'Settings' })).toBe(null);
+      expect(phrase()).toBe('May I be happy.');
+    });
+  });
+
   describe('quiet screen while sitting', () => {
     const settingsVisible = () => screen.queryByRole('heading', { name: 'Settings' }) !== null;
     const dimmed = () => screen.getByTestId('quiet-dim').className.includes('opacity-100');

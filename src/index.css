@@ -55,6 +55,29 @@
   }
 }
 
+/* Metta mode: each phrase fades in, holds, and fades out over its time
+   (animation-duration is set inline to the chosen pace) */
+@keyframes mettaFlash {
+  0% {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  12%, 85% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+.metta-phrase {
+  animation-name: mettaFlash;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: both;
+}
+
 /* Glass-morphism utility classes */
 .glass-card {
   background: rgba(255, 255, 255, 0.1);
@@ -99,5 +122,10 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* No flashing: just show each phrase */
+  .metta-phrase {
+    animation: none !important;
   }
 }
