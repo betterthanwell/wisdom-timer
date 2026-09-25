@@ -650,7 +650,7 @@ function MeditationTimerApp() {
             </div>
 
             {!isInitialized && (
-              <p className="mt-4 text-xs text-white/70 text-center">Loading sounds…</p>
+              <p className="mt-4 text-xs text-white/70 text-center">Loading bells…</p>
             )}
           </GlassCard>
         )}
