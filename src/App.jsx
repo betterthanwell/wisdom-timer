@@ -652,6 +652,7 @@ function MeditationTimerApp() {
                 <VolumeControls
                   bellVolume={state.bellVolume}
                   ambientVolume={state.ambientVolume}
+                  guided={guided}
                   onBellVolumeChange={(vol) => {
                     actions.setBellVolume(vol);
                     setBellVolume(vol);
