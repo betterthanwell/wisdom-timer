@@ -1,5 +1,4 @@
 import { useReducer, useEffect } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
 import { TimerContext } from './useTimerContext';
 import { pickSavedSettings, sanitizeSettings } from '../utils/settings';
 
@@ -41,20 +40,40 @@ const timerReducer = (state, action) => {
   }
 };
 
+const STORAGE_KEY = 'wisdomTimerSettings';
+
+const loadSettings = () => {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) ?? {};
+  } catch (error) {
+    console.warn('Could not load the saved settings:', error);
+    return {};
+  }
+};
+
+const saveSettings = (settings) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch (error) {
+    console.warn('Could not save the settings:', error);
+  }
+};
+
 // Provider component
 export const TimerProvider = ({ children }) => {
-  const [savedSettings, setSavedSettings] = useLocalStorage('wisdomTimerSettings', {});
   // Start from saved settings so the first render already reflects them;
   // invalid or unknown saved values fall back to the defaults
-  const [state, dispatch] = useReducer(timerReducer, savedSettings, (saved) =>
-    sanitizeSettings(saved, initialState)
+  const [state, dispatch] = useReducer(timerReducer, undefined, () =>
+    sanitizeSettings(loadSettings(), initialState)
   );
 
-  // Save settings to localStorage when they change (every setting that has
-  // a validator in utils/settings.js is saved)
+  // Save settings when they change (every setting that has a validator in
+  // utils/settings.js is saved). Written straight away: after a click React
+  // runs this before the page can reload, so a choice made just before
+  // closing or reloading is kept.
   useEffect(() => {
-    setSavedSettings(pickSavedSettings(state));
-  }, [state, setSavedSettings]);
+    saveSettings(pickSavedSettings(state));
+  }, [state]);
 
   // Actions
   const setSetting = (key, value) => dispatch({ type: 'SET_SETTING', key, value });

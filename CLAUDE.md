@@ -58,7 +58,6 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   │   ├── useWakeLock.js       # Keeps the screen on (Screen Wake Lock API) while active
 │   │   ├── useSettleCountdown.js # Settling-in countdown before a new session
 │   │   ├── useAmbientDownloads.js # Each ambient sound's download status (useSyncExternalStore)
-│   │   └── useLocalStorage.js   # Persisted state
 │   ├── context/
 │   │   ├── TimerContext.jsx     # TimerProvider: settings reducer + saving to localStorage
 │   │   └── useTimerContext.js   # Context object + useTimerContext hook (own file for fast refresh)
