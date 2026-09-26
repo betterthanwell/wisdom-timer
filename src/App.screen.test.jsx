@@ -247,6 +247,18 @@ describe('App', () => {
       expect(screen.getByRole('slider', { name: 'Bells volume' }).value).toBe('70'); // default bell volume
     });
 
+    it('plays the woodblock once when its switch is turned on, and again when turned off', async () => {
+      await renderApp();
+      const woodblocks = () => audioManager.playBell.mock.calls.filter(([type]) => type === 'interval');
+      fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
+      expect(woodblocks()).toEqual([['interval', 1]]);
+      // Played from the tap, so iOS allows it
+      expect(audioManager.unlock).toHaveBeenCalled();
+
+      fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
+      expect(woodblocks()).toHaveLength(2);
+    });
+
     it('offers the woodblock every 10 minutes, starting after 5, by default', async () => {
       await renderApp();
       expect(screen.getByText('Interval Woodblock')).toBeTruthy();
