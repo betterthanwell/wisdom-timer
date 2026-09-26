@@ -1,36 +1,19 @@
-import { NumberPicker } from '../UI/NumberPicker';
+import { Stepper } from '../UI/Stepper';
+import { minuteSteps } from '../../utils/minuteSteps';
 
-const PICKER = 'py-1.5 text-lg font-medium';
+const STEPS = minuteSteps(99);
 
-export const DurationSelector = ({ duration, onChange, disabled = false }) => {
-  const minutes = Math.floor(duration / 60);
-  const seconds = duration % 60;
-
-  return (
-    <div className="flex items-center justify-center gap-2 text-sm text-white/70">
-      <span>Custom</span>
-      <NumberPicker
-        value={minutes}
-        min={0}
-        max={99}
-        pad
-        onChange={(value) => onChange(value * 60 + seconds)}
-        label="Minutes"
-        disabled={disabled}
-        className={PICKER}
-      />
-      <span>min</span>
-      <NumberPicker
-        value={seconds}
-        min={0}
-        max={59}
-        pad
-        onChange={(value) => onChange(minutes * 60 + value)}
-        label="Seconds"
-        disabled={disabled}
-        className={PICKER}
-      />
-      <span>sec</span>
-    </div>
-  );
-};
+// The custom length, in whole minutes (presets cover the usual ones)
+export const DurationSelector = ({ duration, onChange, disabled = false }) => (
+  <div className="flex items-center justify-center gap-3 text-sm text-white/70">
+    <span>Custom</span>
+    <Stepper
+      value={Math.round(duration / 60)}
+      steps={STEPS}
+      onChange={(minutes) => onChange(minutes * 60)}
+      label="Custom length"
+      unit="min"
+      disabled={disabled}
+    />
+  </div>
+);

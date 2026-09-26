@@ -1,7 +1,11 @@
 import { Bell } from 'lucide-react';
 import { Switch } from '../UI/Switch';
 import { SettingLabel } from '../UI/SettingLabel';
-import { NumberPicker } from '../UI/NumberPicker';
+import { Stepper } from '../UI/Stepper';
+import { minuteSteps } from '../../utils/minuteSteps';
+
+const INTERVAL_STEPS = minuteSteps(30);
+const START_STEPS = minuteSteps(60);
 
 export const IntervalSettings = ({
   enabled,
@@ -24,32 +28,28 @@ export const IntervalSettings = ({
 
       {enabled && (
         <div className="pl-6 space-y-2">
-          <label className="flex items-center gap-2 text-sm text-white/70">
-            Hit the woodblock every
-            <NumberPicker
+          <div className="flex items-center justify-between gap-3 text-sm text-white/70">
+            <span>Every</span>
+            <Stepper
               value={intervalMinutes}
-              min={1}
-              max={30}
+              steps={INTERVAL_STEPS}
               onChange={(minutes) => onIntervalChange(minutes * 60)}
-              label="Interval in minutes"
+              label="Woodblock interval"
+              unit="min"
               disabled={disabled}
-              className="py-1"
             />
-            minutes
-          </label>
-          <label className="flex items-center gap-2 text-sm text-white/70">
-            Starting after
-            <NumberPicker
+          </div>
+          <div className="flex items-center justify-between gap-3 text-sm text-white/70">
+            <span>Starting after</span>
+            <Stepper
               value={startMinutes}
-              min={1}
-              max={60}
+              steps={START_STEPS}
               onChange={(minutes) => onStartChange(minutes * 60)}
-              label="Starting after, in minutes"
+              label="Woodblock start"
+              unit="min"
               disabled={disabled}
-              className="py-1"
             />
-            minutes
-          </label>
+          </div>
         </div>
       )}
     </div>

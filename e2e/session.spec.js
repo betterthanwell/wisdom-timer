@@ -11,10 +11,16 @@ const passSeconds = async (page, seconds) => {
 };
 const passMinutes = (page, minutes) => passSeconds(page, minutes * 60);
 
-const setDuration = async (page, minutes, seconds = 0) => {
-  await page.getByLabel('Minutes', { exact: true }).selectOption(String(minutes));
-  await page.getByLabel('Seconds', { exact: true }).selectOption(String(seconds));
+// Steps a stepper (named by its group, e.g. "Custom length") to `minutes`
+const setStepper = async (page, name, minutes) => {
+  const value = async () => parseInt(await page.getByRole('group', { name }).textContent());
+  for (let i = 0; i < 40 && (await value()) !== minutes; i++) {
+    const direction = (await value()) < minutes ? 'Increase' : 'Decrease';
+    await page.getByRole('button', { name: `${direction} ${name.toLowerCase()}` }).click();
+  }
+  await expect(page.getByRole('group', { name })).toHaveText(`${minutes} min`);
 };
+const setDuration = (page, minutes) => setStepper(page, 'Custom length', minutes);
 
 reportSoundsOnFailure(test);
 
@@ -55,8 +61,8 @@ test('after the Start tap, the woodblock and end bell ring through unlocked Web 
   // Bells decoded (until then they'd ring on <audio> elements)
   await expect.poll(() => page.evaluate(() => window.__decodedSounds), { timeout: 30_000 }).toBe(3);
   await page.getByRole('switch', { name: 'Interval woodblock' }).click();
-  await page.getByLabel('Interval in minutes').selectOption('1');
-  await page.getByLabel('Starting after, in minutes').selectOption('1');
+  await setStepper(page, 'Woodblock interval', 1);
+  await setStepper(page, 'Woodblock start', 1);
   await setDuration(page, 2);
   await page.getByRole('button', { name: 'Start', exact: true }).click();
   // (The start bell waits a moment for audio to resume, in real time; don't
@@ -88,15 +94,15 @@ test('after the Start tap, the woodblock and end bell ring through unlocked Web 
 
 test('the interval woodblock starts after its own time, repeats, and skips the end', async ({ page }) => {
   await page.getByRole('switch', { name: 'Interval woodblock' }).click();
-  await page.getByLabel('Interval in minutes').selectOption('5');
-  await page.getByLabel('Starting after, in minutes').selectOption('2');
-  await setDuration(page, 17);
+  await setStepper(page, 'Woodblock interval', 4);
+  await setStepper(page, 'Woodblock start', 3);
+  await setDuration(page, 15);
 
   await page.getByRole('button', { name: 'Start', exact: true }).click();
-  await passMinutes(page, 17);
+  await passMinutes(page, 15);
 
   await expect(page.getByText('Complete')).toBeVisible();
-  await expect.poll(() => countSound(page, 'bell-interval')).toBe(3); // 2, 7 and 12 min - not 17
+  await expect.poll(() => countSound(page, 'bell-interval')).toBe(3); // 3, 7 and 11 min - not 15
   await expect.poll(() => countSound(page, 'bell-end')).toBe(1);
 });
 
@@ -112,7 +118,7 @@ test('pausing holds the time; resuming rings the start bell and finishes on sche
   await expect(page.getByText('09:00')).toBeVisible();
 
   // Duration is locked while paused
-  await expect(page.getByLabel('Minutes', { exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Increase custom length' })).toBeDisabled();
   await expect(page.getByRole('button', { name: '30m' })).toBeDisabled();
 
   await page.getByRole('button', { name: 'Start', exact: true }).click();

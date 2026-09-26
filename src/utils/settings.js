@@ -13,7 +13,7 @@ const isVolume = (value) => typeof value === 'number' && value >= 0 && value <= 
 
 // Checks for each setting that can be saved. Anything else in storage is ignored.
 const validators = {
-  duration: (value) => isWholeNumber(value, 1, 99 * 60 + 59),
+  duration: (value) => isWholeNumber(value, 60, 99 * 60) && value % 60 === 0,
   intervalBellsEnabled: (value) => typeof value === 'boolean',
   intervalDuration: (value) => isWholeNumber(value, 60, 30 * 60) && value % 60 === 0,
   intervalStart: (value) => isWholeNumber(value, 60, 60 * 60) && value % 60 === 0,
@@ -36,6 +36,12 @@ const validators = {
   dimLevel: (value) => typeof value === 'number' && value >= DIM_LEVEL_MIN && value <= DIM_LEVEL_MAX,
 };
 
+// Old saved values to bring up to date before they're checked. Lengths used
+// to be set to the second; the custom length is now whole minutes, 1 to 99.
+const upgrades = {
+  duration: (value) => (isWholeNumber(value, 1, 99 * 60 + 59) ? Math.min(99, Math.max(1, Math.round(value / 60))) * 60 : value),
+};
+
 // The settings that are saved: exactly those with a validator
 export const pickSavedSettings = (settings) =>
   Object.fromEntries(Object.keys(validators).map((key) => [key, settings[key]]));
@@ -49,9 +55,9 @@ export const sanitizeSettings = (saved, defaults) => {
   }
 
   for (const [key, isValid] of Object.entries(validators)) {
-    if (Object.hasOwn(saved, key) && isValid(saved[key])) {
-      result[key] = saved[key];
-    }
+    if (!Object.hasOwn(saved, key)) continue;
+    const value = upgrades[key] ? upgrades[key](saved[key]) : saved[key];
+    if (isValid(value)) result[key] = value;
   }
   return result;
 };
