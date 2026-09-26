@@ -9,7 +9,7 @@ export const GentleEndingSetting = ({ enabled, onToggle }) => {
         <SettingLabel icon={Sunset}>Fade out ambience in the last minute</SettingLabel>
         <Switch checked={enabled} onChange={onToggle} label="Gentle ending" />
       </div>
-      <p className="pl-6 text-xs text-white/70">Only the ambience fades, not the bells.</p>
+      <p className="pl-6 text-xs text-white/70">Only the ambient soundtrack fades, not the bells.</p>
     </div>
   );
 };

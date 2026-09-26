@@ -46,7 +46,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   │   ├── Timer/               # TimerDisplay (time, status, "Session N", burst), CircularProgress (glow + progress trail),
 │   │   │                        # TimerControls (Start/Pause|Cancel/Finish/Reset), MettaCard, InterruptedPause (loud PAUSED + Carry on)
 │   │   ├── Settings/            # PresetButtons, DurationSelector, IntervalSettings,
-│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings, GentleEndingSetting, OpenEndedSetting, MettaSetting, DimSetting, GuidedSetting
+│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings, GentleEndingSetting, OpenEndedSetting, MettaSetting, DimSetting, NimittaSizeSetting (?debug only), GuidedSetting
 │   │   │                        # (KeepAwakeSetting and BellPatternSettings aren't shown for now)
 │   │   └── UI/                  # GlassCard, Button (`round` for circles), Switch (on/off toggle with accessible name),
 │   │                            # SettingLabel (icon + setting name), ChoiceButton (option with aria-pressed),
@@ -95,7 +95,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 - Tailwind utility classes; custom CSS only in `index.css` (glass cards, keyframes). Inline styles for complex values (shadows, radial gradients).
 - **Base CSS goes in `@layer base`.** Tailwind 4 puts utilities in cascade layers, and unlayered CSS beats any layer: a bare `* { padding: 0 }` once silently wiped out every `p-*`/`m-*`/`space-y-*` in the app. Tailwind's preflight already resets margins and box-sizing.
 - Give a button one rounding class (`Button`'s `round` prop): conflicting ones like `rounded-xl rounded-full` resolve by stylesheet order, not class order.
-- Settings rows: `SettingLabel` for the heading, `Switch` for on/off, `ChoiceButton` for options. The settings card is grouped into `<section>`s divided by lines: duration, bells, metta, ambient sound (+ gentle ending), screen (dimming), then volume last ("Sound volume" heading over the Bells and Ambient sliders - Voice in guided mode).
+- Settings rows: `SettingLabel` for the heading, `Switch` for on/off, `ChoiceButton` for options. The settings card is grouped into `<section>`s divided by lines: duration, bells, metta, ambient sound (+ gentle ending), volume ("Sound volume" heading over the Bells and Ambient sliders - Voice in guided mode), then "Visual controls" last (dimming; with `?debug`, nimitta size).
 - Global settings via context actions; local UI state with `useState`; refs for values that mustn't re-render.
 - Handlers passed to `useTimer` or used in effects are wrapped in `useCallback` - `useTimer`'s timer effect depends on `onComplete`, so an unstable callback would restart it every render.
 - The react-hooks lint rules include `set-state-in-effect` and exhaustive deps.
@@ -144,7 +144,7 @@ New ambient sounds, preset durations and background colors: see README, "Customi
 
 Never on wisdomtimer.app (`utils/testingTools.js` checks the host):
 - `?speed=60` - session time runs 60× faster (1-600; `sessionClock` in `useTimer` and `useSettleCountdown`); a "speed ×N" badge shows while it's on.
-- `?debug` - a card at the end of the page (`UI/DebugPanel`; above the quiet-screen dim, covering nothing) with the audio context state and the latest audio events (`debugLog.add()`: unlock, resume, how each bell played or why it fell back, ambient failures). Use both on a Vercel preview for iPhone checks, e.g. `…vercel.app/?speed=60&debug`.
+- `?debug` - a card at the end of the page (`UI/DebugPanel`; above the quiet-screen dim, covering nothing) with the audio context state and the latest audio events (`debugLog.add()`: unlock, resume, how each bell played or why it fell back, ambient failures). It also adds a "Nimitta size" slider under Visual controls (25-400% of the glow's reach, not saved) for trying sizes on a device. Use both on a Vercel preview for iPhone checks, e.g. `…vercel.app/?speed=60&debug`.
 
 ## Common Issues
 

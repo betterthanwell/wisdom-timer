@@ -6,6 +6,10 @@ import { button, click, renderApp, setUpAppTests } from './test/appTestUtils';
 
 vi.mock('./utils/audioManager', () => import('./test/audioManagerMock'));
 
+// ?debug, switchable per test (App reads it while rendering)
+const tools = vi.hoisted(() => ({ speed: 1, debug: false }));
+vi.mock('./utils/testingTools', async (importOriginal) => ({ ...(await importOriginal()), testingTools: tools }));
+
 // Quiet screen, keep screen awake, saved settings (the App tests are split across App.*.test.jsx)
 describe('App', () => {
   setUpAppTests();
@@ -42,6 +46,17 @@ describe('App', () => {
 
     const dimColor = () => screen.getByTestId('quiet-dim').style.backgroundColor;
     const dimLevel = () => screen.getByRole('slider', { name: 'Dimming level' });
+
+    it('keeps dimming under Visual controls, the last settings section, after volume', async () => {
+      await renderApp();
+      const sections = [...screen.getByTestId('nimitta').ownerDocument.querySelectorAll('section')];
+      const last = sections.at(-1);
+      expect(last.textContent).toMatch(/^Visual controls/);
+      expect(last.contains(screen.getByRole('switch', { name: 'Dim the screen' }))).toBe(true);
+      expect(sections.at(-2).contains(screen.getByRole('slider', { name: 'Bells volume' }))).toBe(true);
+      // No empty section left where dimming was
+      expect(sections.every((section) => section.textContent.trim() !== '')).toBe(true);
+    });
 
     it('dims to the chosen level', async () => {
       await renderApp();
@@ -120,6 +135,35 @@ describe('App', () => {
       click('Start');
       click('Reset');
       expect(breath()).toEqual(['paused']);
+    });
+
+    // Each glow layer's inset (its size around the ring)
+    const glowInsets = () =>
+      [...screen.getByTestId('nimitta').querySelectorAll('.nimitta-breath')].map((el) => el.style.inset);
+
+    it('offers no size control outside ?debug', async () => {
+      await renderApp();
+      expect(screen.queryByRole('slider', { name: 'Nimitta size' })).toBe(null);
+    });
+
+    it('with ?debug, can be made larger or smaller under Visual controls', async () => {
+      tools.debug = true;
+      try {
+        await renderApp();
+        const before = glowInsets();
+        const slider = screen.getByRole('slider', { name: 'Nimitta size' });
+        expect(slider.closest('section').textContent).toMatch(/^Visual controls/);
+        // 25-400%, in steps that land on 100%
+        expect([slider.min, slider.max, slider.step]).toEqual(['25', '400', '5']);
+
+        fireEvent.change(slider, { target: { value: '150' } });
+        // The outer glow, 2.85x the ring: 4.275x at 150%
+        expect(parseFloat(glowInsets()[0])).toBeCloseTo(-163.75);
+        fireEvent.change(slider, { target: { value: '100' } });
+        expect(glowInsets()).toEqual(before);
+      } finally {
+        tools.debug = false;
+      }
     });
 
     it('breathes while settling in, too', async () => {
