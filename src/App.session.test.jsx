@@ -195,7 +195,7 @@ describe('App', () => {
 
     it('keeps the volume sliders usable', () => {
       const bellSlider = screen.getByRole('slider', { name: 'Bells volume' });
-      const ambientSlider = screen.getByRole('slider', { name: 'Sound volume' });
+      const ambientSlider = screen.getByRole('slider', { name: 'Ambient volume' });
       expect(bellSlider.disabled).toBe(false);
       expect(ambientSlider.disabled).toBe(false);
 

@@ -1,4 +1,4 @@
-import { Bell, Volume2 } from 'lucide-react';
+import { Bell, Headphones, Volume2 } from 'lucide-react';
 import { SettingLabel } from '../UI/SettingLabel';
 
 const VolumeSlider = ({ icon: Icon, label, value, onChange, disabled }) => {
@@ -30,13 +30,22 @@ export const VolumeControls = ({
   ambientVolume,
   onBellVolumeChange,
   onAmbientVolumeChange,
+  guided = false,
   disabled = false,
 }) => {
   return (
     <div className="space-y-3">
       <SettingLabel icon={Volume2}>Sound volume</SettingLabel>
       <VolumeSlider icon={Bell} label="Bells" value={bellVolume} onChange={onBellVolumeChange} disabled={disabled} />
-      <VolumeSlider icon={Volume2} label="Sound" value={ambientVolume} onChange={onAmbientVolumeChange} disabled={disabled} />
+      {/* The guided voice plays through the ambient channel, so one slider
+          serves both; its name says which one you'll hear */}
+      <VolumeSlider
+        icon={guided ? Headphones : Volume2}
+        label={guided ? 'Voice' : 'Ambient'}
+        value={ambientVolume}
+        onChange={onAmbientVolumeChange}
+        disabled={disabled}
+      />
     </div>
   );
 };

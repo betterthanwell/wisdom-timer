@@ -63,6 +63,15 @@ describe('App', () => {
       expect(screen.getByText('04:24')).toBeTruthy();
     });
 
+    it('names the second volume slider for the voice, and for the ambient sound when off', async () => {
+      await startGuided();
+      expect(screen.getByRole('slider', { name: 'Voice volume' })).toBeTruthy();
+      expect(screen.queryByRole('slider', { name: 'Ambient volume' })).toBe(null);
+      fireEvent.click(guidedSwitch());
+      expect(screen.getByRole('slider', { name: 'Ambient volume' })).toBeTruthy();
+      expect(screen.queryByRole('slider', { name: 'Voice volume' })).toBe(null);
+    });
+
     it('takes its length from the chosen recording', async () => {
       await startGuided();
       click(/^Breath, short/);
