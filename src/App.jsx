@@ -252,6 +252,14 @@ function MeditationTimerApp() {
 
   // Changing the dimming level shows it for a moment, so it can be chosen
   // without starting a session
+  // Flipping the woodblock switch either way plays one strike, so you hear
+  // what it sounds like (from the tap, so iOS allows it)
+  const handleIntervalBellsToggle = (enabled) => {
+    actions.setIntervalBells(enabled);
+    unlockAudio();
+    playBell('interval', 1);
+  };
+
   const [previewingDim, setPreviewingDim] = useState(false);
   // The glow's size, tried out with ?debug (not saved)
   const [nimittaSize, setNimittaSize] = useState(1);
@@ -605,7 +613,7 @@ function MeditationTimerApp() {
                   enabled={state.intervalBellsEnabled}
                   intervalDuration={state.intervalDuration}
                   intervalStart={state.intervalStart}
-                  onToggle={actions.setIntervalBells}
+                  onToggle={handleIntervalBellsToggle}
                   onIntervalChange={actions.setIntervalDuration}
                   onStartChange={actions.setIntervalStart}
                   disabled={timer.isRunning}

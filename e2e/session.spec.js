@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { recordSounds, countSound, soundLog, reportSoundsOnFailure } from './sounds';
+import { recordSounds, countSound, soundLog, clearSounds, reportSoundsOnFailure } from './sounds';
 
 // Advance the fake clock in 1-minute jumps. fastForward fires each due timer
 // once per jump (like a throttled background tab) instead of every 100ms
@@ -21,6 +21,14 @@ const setStepper = async (page, name, minutes) => {
   await expect(page.getByRole('group', { name })).toHaveText(`${minutes} min`);
 };
 const setDuration = (page, minutes) => setStepper(page, 'Custom length', minutes);
+
+// The switch plays one woodblock strike as a sample; wait for it, then
+// forget it, so a test hears only the session's sounds
+const turnOnWoodblock = async (page) => {
+  await page.getByRole('switch', { name: 'Interval woodblock' }).click();
+  await expect.poll(() => countSound(page, 'bell-interval')).toBe(1);
+  await clearSounds(page);
+};
 
 reportSoundsOnFailure(test);
 
@@ -60,7 +68,7 @@ test('a full 45-minute session: start bell, countdown, end bell', async ({ page 
 test('after the Start tap, the woodblock and end bell ring through unlocked Web Audio', async ({ page }) => {
   // Bells decoded (until then they'd ring on <audio> elements)
   await expect.poll(() => page.evaluate(() => window.__decodedSounds), { timeout: 30_000 }).toBe(3);
-  await page.getByRole('switch', { name: 'Interval woodblock' }).click();
+  await turnOnWoodblock(page);
   await setStepper(page, 'Woodblock interval', 1);
   await setStepper(page, 'Woodblock start', 1);
   await setDuration(page, 2);
@@ -93,7 +101,7 @@ test('after the Start tap, the woodblock and end bell ring through unlocked Web 
 });
 
 test('the interval woodblock starts after its own time, repeats, and skips the end', async ({ page }) => {
-  await page.getByRole('switch', { name: 'Interval woodblock' }).click();
+  await turnOnWoodblock(page);
   await setStepper(page, 'Woodblock interval', 4);
   await setStepper(page, 'Woodblock start', 3);
   await setDuration(page, 15);

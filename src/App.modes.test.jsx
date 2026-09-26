@@ -59,6 +59,7 @@ describe('App', () => {
     it('keeps ringing interval bells', async () => {
       await startOpenEnded();
       fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
+      vi.clearAllMocks(); // the switch's own sample strike
       setStepper('Woodblock interval', 1);
       setStepper('Woodblock start', 1);
       click('Start');
@@ -71,6 +72,7 @@ describe('App', () => {
     it('hits the woodblock first after the starting time, then every interval', async () => {
       await startOpenEnded();
       fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
+      vi.clearAllMocks(); // the switch's own sample strike
       setStepper('Woodblock interval', 2);
       setStepper('Woodblock start', 1);
       click('Start');

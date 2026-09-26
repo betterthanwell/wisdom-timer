@@ -75,6 +75,11 @@ export const recordSounds = () => {
 export const soundsPlayed = (page) => page.evaluate(() => window.__sounds);
 export const countSound = async (page, name) => (await soundsPlayed(page)).filter((path) => path.includes(name)).length;
 export const soundLog = (page) => page.evaluate(() => window.__soundLog);
+export const clearSounds = (page) =>
+  page.evaluate(() => {
+    window.__sounds.length = 0;
+    window.__soundLog.length = 0;
+  });
 
 // When a test fails, print what its page did with sound - how each sound
 // played, the audio context's state and its changes - and the page's console
