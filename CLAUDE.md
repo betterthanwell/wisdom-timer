@@ -144,7 +144,7 @@ New ambient sounds, preset durations and background colors: see README, "Customi
 
 Never on wisdomtimer.app (`utils/testingTools.js` checks the host):
 - `?speed=60` - session time runs 60× faster (1-600; `sessionClock` in `useTimer` and `useSettleCountdown`); a "speed ×N" badge shows while it's on.
-- `?debug` - a card at the end of the page (`UI/DebugPanel`; above the quiet-screen dim, covering nothing) with the audio context state and the latest audio events (`debugLog.add()`: unlock, resume, how each bell played or why it fell back, ambient failures). It also adds a "Nimitta size" slider under Visual controls (50-200% of the glow's reach, not saved) for trying sizes on a device. Use both on a Vercel preview for iPhone checks, e.g. `…vercel.app/?speed=60&debug`.
+- `?debug` - a card at the end of the page (`UI/DebugPanel`; above the quiet-screen dim, covering nothing) with the audio context state and the latest audio events (`debugLog.add()`: unlock, resume, how each bell played or why it fell back, ambient failures). It also adds a "Nimitta size" slider under Visual controls (25-400% of the glow's reach, not saved) for trying sizes on a device. Use both on a Vercel preview for iPhone checks, e.g. `…vercel.app/?speed=60&debug`.
 
 ## Common Issues
 

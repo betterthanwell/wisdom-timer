@@ -1,8 +1,8 @@
 import { Sun } from 'lucide-react';
 import { SettingLabel } from '../UI/SettingLabel';
 
-export const NIMITTA_SIZE_MIN = 0.5;
-export const NIMITTA_SIZE_MAX = 2;
+export const NIMITTA_SIZE_MIN = 0.25;
+export const NIMITTA_SIZE_MAX = 4;
 
 const MIN = Math.round(NIMITTA_SIZE_MIN * 100);
 const MAX = Math.round(NIMITTA_SIZE_MAX * 100);
@@ -21,7 +21,7 @@ export const NimittaSizeSetting = ({ size, onChange }) => {
           type="range"
           min={MIN}
           max={MAX}
-          step="10"
+          step="5"
           value={percent}
           onChange={(e) => onChange(parseInt(e.target.value) / 100)}
           aria-label="Nimitta size"

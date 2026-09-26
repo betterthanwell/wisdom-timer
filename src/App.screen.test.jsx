@@ -153,6 +153,8 @@ describe('App', () => {
         const before = glowInsets();
         const slider = screen.getByRole('slider', { name: 'Nimitta size' });
         expect(slider.closest('section').textContent).toMatch(/^Visual controls/);
+        // 25-400%, in steps that land on 100%
+        expect([slider.min, slider.max, slider.step]).toEqual(['25', '400', '5']);
 
         fireEvent.change(slider, { target: { value: '150' } });
         // The outer glow, 2.85x the ring: 4.275x at 150%
