@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { build, preview } from 'vite';
-import { recordSounds, countSound } from './sounds';
+import { recordSounds, countSound, reportSoundsOnFailure } from './sounds';
 
 // Offline use: after one visit, the app opens and works without a network
 // (airplane mode, no signal) - served by the service worker.
@@ -28,6 +28,7 @@ const serveBuild = async ({ outDir = 'dist', port = 0 } = {}) => {
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(recordSounds);
 });
+reportSoundsOnFailure(test);
 
 // Wait until the service worker has cached everything (it is active only
 // once its install - the caching - has finished)
@@ -56,12 +57,14 @@ test('after one visit, the app opens offline and Space starts a session with its
 
   // The start bell came from the offline copy
   await expect.poll(() => countSound(page, 'bell-start')).toBe(1);
-  // All three bells decode from it (under load this can outlast the 2 s
-  // the app waits before enabling Start). At least: in full parallel runs
-  // WebKit has now and then counted more decodes in one page (not seen alone).
+  // All three bells decode from it, once each (under load this can outlast
+  // the 2 s the app waits before enabling Start). WebKit was once seen
+  // counting more in full parallel runs; not reproduced in 36 WebKit runs
+  // since, and the app has one decode path. Kept exact: more would mean the
+  // bells load twice, and a failure prints each decode with its audio context.
   await expect
     .poll(() => page.evaluate(() => window.__decodedSounds), { timeout: 10_000 })
-    .toBeGreaterThanOrEqual(3);
+    .toBe(3);
 
   // Bells fall back to <audio> elements when Web Audio can't play (iOS: a
   // call, another app). Those stream with Range requests, which the offline

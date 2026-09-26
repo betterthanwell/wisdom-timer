@@ -10,6 +10,7 @@ export const recordSounds = () => {
   window.__sounds = [];
   window.__soundLog = [];
   window.__decodedSounds = 0;
+  window.__decodes = []; // { path, context: 1, 2, … (which audio context), at: ms since the page loaded }
   window.__audioStates = [];
   const record = (path, entry) => {
     window.__sounds.push(path);
@@ -35,6 +36,7 @@ export const recordSounds = () => {
     downloadedFrom.set(data, new URL(this.url).pathname);
     return data;
   };
+  const contextNumbers = new WeakMap(); // context -> 1, 2, …
   const realDecode = BaseAudioContext.prototype.decodeAudioData;
   BaseAudioContext.prototype.decodeAudioData = async function (data, ...args) {
     const path = downloadedFrom.get(data);
@@ -42,6 +44,8 @@ export const recordSounds = () => {
     if (path) {
       decodedFrom.set(buffer, path);
       window.__decodedSounds++;
+      if (!contextNumbers.has(this)) contextNumbers.set(this, contextNumbers.size + 1);
+      window.__decodes.push({ path, context: contextNumbers.get(this), at: Math.round(performance.now()) });
     }
     return buffer;
   };
@@ -82,8 +86,9 @@ export const clearSounds = (page) =>
   });
 
 // When a test fails, print what its page did with sound - how each sound
-// played, the audio context's state and its changes - and the page's console
-// messages, so CI logs say why a bell didn't ring. Call once per spec file.
+// played, the audio context's state and its changes, each bell decode - and
+// the page's console messages, so CI logs say why a bell didn't ring. Call
+// once per spec file.
 export const reportSoundsOnFailure = (test) => {
   let messages = [];
   test.beforeEach(({ page }) => {
@@ -94,7 +99,7 @@ export const reportSoundsOnFailure = (test) => {
   test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.status === testInfo.expectedStatus) return;
     const audio = await page
-      .evaluate(() => ({ state: window.__audioContext?.state, changes: window.__audioStates, sounds: window.__soundLog }))
+      .evaluate(() => ({ state: window.__audioContext?.state, changes: window.__audioStates, sounds: window.__soundLog, decodes: window.__decodes }))
       .catch((error) => `unavailable (${error.message})`);
     console.log(
       [`[${testInfo.project.name}] ${testInfo.title}`, `audio: ${JSON.stringify(audio)}`, 'console:', ...messages].join('\n  ')
