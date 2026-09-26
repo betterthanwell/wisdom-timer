@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Clock, Settings as SettingsIcon } from 'lucide-react';
+import { Clock, Eye, Settings as SettingsIcon } from 'lucide-react';
 import { TimerProvider } from './context/TimerContext';
 import { useTimerContext } from './context/useTimerContext';
 import { useTimer } from './hooks/useTimer';
@@ -29,6 +29,7 @@ import { GentleEndingSetting } from './components/Settings/GentleEndingSetting';
 import { OpenEndedSetting } from './components/Settings/OpenEndedSetting';
 import { MettaSetting } from './components/Settings/MettaSetting';
 import { DimSetting } from './components/Settings/DimSetting';
+import { NimittaSizeSetting } from './components/Settings/NimittaSizeSetting';
 import { GuidedSetting } from './components/Settings/GuidedSetting';
 import { MettaCard } from './components/Timer/MettaCard';
 import { InterruptedPause } from './components/Timer/InterruptedPause';
@@ -252,6 +253,8 @@ function MeditationTimerApp() {
   // Changing the dimming level shows it for a moment, so it can be chosen
   // without starting a session
   const [previewingDim, setPreviewingDim] = useState(false);
+  // The glow's size, tried out with ?debug (not saved)
+  const [nimittaSize, setNimittaSize] = useState(1);
   const dimPreviewTimeoutRef = useRef(null);
   useEffect(() => () => clearTimeout(dimPreviewTimeoutRef.current), []);
   const handleDimLevelChange = (level) => {
@@ -507,6 +510,7 @@ function MeditationTimerApp() {
           sessionNumber={sessionNumber}
           endsAt={openEnded ? null : timer.endsAt}
           settleRemaining={isSettling ? settleRemaining : null}
+          glowScale={nimittaSize}
         />
         )}
 
@@ -542,7 +546,7 @@ function MeditationTimerApp() {
         )}
 
         {/* Settings Card, in groups: guided meditation, duration, bells, metta,
-            ambient sound, screen, volume */}
+            ambient sound, volume, visual controls */}
         {!quiet && (
           <GlassCard className="px-5 py-5 sm:p-6">
             <div className="flex items-center gap-2 text-white">
@@ -636,18 +640,7 @@ function MeditationTimerApp() {
               </section>
               )}
 
-              {/* The screen while sitting (it's always kept awake, where the
-                  browser supports that) */}
-              <section className={SECTION}>
-                <DimSetting
-                  enabled={state.dimScreen}
-                  level={state.dimLevel}
-                  onToggle={actions.setDimScreen}
-                  onLevelChange={handleDimLevelChange}
-                />
-              </section>
-
-              {/* Volume, last */}
+              {/* Volume */}
               <section className={SECTION}>
                 <VolumeControls
                   bellVolume={state.bellVolume}
@@ -662,6 +655,20 @@ function MeditationTimerApp() {
                     setAmbientVolume(vol);
                   }}
                 />
+              </section>
+
+              {/* Visual controls, last: the screen while sitting (it's always
+                  kept awake, where the browser supports that), and with ?debug
+                  the nimitta's size */}
+              <section className={SECTION}>
+                <SettingLabel icon={Eye}>Visual controls</SettingLabel>
+                <DimSetting
+                  enabled={state.dimScreen}
+                  level={state.dimLevel}
+                  onToggle={actions.setDimScreen}
+                  onLevelChange={handleDimLevelChange}
+                />
+                {testingTools.debug && <NimittaSizeSetting size={nimittaSize} onChange={setNimittaSize} />}
               </section>
             </div>
 

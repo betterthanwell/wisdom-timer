@@ -3,7 +3,8 @@
 // reaches well past the ring and fades out to nothing. While `breathing` it
 // swells and settles on an 8-second breath (4 s each way); otherwise it holds
 // still where it is. The ring scales with its container; `size` is only the
-// SVG's coordinate space.
+// SVG's coordinate space. `glowScale` makes the glow reach further or less
+// far (the ?debug nimitta size).
 
 // A radial glow that fades to nothing at its edge. Many stops along a smooth
 // curve, so no rings show where straight gradient segments would meet.
@@ -20,7 +21,7 @@ const GLOWS = [
   [0.9, glow('255, 255, 255', 0.4, (r) => (1 - r * r) ** 2)],
 ];
 
-export const CircularProgress = ({ progress, size = 280, strokeWidth = 5, children, breathing = false, className = '' }) => {
+export const CircularProgress = ({ progress, size = 280, strokeWidth = 5, children, breathing = false, glowScale = 1, className = '' }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (progress / 100) * circumference;
@@ -33,7 +34,7 @@ export const CircularProgress = ({ progress, size = 280, strokeWidth = 5, childr
             key={scale}
             className="nimitta-breath absolute rounded-full"
             // The ring's box is square, so one percentage insets all sides
-            style={{ inset: `${((1 - scale) / 2) * 100}%`, background, animationPlayState: breathing ? 'running' : 'paused' }}
+            style={{ inset: `${((1 - scale * glowScale) / 2) * 100}%`, background, animationPlayState: breathing ? 'running' : 'paused' }}
           />
         ))}
       </div>

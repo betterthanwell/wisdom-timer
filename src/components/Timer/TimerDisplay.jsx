@@ -1,7 +1,7 @@
 import { formatClockTime, formatTime } from '../../utils/timeFormatter';
 import { CircularProgress } from './CircularProgress';
 
-export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = false, isComplete, sessionNumber = 1, endsAt = null, settleRemaining = null }) => {
+export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = false, isComplete, sessionNumber = 1, endsAt = null, settleRemaining = null, glowScale = 1 }) => {
   const isSettling = settleRemaining !== null;
   const getStatusText = () => {
     if (isSettling) return 'Settling in…';
@@ -50,6 +50,7 @@ export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = fa
         <CircularProgress
           progress={isSettling ? 0 : progress}
           breathing={isRunning || isSettling}
+          glowScale={glowScale}
           className="w-[min(16rem,68vw)] sm:w-72"
         >
           <div
