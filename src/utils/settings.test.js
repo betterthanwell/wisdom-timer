@@ -44,9 +44,19 @@ describe('sanitizeSettings', () => {
     expect(sanitizeSettings({ duration }, defaults).duration).toBe(2700);
   });
 
-  it('accepts the shortest and longest durations', () => {
-    expect(sanitizeSettings({ duration: 1 }, defaults).duration).toBe(1);
-    expect(sanitizeSettings({ duration: 5999 }, defaults).duration).toBe(5999);
+  it('accepts whole minutes from 1 to 99', () => {
+    expect(sanitizeSettings({ duration: 60 }, defaults).duration).toBe(60);
+    expect(sanitizeSettings({ duration: 5940 }, defaults).duration).toBe(5940);
+  });
+
+  // Lengths used to be set to the second; the custom length is now minutes only
+  it.each([
+    [750, 780], // 12:30 -> 13 min
+    [749, 720],
+    [1, 60],
+    [5999, 5940],
+  ])('rounds a saved %i s to the nearest minute (%i s), from 1 to 99', (duration, rounded) => {
+    expect(sanitizeSettings({ duration }, defaults).duration).toBe(rounded);
   });
 
   it('only accepts whole-minute intervals from 1 to 30 minutes', () => {

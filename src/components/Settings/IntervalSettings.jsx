@@ -1,12 +1,11 @@
 import { Bell } from 'lucide-react';
 import { Switch } from '../UI/Switch';
 import { SettingLabel } from '../UI/SettingLabel';
+import { Stepper } from '../UI/Stepper';
+import { minuteSteps } from '../../utils/minuteSteps';
 
-// Whole minutes between min and max (anything unreadable counts as min)
-const clampMinutes = (text, min, max) => Math.max(min, Math.min(max, parseInt(text) || min));
-
-const inputClassName =
-  'w-12 px-1 py-1 text-center bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50';
+const INTERVAL_STEPS = minuteSteps(30);
+const START_STEPS = minuteSteps(60);
 
 export const IntervalSettings = ({
   enabled,
@@ -29,36 +28,28 @@ export const IntervalSettings = ({
 
       {enabled && (
         <div className="pl-6 space-y-2">
-          <label className="flex items-center gap-2 text-sm text-white/70">
-            Hit the woodblock every
-            <input
-              type="number"
-              inputMode="numeric"
-              min="1"
-              max="30"
+          <div className="flex items-center justify-between gap-3 text-sm text-white/70">
+            <span>Every</span>
+            <Stepper
               value={intervalMinutes}
-              onChange={(e) => onIntervalChange(clampMinutes(e.target.value, 1, 30) * 60)}
-              aria-label="Interval in minutes"
+              steps={INTERVAL_STEPS}
+              onChange={(minutes) => onIntervalChange(minutes * 60)}
+              label="Woodblock interval"
+              unit="min"
               disabled={disabled}
-              className={inputClassName}
             />
-            minutes
-          </label>
-          <label className="flex items-center gap-2 text-sm text-white/70">
-            Starting after
-            <input
-              type="number"
-              inputMode="numeric"
-              min="1"
-              max="60"
+          </div>
+          <div className="flex items-center justify-between gap-3 text-sm text-white/70">
+            <span>Starting after</span>
+            <Stepper
               value={startMinutes}
-              onChange={(e) => onStartChange(clampMinutes(e.target.value, 1, 60) * 60)}
-              aria-label="Starting after, in minutes"
+              steps={START_STEPS}
+              onChange={(minutes) => onStartChange(minutes * 60)}
+              label="Woodblock start"
+              unit="min"
               disabled={disabled}
-              className={inputClassName}
             />
-            minutes
-          </label>
+          </div>
         </div>
       )}
     </div>

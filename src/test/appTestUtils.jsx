@@ -20,14 +20,24 @@ export const renderApp = async () => {
   await waitFor(() => expect(button('Start').disabled).toBe(false));
 };
 
-// Runs a 1-second session to completion on a fake clock
-export const completeOneSecondSession = () => {
+// The number a stepper (UI/Stepper, named by its group) shows
+export const stepperValue = (name) => parseInt(screen.getByRole('group', { name }).textContent);
+
+// Steps a stepper to `minutes` with its - and + buttons
+export const setStepper = (name, minutes) => {
+  for (let i = 0; i < 40 && stepperValue(name) !== minutes; i++) {
+    click(`${stepperValue(name) < minutes ? 'Increase' : 'Decrease'} ${name.toLowerCase()}`);
+  }
+  expect(stepperValue(name)).toBe(minutes);
+};
+
+// Runs a 1-minute session to completion on a fake clock
+export const completeOneMinuteSession = () => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
-  fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } });
-  fireEvent.change(screen.getByLabelText('Seconds'), { target: { value: '1' } });
+  setStepper('Custom length', 1);
   click('Start');
   act(() => {
-    vi.advanceTimersByTime(1100);
+    vi.advanceTimersByTime(60_100);
   });
   expect(screen.getByText('Complete')).toBeTruthy();
 };

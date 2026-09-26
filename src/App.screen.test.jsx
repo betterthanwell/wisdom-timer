@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen, waitFor, render } from '@testing-library/react';
 import App from './App';
 import { audioManager } from './utils/audioManager';
-import { button, click, renderApp, setUpAppTests } from './test/appTestUtils';
+import { button, click, renderApp, setStepper, setUpAppTests, stepperValue } from './test/appTestUtils';
 
 vi.mock('./utils/audioManager', () => import('./test/audioManagerMock'));
 
@@ -247,45 +247,68 @@ describe('App', () => {
       expect(screen.getByRole('slider', { name: 'Bells volume' }).value).toBe('70'); // default bell volume
     });
 
-    it('cannot start a 0:00 session', async () => {
-      await renderApp();
-      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } });
-      fireEvent.change(screen.getByLabelText('Seconds'), { target: { value: '0' } });
-
-      expect(button('Start').disabled).toBe(true);
-    });
-
     it('offers the woodblock every 10 minutes, starting after 5, by default', async () => {
       await renderApp();
       expect(screen.getByText('Interval Woodblock')).toBeTruthy();
       fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
 
-      expect(screen.getByText(/Hit the woodblock every/)).toBeTruthy();
-      expect(screen.getByLabelText('Interval in minutes').value).toBe('10');
+      expect(screen.getByText('Every')).toBeTruthy();
+      expect(stepperValue('Woodblock interval')).toBe(10);
       expect(screen.getByText(/Starting after/)).toBeTruthy();
-      expect(screen.getByLabelText('Starting after, in minutes').value).toBe('5');
+      expect(stepperValue('Woodblock start')).toBe(5);
     });
 
-    it('keeps the starting time between 1 and 60 minutes, and remembers it', async () => {
+    it('steps the woodblock times: 1 minute at a time up to 10, then 5 - every 1-30 minutes, starting after 1-60', async () => {
       await renderApp();
       fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
-      const start = screen.getByLabelText('Starting after, in minutes');
+      expect(stepperValue('Woodblock interval')).toBe(10);
+      click('Increase woodblock interval');
+      expect(stepperValue('Woodblock interval')).toBe(15);
+      setStepper('Woodblock interval', 30);
+      click('Increase woodblock interval');
+      expect(stepperValue('Woodblock interval')).toBe(30);
 
-      fireEvent.change(start, { target: { value: '99' } });
-      expect(start.value).toBe('60');
-      fireEvent.change(start, { target: { value: '0' } });
-      expect(start.value).toBe('1');
-      fireEvent.change(start, { target: { value: '20' } });
-      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).intervalStart).toBe(1200);
+      expect(stepperValue('Woodblock start')).toBe(5);
+      click('Decrease woodblock start');
+      expect(stepperValue('Woodblock start')).toBe(4);
+      setStepper('Woodblock start', 1);
+      click('Decrease woodblock start');
+      expect(stepperValue('Woodblock start')).toBe(1);
+      setStepper('Woodblock start', 60);
+      click('Increase woodblock start');
+      expect(stepperValue('Woodblock start')).toBe(60);
+
+      const saved = JSON.parse(localStorage.getItem('wisdomTimerSettings'));
+      expect([saved.intervalDuration, saved.intervalStart]).toEqual([1800, 3600]);
     });
 
-    it('caps the interval at 30 minutes', async () => {
+    it('steps the custom length in whole minutes, 1 at a time up to 10, then 5, from 1 to 99', async () => {
       await renderApp();
-      fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
-      const interval = screen.getByLabelText('Interval in minutes');
+      expect(stepperValue('Custom length')).toBe(45);
+      click('Increase custom length');
+      expect(screen.getByText('50:00')).toBeTruthy();
+      setStepper('Custom length', 10);
+      click('Decrease custom length');
+      expect(stepperValue('Custom length')).toBe(9);
+      setStepper('Custom length', 1);
+      click('Decrease custom length');
+      expect(stepperValue('Custom length')).toBe(1);
+      expect(button('Start').disabled).toBe(false);
 
-      fireEvent.change(interval, { target: { value: '99' } });
-      expect(interval.value).toBe('30');
+      setStepper('Custom length', 95);
+      click('Increase custom length');
+      expect(stepperValue('Custom length')).toBe(99);
+      click('Increase custom length');
+      expect(stepperValue('Custom length')).toBe(99);
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).duration).toBe(5940);
+    });
+
+    it('steps from a length between the steps to the next one', async () => {
+      localStorage.setItem('wisdomTimerSettings', JSON.stringify({ duration: 12 * 60 }));
+      await renderApp();
+      expect(stepperValue('Custom length')).toBe(12);
+      click('Increase custom length');
+      expect(stepperValue('Custom length')).toBe(15);
     });
   });
 });

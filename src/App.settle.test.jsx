@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen } from '@testing-library/react';
 import { audioManager } from './utils/audioManager';
-import { button, click, startBellCount, renderApp, completeOneSecondSession, setUpAppTests } from './test/appTestUtils';
+import { button, click, startBellCount, renderApp, completeOneMinuteSession, setStepper, setUpAppTests } from './test/appTestUtils';
 
 vi.mock('./utils/audioManager', () => import('./test/audioManagerMock'));
 
@@ -62,7 +62,7 @@ describe('App', () => {
 
     it('shows the next session number while settling in after a completed one', async () => {
       await renderApp();
-      completeOneSecondSession();
+      completeOneMinuteSession();
       click('Settle in for 10s');
       click('Start');
 
@@ -169,7 +169,7 @@ describe('App', () => {
       expect(audioManager.playBell).toHaveBeenCalledWith('start', 3);
 
       click('Reset');
-      completeOneSecondSession();
+      completeOneMinuteSession();
       expect(audioManager.playBell).toHaveBeenCalledWith('end', 2);
     });
 
@@ -202,7 +202,7 @@ describe('App', () => {
     const startFiveMinutes = async ({ gentle = true } = {}) => {
       await renderApp();
       if (!gentle) fireEvent.click(screen.getByRole('switch', { name: 'Gentle ending' }));
-      fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '5' } });
+      setStepper('Custom length', 5);
       click('Start');
     };
 

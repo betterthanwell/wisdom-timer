@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import App from './App';
 import { audioManager } from './utils/audioManager';
-import { button, click, startBellCount, renderApp, completeOneSecondSession, setUpAppTests } from './test/appTestUtils';
+import { button, click, startBellCount, renderApp, completeOneMinuteSession, setUpAppTests } from './test/appTestUtils';
 
 vi.mock('./utils/audioManager', () => import('./test/audioManagerMock'));
 
@@ -85,7 +85,7 @@ describe('App', () => {
       click('Pause');
       expect(status.textContent).toBe('Paused');
       click('Reset');
-      completeOneSecondSession();
+      completeOneMinuteSession();
       expect(screen.getByRole('status').textContent).toBe('Complete');
     });
   });
@@ -94,7 +94,7 @@ describe('App', () => {
     it('rings the end bell and stops the ambient sound', async () => {
       await renderApp();
       click('Rain');
-      completeOneSecondSession();
+      completeOneMinuteSession();
 
       expect(audioManager.playBell).toHaveBeenCalledWith('end', 1);
       expect(audioManager.stopAmbient).toHaveBeenCalled();
@@ -103,14 +103,14 @@ describe('App', () => {
     it('starts a new session with Play, without needing Reset', async () => {
       await renderApp();
       click('Rain');
-      completeOneSecondSession();
+      completeOneMinuteSession();
       vi.clearAllMocks();
 
       expect(button('Start').disabled).toBe(false);
       click('Start');
 
       expect(screen.getByText('Meditating...')).toBeTruthy();
-      expect(screen.getByText('00:01')).toBeTruthy();
+      expect(screen.getByText('01:00')).toBeTruthy();
       expect(startBellCount()).toBe(1);
       expect(audioManager.playAmbient).toHaveBeenCalledWith('rain');
     });
@@ -119,7 +119,7 @@ describe('App', () => {
       await renderApp();
       expect(screen.getByText('Session 1')).toBeTruthy();
 
-      completeOneSecondSession();
+      completeOneMinuteSession();
       expect(screen.getByText('Session 1')).toBeTruthy(); // the one just completed
 
       click('Start');
@@ -128,7 +128,7 @@ describe('App', () => {
 
     it('a new session cancels end-bell strikes still to ring, before its start bell', async () => {
       await renderApp();
-      completeOneSecondSession();
+      completeOneMinuteSession();
       vi.clearAllMocks();
       click('Start');
 
@@ -183,14 +183,14 @@ describe('App', () => {
     it('locks the duration settings', () => {
       expect(button('30m').disabled).toBe(true);
       expect(button('60m').disabled).toBe(true);
-      expect(screen.getByLabelText('Minutes').disabled).toBe(true);
-      expect(screen.getByLabelText('Seconds').disabled).toBe(true);
+      expect(button('Decrease custom length').disabled).toBe(true);
+      expect(button('Increase custom length').disabled).toBe(true);
     });
 
     it('unlocks the duration settings after reset', () => {
       click('Reset');
       expect(button('30m').disabled).toBe(false);
-      expect(screen.getByLabelText('Minutes').disabled).toBe(false);
+      expect(button('Increase custom length').disabled).toBe(false);
     });
 
     it('keeps the volume sliders usable', () => {
@@ -241,7 +241,7 @@ describe('App', () => {
       click('Start');
       click('Show settings');
       expect(button('30m').disabled).toBe(true);
-      expect(screen.getByLabelText('Minutes').disabled).toBe(true);
+      expect(button('Increase custom length').disabled).toBe(true);
     });
   });
 

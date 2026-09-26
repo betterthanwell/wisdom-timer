@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen } from '@testing-library/react';
 import { audioManager } from './utils/audioManager';
-import { button, click, renderApp, setUpAppTests } from './test/appTestUtils';
+import { button, click, renderApp, setStepper, setUpAppTests } from './test/appTestUtils';
 
 vi.mock('./utils/audioManager', () => import('./test/audioManagerMock'));
 
@@ -42,7 +42,7 @@ describe('App', () => {
     it('hides the duration settings and starts from 00:00', async () => {
       await startOpenEnded();
       expect(screen.queryByRole('button', { name: '45m' })).toBe(null);
-      expect(screen.queryByLabelText('Minutes')).toBe(null);
+      expect(screen.queryByRole('group', { name: 'Custom length' })).toBe(null);
       expect(screen.getByText('00:00')).toBeTruthy();
       expect(screen.getByText('Counts up until you press Finish.')).toBeTruthy();
     });
@@ -59,8 +59,8 @@ describe('App', () => {
     it('keeps ringing interval bells', async () => {
       await startOpenEnded();
       fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
-      fireEvent.change(screen.getByLabelText('Interval in minutes'), { target: { value: '1' } });
-      fireEvent.change(screen.getByLabelText('Starting after, in minutes'), { target: { value: '1' } });
+      setStepper('Woodblock interval', 1);
+      setStepper('Woodblock start', 1);
       click('Start');
       passSeconds(180);
 
@@ -71,8 +71,8 @@ describe('App', () => {
     it('hits the woodblock first after the starting time, then every interval', async () => {
       await startOpenEnded();
       fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
-      fireEvent.change(screen.getByLabelText('Interval in minutes'), { target: { value: '2' } });
-      fireEvent.change(screen.getByLabelText('Starting after, in minutes'), { target: { value: '1' } });
+      setStepper('Woodblock interval', 2);
+      setStepper('Woodblock start', 1);
       click('Start');
       const woodblocks = () => audioManager.playBell.mock.calls.filter(([type]) => type === 'interval').length;
 
