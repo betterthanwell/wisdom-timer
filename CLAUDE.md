@@ -60,7 +60,6 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   │   ├── useMediaSession.js   # Lock screen play/pause act on the session (Media Session API)
 │   │   ├── useSettleCountdown.js # Settling-in countdown before a new session
 │   │   ├── useAmbientDownloads.js # Each ambient sound's download status (useSyncExternalStore)
-│   │   └── useLocalStorage.js   # Persisted state
 │   ├── context/
 │   │   ├── TimerContext.jsx     # TimerProvider: settings reducer + saving to localStorage
 │   │   └── useTimerContext.js   # Context object + useTimerContext hook (own file for fast refresh)
