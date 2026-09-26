@@ -12,8 +12,8 @@ const passSeconds = async (page, seconds) => {
 const passMinutes = (page, minutes) => passSeconds(page, minutes * 60);
 
 const setDuration = async (page, minutes, seconds = 0) => {
-  await page.getByLabel('Minutes', { exact: true }).fill(String(minutes));
-  await page.getByLabel('Seconds', { exact: true }).fill(String(seconds));
+  await page.getByLabel('Minutes', { exact: true }).selectOption(String(minutes));
+  await page.getByLabel('Seconds', { exact: true }).selectOption(String(seconds));
 };
 
 reportSoundsOnFailure(test);
@@ -55,8 +55,8 @@ test('after the Start tap, the woodblock and end bell ring through unlocked Web 
   // Bells decoded (until then they'd ring on <audio> elements)
   await expect.poll(() => page.evaluate(() => window.__decodedSounds), { timeout: 30_000 }).toBe(3);
   await page.getByRole('switch', { name: 'Interval woodblock' }).click();
-  await page.getByLabel('Interval in minutes').fill('1');
-  await page.getByLabel('Starting after, in minutes').fill('1');
+  await page.getByLabel('Interval in minutes').selectOption('1');
+  await page.getByLabel('Starting after, in minutes').selectOption('1');
   await setDuration(page, 2);
   await page.getByRole('button', { name: 'Start', exact: true }).click();
   // (The start bell waits a moment for audio to resume, in real time; don't
@@ -88,8 +88,8 @@ test('after the Start tap, the woodblock and end bell ring through unlocked Web 
 
 test('the interval woodblock starts after its own time, repeats, and skips the end', async ({ page }) => {
   await page.getByRole('switch', { name: 'Interval woodblock' }).click();
-  await page.getByLabel('Interval in minutes').fill('5');
-  await page.getByLabel('Starting after, in minutes').fill('2');
+  await page.getByLabel('Interval in minutes').selectOption('5');
+  await page.getByLabel('Starting after, in minutes').selectOption('2');
   await setDuration(page, 17);
 
   await page.getByRole('button', { name: 'Start', exact: true }).click();

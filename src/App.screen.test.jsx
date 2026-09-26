@@ -266,26 +266,31 @@ describe('App', () => {
       expect(screen.getByLabelText('Starting after, in minutes').value).toBe('5');
     });
 
-    it('keeps the starting time between 1 and 60 minutes, and remembers it', async () => {
+    // The option labels of a list (a native <select>: a wheel on iPhone)
+    const choices = (name) => [...screen.getByRole('combobox', { name }).options].map((o) => o.textContent);
+
+    it('picks the woodblock times from lists: every 1-30 minutes, starting after 1-60, remembered', async () => {
       await renderApp();
       fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
-      const start = screen.getByLabelText('Starting after, in minutes');
+      expect(choices('Interval in minutes')).toEqual(Array.from({ length: 30 }, (_, i) => String(i + 1)));
+      expect(choices('Starting after, in minutes')).toEqual(Array.from({ length: 60 }, (_, i) => String(i + 1)));
 
-      fireEvent.change(start, { target: { value: '99' } });
-      expect(start.value).toBe('60');
-      fireEvent.change(start, { target: { value: '0' } });
-      expect(start.value).toBe('1');
-      fireEvent.change(start, { target: { value: '20' } });
-      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).intervalStart).toBe(1200);
+      fireEvent.change(screen.getByRole('combobox', { name: 'Starting after, in minutes' }), { target: { value: '20' } });
+      fireEvent.change(screen.getByRole('combobox', { name: 'Interval in minutes' }), { target: { value: '5' } });
+      const saved = JSON.parse(localStorage.getItem('wisdomTimerSettings'));
+      expect([saved.intervalStart, saved.intervalDuration]).toEqual([1200, 300]);
     });
 
-    it('caps the interval at 30 minutes', async () => {
+    it('picks a custom length from lists of two-digit minutes (00-99) and seconds (00-59)', async () => {
       await renderApp();
-      fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
-      const interval = screen.getByLabelText('Interval in minutes');
+      const pad = (n) => String(n).padStart(2, '0');
+      expect(choices('Minutes')).toEqual(Array.from({ length: 100 }, (_, i) => pad(i)));
+      expect(choices('Seconds')).toEqual(Array.from({ length: 60 }, (_, i) => pad(i)));
 
-      fireEvent.change(interval, { target: { value: '99' } });
-      expect(interval.value).toBe('30');
+      fireEvent.change(screen.getByRole('combobox', { name: 'Minutes' }), { target: { value: '5' } });
+      fireEvent.change(screen.getByRole('combobox', { name: 'Seconds' }), { target: { value: '30' } });
+      expect(screen.getByText('05:30')).toBeTruthy();
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings')).duration).toBe(330);
     });
   });
 });
