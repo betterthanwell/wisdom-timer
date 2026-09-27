@@ -21,6 +21,7 @@ Free for anyone, anywhere, any time, for ever.
 - **Open-ended sitting** (optional) - count up from 00:00 with no set end; interval bells keep ringing, and **Finish** rings the end bell and completes the session
 - **Pause and resume** - the start bell rings again when you resume
 - **Hold to reset** - during a sit, Reset has to be held for a second, so a stray tap can't end it
+- **Survives a reload** - a sit in progress is kept for the browser tab: after a reload it runs on to the same end (one tap brings the sound back), and a sit that ended meanwhile says when
 - **Play after a finished session starts the next one** - no need to press Reset
 - **The time as a soft light** - no box around it: the time sits in a warm glow (think *nimitta*) that breathes slowly while you sit - 4 s swelling, 4 s settling - and holds still when paused. The session's progress is a thin trail of light around it; Play, Pause and Reset sit on the card below
 - **"Ends at 07:45"** under the timer while a session runs (in your device's time format)

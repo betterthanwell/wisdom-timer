@@ -12,22 +12,43 @@ const WAKE_UP_HORIZON_MS = 6 * 60 * 60 * 1000;
 const toMs = (seconds) => Math.round(seconds * 1000);
 const shownSeconds = (ms) => Math.ceil(ms / 1000);
 
-export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell) => {
+// `resumeFrom` picks up a sit saved before a reload (utils/savedSit.js):
+// { running, remainingMs } - running on to the same end, or paused with that
+// much left. It sets the first render's state, without onStart (no start
+// bell); later renders ignore it.
+export const useTimer = (initialDuration, onStart, onComplete, onIntervalBell, resumeFrom = null) => {
+  const [initial] = useState(() => {
+    if (!resumeFrom) return { remainingMs: toMs(initialDuration), running: false, paused: false, endsAt: null, bellsRung: 0 };
+    const { running, remainingMs } = resumeFrom;
+    return {
+      remainingMs,
+      running,
+      paused: !running,
+      endsAt: running ? sessionClock.now() + remainingMs : null,
+      // Bells due before the reload rang then
+      bellsRung: countIntervalBellsDue(
+        (toMs(initialDuration) - remainingMs) / 1000,
+        onIntervalBell?.interval,
+        initialDuration,
+        onIntervalBell?.firstAt
+      ),
+    };
+  });
   const [duration, setDuration] = useState(initialDuration);
-  const [timeRemaining, setTimeRemaining] = useState(() => shownSeconds(toMs(initialDuration)));
-  const [isRunning, setIsRunning] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(() => shownSeconds(initial.remainingMs));
+  const [isRunning, setIsRunning] = useState(initial.running);
   const [isComplete, setIsComplete] = useState(false);
   // Started, then paused - the session is still in progress
-  const [isPaused, setIsPaused] = useState(false);
+  const [isPaused, setIsPaused] = useState(initial.paused);
   // When the running session will end (timestamp), or null when not running
-  const [endsAt, setEndsAt] = useState(null);
+  const [endsAt, setEndsAt] = useState(initial.endsAt);
 
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
-  const expectedEndTimeRef = useRef(null);
-  const intervalBellsRungRef = useRef(0);
+  const expectedEndTimeRef = useRef(initial.endsAt);
+  const intervalBellsRungRef = useRef(initial.bellsRung);
   // The exact time left while not running (ms)
-  const remainingMsRef = useRef(toMs(initialDuration));
+  const remainingMsRef = useRef(initial.remainingMs);
 
   // Start the timer
   const start = useCallback(() => {

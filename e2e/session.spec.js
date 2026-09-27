@@ -317,6 +317,27 @@ test('Test bell rings the end bell once, before a sit', async ({ page }) => {
   await expect(page.getByText('Ready')).toBeVisible();
 });
 
+test('a reload mid-sit: the sit runs on to the same end, and after the restore tap the end bell rings', async ({ page }) => {
+  await setDuration(page, 10);
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect.poll(() => countSound(page, 'bell-start')).toBe(1);
+  await passMinutes(page, 3);
+  await expect(page.getByText('07:00')).toBeVisible();
+
+  await page.reload();
+  await page.clock.runFor(2500); // sound loading fallback timeouts
+  await expect(page.getByText('Meditating...')).toBeVisible();
+  await expect(page.getByText(/^06:5\d$/)).toBeVisible();
+  await expect(page.getByText(/page reloaded/i)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Restore the bell' }).click();
+  await passMinutes(page, 7);
+  await expect(page.getByText('Complete')).toBeVisible();
+  await expect.poll(() => countSound(page, 'bell-end')).toBe(1);
+  // (Sounds are recorded per page load: none since the reload but the end bell)
+  expect(await countSound(page, 'bell-start')).toBe(0);
+});
+
 test('settings survive a reload', async ({ page }) => {
   await page.getByRole('button', { name: '30m' }).click();
   await expect(page.getByText('30:00')).toBeVisible();
