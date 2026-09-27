@@ -3,7 +3,7 @@
 ## State
 - **TimerContext** - `useReducer` for settings: `duration`, `presetDurations`, `intervalBellsEnabled`, `intervalDuration`, `intervalStart`, `selectedAmbient`, `ambientVolume`, `bellVolume`, `keepScreenAwake`, `dimScreen`, `dimLevel`, … One generic `SET_SETTING` action (`{ key, value }`); named action functions (`setDuration`, `setKeepScreenAwake`, …) wrap it.
 - Saved settings (`localStorage` key `wisdomTimerSettings`) seed the reducer's initial state through `sanitizeSettings()`, which keeps only valid values for known keys and uses defaults otherwise. Saving uses `pickSavedSettings()`: **every setting with a validator in `utils/settings.js` is saved, and nothing else.**
-- Session state (running, paused, complete, time left) lives in `useTimer`, not the context.
+- Session state (running, paused, complete, time left) lives in `useTimer`, not the context. The sit in progress is also kept for the tab (`utils/savedSit.js`, `sessionStorage`), and `useTimer`'s 5th argument, `resumeFrom` (`{ running, remainingMs }`), sets its first render after a reload - without `onStart`, and with the interval bells already due counted as rung.
 
 ## Timer (`useTimer`)
 - Time left is computed from `expectedEndTimeRef` and `Date.now()`, never by decrementing, so it doesn't drift.
