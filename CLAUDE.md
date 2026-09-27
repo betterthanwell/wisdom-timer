@@ -56,7 +56,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   │   ├── useTimer.js          # Countdown from the clock, pause/resume, interval bells, wake-ups
 │   │   ├── useAudio.js          # React wrapper around the audioManager singleton
 │   │   ├── useSessionCounter.js # Sessions completed today (memory only, resets daily)
-│   │   ├── useWakeLock.js       # Keeps the screen on (Screen Wake Lock API) while active
+│   │   ├── useWakeLock.js       # Keeps the screen on (Screen Wake Lock API) while active; reports when it can't
 │   │   ├── useMediaSession.js   # Lock screen play/pause act on the session (Media Session API)
 │   │   ├── useSettleCountdown.js # Settling-in countdown before a new session
 │   │   ├── useAmbientDownloads.js # Each ambient sound's download status (useSyncExternalStore)
