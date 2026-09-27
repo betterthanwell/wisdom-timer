@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Clock, Eye, Settings as SettingsIcon, TriangleAlert } from 'lucide-react';
 import { TimerProvider } from './context/TimerContext';
 import { useTimerContext } from './context/useTimerContext';
@@ -481,8 +481,11 @@ function MeditationTimerApp() {
     };
   }, []);
 
-  // Keyboard shortcuts
-  useEffect(() => {
+  // Keyboard shortcuts. Set up in a layout effect, which runs with the render
+  // it follows: a passive one can run a task later on a busy device, and a
+  // Space pressed as Start lit up (once the sounds had loaded) was ignored
+  // by the handler from before.
+  useLayoutEffect(() => {
     const handleKeyPress = (e) => {
       // Ignore if user is typing in an input field
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
