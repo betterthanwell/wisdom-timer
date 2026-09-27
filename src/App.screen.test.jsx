@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, screen, waitFor, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor, render } from '@testing-library/react';
 import App from './App';
 import { audioManager } from './utils/audioManager';
 import { button, click, renderApp, setStepper, setUpAppTests, stepperValue } from './test/appTestUtils';
@@ -257,6 +257,33 @@ describe('App', () => {
 
       fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
       expect(woodblocks()).toHaveLength(2);
+    });
+
+    it('Test bell rings the end bell once, from the tap, so the volume can be checked before a sit', async () => {
+      localStorage.setItem('wisdomTimerSettings', JSON.stringify({ endStrikes: 3 }));
+      await renderApp();
+      click('Test bell');
+
+      expect(audioManager.playBell.mock.calls).toEqual([['end', 1]]);
+      // Played from the tap, so iOS allows it
+      expect(audioManager.unlock.mock.invocationCallOrder[0]).toBeLessThan(
+        audioManager.playBell.mock.invocationCallOrder[0]
+      );
+    });
+
+    it('Test bell waits for the sounds, and never rings over a running sit', async () => {
+      audioManager.init.mockImplementationOnce(() => new Promise(() => {}));
+      render(<App />);
+      expect(button('Test bell').disabled).toBe(true);
+      cleanup();
+
+      await renderApp();
+      click('Start');
+      click('Show settings');
+      expect(button('Test bell').disabled).toBe(true);
+
+      click('Pause');
+      expect(button('Test bell').disabled).toBe(false);
     });
 
     it('offers the woodblock every 10 minutes, starting after 5, by default', async () => {

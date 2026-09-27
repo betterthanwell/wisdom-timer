@@ -36,6 +36,7 @@ Free for anyone, anywhere, any time, for ever.
 - **Metta mode** (optional) - the four loving-kindness phrases take turns in large letters above the timer while you sit: *May I be happy. May my loved ones be happy. May those I find difficult be happy. May all beings everywhere be happy.* Each shows for 5, 10, 20 or 30 seconds (default 10), then the cycle starts again
 - **Gentle ending** (on by default) - the ambient sound fades out over the last minute, so the end bell arrives into silence; the bells themselves never fade
 - **Separate volume sliders** for bells and ambient sound; changes apply immediately, including to a bell that is still ringing
+- **Test bell** - rings the end bell at the chosen volume, for a sound check before a sit (is it loud enough for the room, and coming out of the speaker rather than someone's earbuds?)
 
 ### While a session is in progress
 | | Running | Paused |
