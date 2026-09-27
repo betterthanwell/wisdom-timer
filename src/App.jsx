@@ -19,6 +19,7 @@ import { GlassCard } from './components/UI/GlassCard';
 import { SettingLabel } from './components/UI/SettingLabel';
 import { TimerDisplay } from './components/Timer/TimerDisplay';
 import { TimerControls } from './components/Timer/TimerControls';
+import { Button } from './components/UI/Button';
 import { PresetButtons } from './components/Settings/PresetButtons';
 import { DurationSelector } from './components/Settings/DurationSelector';
 import { IntervalSettings } from './components/Settings/IntervalSettings';
@@ -89,6 +90,9 @@ function MeditationTimerApp() {
   // carried on or reset. (Other sessions run on: the sit's length is the
   // point there.)
   const [interrupted, setInterrupted] = useState(false);
+  // A regular sit interrupted from outside runs on, but iOS may keep the sound
+  // off until a tap - so the end bell wouldn't ring. It offers that tap.
+  const [soundInterrupted, setSoundInterrupted] = useState(false);
   const pauseAtRef = useRef(null);
   const rescueSession = useCallback(
     (voicePosition) => {
@@ -136,6 +140,7 @@ function MeditationTimerApp() {
       return;
     }
     debugLog.add('session complete');
+    setSoundInterrupted(false);
     cancelVoice();
     playBell('end', state.endStrikes);
     stopAmbient();
@@ -176,31 +181,6 @@ function MeditationTimerApp() {
     pauseAmbient();
   }, [pauseTimer, cancelVoice, pauseAmbient]);
 
-  // Told by the audio manager of an interruption: the voice's position, or
-  // null before the voice has started (the lead-in)
-  const onInterruptionRef = useRef(() => {});
-  useEffect(() => {
-    onInterruptionRef.current = (voicePosition) => {
-      if (!guided || !timer.isRunning) return;
-      if (voicePosition !== null) {
-        rescueSession(voicePosition);
-      } else {
-        debugLog.add('session paused by an interruption (lead-in)');
-        cancelVoice();
-        pauseTimer();
-        setInterrupted(true);
-      }
-    };
-  }, [guided, timer.isRunning, rescueSession, cancelVoice, pauseTimer]);
-  useEffect(() => {
-    setInterruptionListener((voicePosition) => onInterruptionRef.current(voicePosition));
-    return () => setInterruptionListener(null);
-  }, [setInterruptionListener]);
-
-  // Handle start/resume (ambient sound is handled by handleTimerStart)
-  // Quiet screen: while running, settings are hidden unless asked for
-  const [settingsRevealed, setSettingsRevealed] = useState(false);
-
   // Optional settling-in countdown before a new session's start bell. When it
   // ends it calls the *latest* startTimer, so changes made meanwhile (e.g.
   // the ambient sound) are used.
@@ -210,6 +190,39 @@ function MeditationTimerApp() {
     startTimerRef.current = startTimer;
   }, [startTimer]);
 
+  // Told by the audio manager of an interruption: the voice's position, or
+  // null before the voice has started (the lead-in). A regular sit runs on,
+  // offering a tap to restore the sound (the end bell needs it on iOS).
+  const onInterruptionRef = useRef(() => {});
+  useEffect(() => {
+    onInterruptionRef.current = (voicePosition) => {
+      if (!guided) {
+        if (timer.isRunning || isSettling) {
+          debugLog.add('sound interrupted during a sit: offering to restore it');
+          setSoundInterrupted(true);
+        }
+        return;
+      }
+      if (!timer.isRunning) return;
+      if (voicePosition !== null) {
+        rescueSession(voicePosition);
+      } else {
+        debugLog.add('session paused by an interruption (lead-in)');
+        cancelVoice();
+        pauseTimer();
+        setInterrupted(true);
+      }
+    };
+  }, [guided, timer.isRunning, isSettling, rescueSession, cancelVoice, pauseTimer]);
+  useEffect(() => {
+    setInterruptionListener((voicePosition) => onInterruptionRef.current(voicePosition));
+    return () => setInterruptionListener(null);
+  }, [setInterruptionListener]);
+
+  // Handle start/resume (ambient sound is handled by handleTimerStart)
+  // Quiet screen: while running, settings are hidden unless asked for
+  const [settingsRevealed, setSettingsRevealed] = useState(false);
+
   const handleStart = useCallback(() => {
     // Now, during the tap (or Space): bells started later by timers - the
     // interval and end bells, and the start bell after settling in - are
@@ -217,6 +230,7 @@ function MeditationTimerApp() {
     debugLog.add(`Start tapped${!timer.isPaused && state.settleSeconds > 0 ? `, settling in ${state.settleSeconds}s` : ''}`);
     unlockAudio();
     setInterrupted(false);
+    setSoundInterrupted(false);
     setSettingsRevealed(false); // every start begins quiet
     // A new session: end-bell strikes of the last one still to ring would
     // clash with the start bell (resuming keeps the start bell's strikes)
@@ -233,9 +247,22 @@ function MeditationTimerApp() {
     }
   }, [unlockAudio, timer.isPaused, cancelPendingBells, guided, guidedTrack, state.settleSeconds, activeAmbient, primeAmbient, beginSettling, startTimer]);
 
+  // Restore the sound after an interruption, in this tap: fresh audio
+  // (unlock() rebuilds it), then the ambient sound again - or, while settling
+  // in, primed again for the countdown to start. The sit carries on.
+  const handleRestoreSound = useCallback(() => {
+    debugLog.add('Restore the bell tapped');
+    unlockAudio();
+    setSoundInterrupted(false);
+    if (!activeAmbient) return;
+    if (timer.isRunning) playAmbient(activeAmbient);
+    else if (isSettling) primeAmbient(activeAmbient);
+  }, [unlockAudio, activeAmbient, timer.isRunning, isSettling, playAmbient, primeAmbient]);
+
   // Handle reset - stop ambient sound
   const handleReset = useCallback(() => {
     setInterrupted(false);
+    setSoundInterrupted(false);
     cancelSettling();
     cancelVoice();
     cancelPendingBells();
@@ -520,6 +547,17 @@ function MeditationTimerApp() {
           settleRemaining={isSettling ? settleRemaining : null}
           glowScale={nimittaSize}
         />
+        )}
+
+        {/* A regular sit interrupted from outside: above the dim, so it's seen */}
+        {soundInterrupted && inSession && (
+          <div
+            data-testid="sound-interrupted"
+            className="relative z-20 mx-auto flex max-w-sm flex-col items-center gap-3 rounded-xl bg-black/35 px-4 py-3 text-center text-sm text-white"
+          >
+            <p role="alert">The sound was interrupted (a call, Siri, an alarm?), so the end bell may not ring.</p>
+            <Button onClick={handleRestoreSound}>Restore the bell</Button>
+          </div>
         )}
 
         {/* The controls, on the card below it */}
