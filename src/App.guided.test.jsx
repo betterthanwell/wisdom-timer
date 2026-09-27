@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen } from '@testing-library/react';
 import { audioManager } from './utils/audioManager';
-import { button, click, renderApp, setUpAppTests, startBellCount } from './test/appTestUtils';
+import { button, click, passMs, renderApp, setUpAppTests, startBellCount } from './test/appTestUtils';
 
 vi.mock('./utils/audioManager', () => import('./test/audioManagerMock'));
 
@@ -20,13 +20,6 @@ describe('App', () => {
       vi.useRealTimers();
     });
 
-    const passMs = (ms) => {
-      for (; ms > 0; ms -= 1000) {
-        act(() => {
-          vi.advanceTimersByTime(Math.min(ms, 1000));
-        });
-      }
-    };
     const guidedSwitch = () => screen.getByRole('switch', { name: 'Guided meditation' });
     const endBellCount = () => audioManager.playBell.mock.calls.filter(([type]) => type === 'end').length;
 

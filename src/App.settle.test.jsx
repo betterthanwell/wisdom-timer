@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { audioManager } from './utils/audioManager';
-import { button, click, startBellCount, renderApp, completeOneMinuteSession, setStepper, setUpAppTests } from './test/appTestUtils';
+import { button, click, startBellCount, renderApp, completeOneMinuteSession, passSeconds, setStepper, setUpAppTests } from './test/appTestUtils';
 
 vi.mock('./utils/audioManager', () => import('./test/audioManagerMock'));
 
@@ -48,11 +48,6 @@ describe('App', () => {
 
       expect(audioManager.primeAmbient).not.toHaveBeenCalled();
     });
-
-    const passSeconds = (seconds) =>
-      act(() => {
-        vi.advanceTimersByTime(seconds * 1000);
-      });
 
     const renderWithSettling = async (label = 'Settle in for 10s') => {
       await renderApp();
@@ -190,13 +185,6 @@ describe('App', () => {
       vi.useRealTimers();
     });
 
-    const passSeconds = (seconds) => {
-      for (let i = 0; i < seconds; i++) {
-        act(() => {
-          vi.advanceTimersByTime(1000);
-        });
-      }
-    };
     const lastLevel = () => audioManager.setAmbientLevel.mock.calls.at(-1)?.[0];
 
     const startFiveMinutes = async ({ gentle = true } = {}) => {

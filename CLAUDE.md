@@ -26,7 +26,7 @@ npm run dev          # Dev server (http://localhost:5173)
 npm run build        # Production build to dist/
 npm run preview      # Serve the production build
 npm run lint         # ESLint
-npm test             # Vitest, once (~10 s)
+npm test             # Vitest, once (~20 s)
 npm run test:watch   # Vitest, watch mode
 npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iPhone profile
 ```
@@ -37,7 +37,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 ├── src/
 │   ├── App.jsx                  # Session flow, keyboard shortcuts, layout (default export)
 │   ├── App.*.test.jsx           # Component tests: whole app, audioManager mocked (session, settle, modes, screen, lockscreen, …)
-│   ├── test/                    # appTestUtils.jsx (renderApp, click, …), audioManagerMock.js
+│   ├── test/                    # appTestUtils.jsx (renderApp, click, passSeconds, …), audioManagerMock.js (+ a test that it matches AudioManager)
 │   ├── main.jsx                 # Entry point (StrictMode); registers the service worker once bells load
 │   ├── sw.js                    # Service worker source (offline use) - emitted as /sw.js by vite.config.js
 │   ├── registerServiceWorker.js # Registers /sw.js (production builds only)
@@ -73,7 +73,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   │   ├── settings.js          # sanitizeSettings() - validates saved settings
 │   │   ├── debugLog.js          # debugLog.add() - audio events for the ?debug panel
 │   │   ├── testingTools.js      # ?speed / ?debug, off on wisdomtimer.app
-│   │   └── timeFormatter.js     # formatTime (MM:SS) etc.
+│   │   └── timeFormatter.js     # formatTime (MM:SS), formatClockTime (wall-clock time)
 │   └── constants/
 │       └── audioSources.js      # AUDIO_SOURCES (paths) + AMBIENT_SOUNDS (buttons, built from it)
 ├── e2e/                         # Playwright: session.spec.js, offline.spec.js, darkreader.spec.js, sounds.js (sound recorder)
@@ -121,9 +121,9 @@ New ambient sounds, preset durations and background colors: see README, "Customi
 - Prefer pure functions (like `countIntervalBellsDue`, `sanitizeSettings`) and unit-test them.
 - Hook tests: `renderHook` + `vi.useFakeTimers()`. Advance time in 1-second `act()` steps so React re-renders between ticks (one big `advanceTimersByTime` batches the updates and skips effects). Background throttling is simulated by stubbing `setInterval` out entirely.
 - `audioManager.test.js` uses a `FakeAudio` class via `vi.stubGlobal('Audio', …)`, plus `FixedVolumeAudio` that ignores volume like iOS.
-- `App.*.test.jsx` render `<App />` with `audioManager` replaced by spies (`vi.mock('./utils/audioManager', () => import('./test/audioManagerMock'))` in each file) and find controls by accessible name; shared helpers and `setUpAppTests()` are in `src/test/appTestUtils.jsx`. They're split into several files so Vitest runs them in parallel (one file took ~14 s of a 17 s run); keep each under ~5 s. Sessions run on the fake clock (`completeOneSecondSession()`), not in real time.
+- `App.*.test.jsx` render `<App />` with `audioManager` replaced by spies (`vi.mock('./utils/audioManager', () => import('./test/audioManagerMock'))` in each file) and find controls by accessible name; shared helpers and `setUpAppTests()` are in `src/test/appTestUtils.jsx`. The mock may only stand in for methods `AudioManager` really has (`audioManagerMock.test.js` checks). They're split into several files so Vitest runs them in parallel (one file took ~14 s of a 17 s run). Each file also costs ~0.6 s to set up jsdom, though: with no file much over ~7 s the run is bound by the total, and splitting the three slowest further made it ~2 s slower. Split a file only when it dominates the run. Sessions run on the fake clock (`completeOneMinuteSession()`, `passSeconds()` / `passMs()` in 1-second `act()` steps), not in real time.
 - Pure logic tests start with `// @vitest-environment node` (no jsdom to set up).
-- Vitest globals are off, so Testing Library doesn't auto-clean: call `cleanup()` in `afterEach` (`setUpAppTests()` does).
+- Vitest globals are off, so Testing Library doesn't auto-clean: call `cleanup()` in `afterEach` (`setUpAppTests()` does). `vi.spyOn()` and `vi.stubGlobal()` are undone before each test (`restoreMocks`, `unstubGlobals`), so a silenced `console.warn` doesn't leak into the next one.
 - While iterating, run just the affected test file (`npx vitest run src/App.settle.test.jsx`) and e2e spec in Chromium (`npx playwright test -g "…" --project=chromium`, ~5-12 s); the full matrix once at the end, and CI on the PR.
 - **Playwright** (`e2e/`): the production build in Chromium, Firefox, WebKit and an iPhone 15 profile. First time: `npx playwright install chromium firefox webkit`.
   - The page clock is faked **and frozen** (`clock.install()` then `clock.pauseAt()`); an unfrozen fake clock keeps flowing in real time, which made a test flaky on slow CI. Advance with `clock.fastForward` in 1-minute jumps; `runFor` fires every 100ms tick and is far too slow for long sessions.

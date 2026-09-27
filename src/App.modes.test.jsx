@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { audioManager } from './utils/audioManager';
-import { button, click, renderApp, setStepper, setUpAppTests } from './test/appTestUtils';
+import { button, click, passSeconds, renderApp, setStepper, setUpAppTests } from './test/appTestUtils';
 
 vi.mock('./utils/audioManager', () => import('./test/audioManagerMock'));
 
@@ -18,13 +18,6 @@ describe('App', () => {
       vi.useRealTimers();
     });
 
-    const passSeconds = (seconds) => {
-      for (let i = 0; i < seconds; i++) {
-        act(() => {
-          vi.advanceTimersByTime(1000);
-        });
-      }
-    };
     const openEndedSwitch = () => screen.getByRole('switch', { name: 'Open-ended sitting' });
 
     const startOpenEnded = async () => {
@@ -133,13 +126,6 @@ describe('App', () => {
       vi.useRealTimers();
     });
 
-    const passSeconds = (seconds) => {
-      for (let i = 0; i < seconds; i++) {
-        act(() => {
-          vi.advanceTimersByTime(1000);
-        });
-      }
-    };
     const mettaSwitch = () => screen.getByRole('switch', { name: 'Metta mode' });
     const phrase = () => screen.queryByTestId('metta-phrase')?.textContent ?? null;
 
