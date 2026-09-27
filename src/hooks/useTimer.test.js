@@ -31,6 +31,52 @@ describe('useTimer', () => {
     vi.useRealTimers();
   });
 
+  // A sit saved before a reload (utils/savedSit.js) picks up where it was
+  describe('resuming a saved sit', () => {
+    const resumeTimer = (duration, resumeFrom, intervalBell = null) => {
+      const onStart = vi.fn();
+      const onComplete = vi.fn();
+      const hook = renderHook(() => useTimer(duration, onStart, onComplete, intervalBell, resumeFrom));
+      return { ...hook, onStart, onComplete };
+    };
+
+    it('runs on to the same end, without onStart (no start bell)', () => {
+      const { result, onStart, onComplete } = resumeTimer(600, { running: true, remainingMs: 90_500 });
+      expect(result.current.isRunning).toBe(true);
+      expect(result.current.timeRemaining).toBe(91);
+      expect(result.current.endsAt).toBe(Date.now() + 90_500);
+      expect(onStart).not.toHaveBeenCalled();
+
+      advanceSeconds(90);
+      expect(onComplete).not.toHaveBeenCalled();
+      advanceSeconds(1);
+      expect(result.current.isComplete).toBe(true);
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+
+    it('rings no catch-up interval bell for the time before the reload', () => {
+      const bell = { interval: 60, callback: vi.fn() };
+      // 200 s sat: the bells at 60, 120 and 180 s rang before the reload
+      const { result } = resumeTimer(600, { running: true, remainingMs: 400_000 }, bell);
+      advanceSeconds(39);
+      expect(bell.callback).not.toHaveBeenCalled();
+      advanceSeconds(1); // 240 s
+      expect(bell.callback).toHaveBeenCalledTimes(1);
+      expect(result.current.isRunning).toBe(true);
+    });
+
+    it('stays paused with the same time left, and resumes from there', () => {
+      const { result, onStart } = resumeTimer(600, { running: false, remainingMs: 125_000 });
+      expect(result.current.isPaused).toBe(true);
+      expect(result.current.isRunning).toBe(false);
+      expect(result.current.timeRemaining).toBe(125);
+
+      act(() => result.current.start());
+      expect(onStart).toHaveBeenCalledWith(475);
+      expect(result.current.timeRemaining).toBe(125);
+    });
+  });
+
   it('counts down and completes once', () => {
     const { result, onStart, onComplete } = renderTimer(10);
 
