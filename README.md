@@ -209,7 +209,7 @@ The bells and ambient sounds are licensed under **CC0 1.0 Universal (Public Doma
 
 ## 🤝 Contributing
 
-Contributions welcome - bug reports, ideas, audio recommendations and pull requests. Please run `npm run lint`, `npm test` and, for UI changes, `npm run test:e2e` before opening a PR; CI runs them too.
+Contributions welcome - bug reports, ideas, audio recommendations and pull requests. Please run `npm run lint`, `npm test` and, for UI changes, `npm run test:e2e` before opening a PR; CI runs them too. Commit messages say why, for whoever reads them a year from now - see [CLAUDE.md](CLAUDE.md#commit-messages-and-prs) for how to write them and what goes in a PR description.
 
 ---
 
