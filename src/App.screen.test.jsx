@@ -264,6 +264,27 @@ describe('App', () => {
     });
   });
 
+  // Advice for someone leading a group, where the end bell matters most
+  describe('group sit tips', () => {
+    const tips = () => screen.queryByText('Leading a group sit?');
+
+    it('are there before a sit, folded away, and cover the sound check, the screen and interruptions', async () => {
+      await renderApp();
+      const details = tips().closest('details');
+      expect(details.open).toBe(false);
+      expect(details.textContent).toMatch(/Test bell/);
+      expect(details.textContent).toMatch(/Don't lock the phone/);
+      expect(details.textContent).toMatch(/Do Not Disturb/);
+      expect(details.textContent).toMatch(/Restore the bell/);
+    });
+
+    it('stay out of the quiet screen', async () => {
+      await renderApp();
+      click('Start');
+      expect(tips()).toBe(null);
+    });
+  });
+
   describe('settings validation', () => {
     it('shows that the bells are loading, with Start disabled until they are ready', async () => {
       audioManager.init.mockImplementationOnce(() => new Promise(() => {}));

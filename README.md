@@ -62,6 +62,18 @@ Free for anyone, anywhere, any time, for ever.
 
 - **iPhone with the screen locked:** iOS pauses web pages when the phone locks, so bells can't ring until you unlock it. Keeping the screen awake during a session prevents the automatic lock; locking the phone yourself still pauses the page.
 
+## 🧘 Leading a group sit
+
+The end bell matters most when a group sits together. So that it rings:
+
+- **Ring the Test bell first** (under the volume sliders): loud enough for the room, and from the phone's speaker, not someone's earbuds.
+- **Don't lock the phone while you sit:** a locked phone may not ring the end bell on time. The app keeps the screen on and dims it.
+- **Turn on Do Not Disturb or a Focus mode,** so calls are less likely to interrupt the sound. If something does, tap **Restore the bell**.
+- **Plug the phone in, or start with plenty of battery:** on low battery it may not keep the screen on.
+- **Open the app once before, with a connection:** after that it works offline.
+
+The app shows the same tips under the settings ("Leading a group sit?").
+
 ## 🚀 Getting Started
 
 ### Prerequisites
