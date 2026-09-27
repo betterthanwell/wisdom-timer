@@ -65,7 +65,11 @@ test('a full 45-minute session: start bell, countdown, end bell', async ({ page 
   await expect.poll(() => countSound(page, 'bell-end')).toBe(1);
 });
 
-test('after the Start tap, the woodblock and end bell ring through unlocked Web Audio', async ({ page }) => {
+// Tests tagged @webaudio run in WebKit one at a time, after everything else
+// (see playwright.config.js): WebKit pages playing at the same time take each
+// other's audio away, so these couldn't check what they're for in a parallel run
+
+test('after the Start tap, the woodblock and end bell ring through unlocked Web Audio', { tag: '@webaudio' }, async ({ page }) => {
   // Bells decoded (until then they'd ring on <audio> elements)
   await expect.poll(() => page.evaluate(() => window.__decodedSounds), { timeout: 30_000 }).toBe(3);
   await turnOnWoodblock(page);
@@ -79,21 +83,9 @@ test('after the Start tap, the woodblock and end bell ring through unlocked Web 
   await passMinutes(page, 2);
   await expect(page.getByText('Complete')).toBeVisible();
 
-  const log = await soundLog(page);
-  expect(log.map((entry) => entry.path)).toEqual([
-    '/audio/bells/bell-start.mp3',
-    '/audio/bells/bell-interval.mp3',
-    '/audio/bells/bell-end.mp3',
-  ]);
-  // WebKit can take audio away from a page (iOS: a call, another app; in
-  // parallel test runs: other test pages) - the context turns "interrupted"
-  // and bells rightly fall back to <audio> elements. Otherwise:
-  const states = await page.evaluate(() => window.__audioStates);
-  test.skip(states.includes('interrupted'), `WebKit interrupted audio during the test (${states.join(' → ')})`);
-
   // Bells started by timers (no tap) must not depend on <audio> elements,
   // which iOS won't start without a tap
-  expect(log).toEqual([
+  expect(await soundLog(page)).toEqual([
     { path: '/audio/bells/bell-start.mp3', via: 'webaudio', state: expect.stringMatching(/^(suspended|running)$/) },
     { path: '/audio/bells/bell-interval.mp3', via: 'webaudio', state: 'running' },
     { path: '/audio/bells/bell-end.mp3', via: 'webaudio', state: 'running' },
@@ -308,7 +300,7 @@ test('metta mode: the phrases take turns above the timer while sitting', async (
   await expect(phrase).toBeHidden();
 });
 
-test('guided meditation: start bell, the voice after the lead-in, end bell exactly when the recording ends', async ({ page }) => {
+test('guided meditation: start bell, the voice after the lead-in, end bell exactly when the recording ends', { tag: '@webaudio' }, async ({ page }) => {
   await page.getByRole('switch', { name: 'Guided meditation' }).click();
   // Downloaded when chosen and kept on the device; Start waits for it
   await expect
@@ -331,10 +323,6 @@ test('guided meditation: start bell, the voice after the lead-in, end bell exact
   expect(await page.evaluate(() => [...document.querySelectorAll('audio')].length)).toBe(0); // (not in the DOM)
 
   await passSeconds(page, 248);
-  // Headless WebKit can interrupt audio by itself; a guided session then
-  // rightly pauses (see the next test) instead of reaching its end
-  const states = await page.evaluate(() => window.__audioStates);
-  test.skip(states.includes('interrupted'), `WebKit interrupted audio during the test (${states.join(' → ')})`);
   await page.clock.fastForward(575);
   await expect(page.getByText('Complete')).not.toBeVisible();
   expect(await countSound(page, 'bell-end')).toBe(0);
@@ -343,7 +331,7 @@ test('guided meditation: start bell, the voice after the lead-in, end bell exact
   await expect.poll(() => countSound(page, 'bell-end')).toBe(1);
 });
 
-test('guided meditation: a voice paused from outside (iOS: a call) pauses the session, and Carry on resumes it', async ({ page }) => {
+test('guided meditation: a voice paused from outside (iOS: a call) pauses the session, and Carry on resumes it', { tag: '@webaudio' }, async ({ page }) => {
   await page.getByRole('switch', { name: 'Guided meditation' }).click();
   const start = page.getByRole('button', { name: 'Start', exact: true });
   await expect(start).toBeEnabled({ timeout: 30_000 });
@@ -363,10 +351,6 @@ test('guided meditation: a voice paused from outside (iOS: a call) pauses the se
   await expect(page.getByText('PAUSED', { exact: true })).not.toBeVisible();
   await expect(page.getByText('Meditating...')).toBeVisible();
   expect(await countSound(page, 'bell-start')).toBe(1);
-  // Headless WebKit can interrupt audio by itself (see the Web Audio test
-  // above); the app then rightly pauses again
-  const states = await page.evaluate(() => window.__audioStates);
-  test.skip(states.includes('interrupted'), `WebKit interrupted audio during the test (${states.join(' → ')})`);
   // The voice plays on
   await expect.poll(() => page.evaluate(() => window.__lastMediaElement.paused)).toBe(false);
 });
