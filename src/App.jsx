@@ -550,7 +550,9 @@ function MeditationTimerApp() {
 
   return (
     <div
-      className={`min-h-dvh flex justify-center overflow-x-clip px-4 py-6 sm:py-12 transition-colors duration-[3000ms] ease-in-out ${
+      className={`min-h-dvh flex justify-center overflow-x-clip px-4 ${
+        showMetta || showItipiso ? 'pt-3 pb-6' : 'py-6' // no title: less space above the phrases
+      } sm:py-12 transition-colors duration-[3000ms] ease-in-out ${
         showBrightBg
           ? 'bg-gradient-to-br from-[#FFFBEB] via-[#FEF3C7] to-[#FDE047]'
           : 'bg-gradient-to-br from-[#FDE68A] to-[#F97316]'
@@ -594,13 +596,9 @@ function MeditationTimerApp() {
           />
         )}
 
-        {/* Itipi so: the Pali line above the time (the English is below it) */}
+        {/* Itipi so: the English line above the time (the Pali is below it) */}
         {showItipiso && (
-          <ItipisoPali
-            elapsed={timer.duration - timer.timeRemaining}
-            pace={state.itipisoPace}
-            isRunning={timer.isRunning}
-          />
+          <ItipisoEnglish elapsed={timer.duration - timer.timeRemaining} pace={state.itipisoPace} />
         )}
 
         {/* The time, shining free of any card - or, after an interruption,
@@ -618,11 +616,16 @@ function MeditationTimerApp() {
           endsAt={openEnded ? null : timer.endsAt}
           settleRemaining={isSettling ? settleRemaining : null}
           glowScale={nimittaSize}
+          compact={showItipiso}
         />
         )}
 
         {showItipiso && (
-          <ItipisoEnglish elapsed={timer.duration - timer.timeRemaining} pace={state.itipisoPace} />
+          <ItipisoPali
+            elapsed={timer.duration - timer.timeRemaining}
+            pace={state.itipisoPace}
+            isRunning={timer.isRunning}
+          />
         )}
 
         {/* A regular sit interrupted from outside, or running on after a

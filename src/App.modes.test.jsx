@@ -240,7 +240,7 @@ describe('App', () => {
       expect(english()).toBe(null);
     });
 
-    it('shows the Pali above and the English below, line by line, at 2 s a word', async () => {
+    it('shows the Pali and the English, line by line, at 2 s a word', async () => {
       await renderApp();
       fireEvent.click(itipisoSwitch());
       expect(screen.getByText('Itipi so.')).toBeTruthy();
@@ -252,6 +252,16 @@ describe('App', () => {
       passSeconds(10); // five words
       expect(pali()).toBe('vijjācaraṇasampanno sugato lokavidū');
       expect(english()).toBe('accomplished in knowledge and conduct, holy, knower of the world,');
+    });
+
+    it('puts the English above the time and the Pali below it', async () => {
+      await renderApp();
+      fireEvent.click(itipisoSwitch());
+      click('Start');
+      const nimitta = screen.getByTestId('nimitta');
+      const follows = (a, b) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(follows(screen.getByTestId('itipiso-english'), nimitta)).toBe(true);
+      expect(follows(nimitta, screen.getByTestId('itipiso-pali'))).toBe(true);
     });
 
     it('holds the line while paused and carries on after resuming', async () => {

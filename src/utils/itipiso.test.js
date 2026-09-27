@@ -37,21 +37,20 @@ describe('itipisoStep', () => {
     expect(itipisoStep(3, 1)).toEqual({ step: 0, line: 0, wordOffset: 3 });
   });
 
-  it('rests for two words between sections', () => {
-    expect(itipisoStep(28, 2)).toEqual({ step: 3, line: null, wordOffset: 0 });
-    expect(itipisoStep(31, 2).line).toBe(null);
-    expect(itipisoStep(32, 2)).toEqual({ step: 4, line: 3, wordOffset: 0 });
+  it('holds the finished line through a rest of two words between sections', () => {
+    expect(itipisoStep(28, 2)).toEqual({ step: 2, line: 2, wordOffset: 12 });
+    expect(itipisoStep(31, 2)).toEqual({ step: 2, line: 2, wordOffset: 15 });
+    expect(itipisoStep(32, 2)).toEqual({ step: 3, line: 3, wordOffset: 0 });
   });
 
-  it('rests for four words at the end, then begins again, counting steps on', () => {
+  it('holds the last line through a rest of four words, then begins again, counting steps on', () => {
     const lineUnits = ITIPISO_LINES.reduce((sum, line) => sum + words(line), 0);
     const cycle = lineUnits + 2 + 2 + 4; // two section rests and the end rest
     const lastLineEnd = (cycle - 4) * 2;
-    // 14 lines and 3 rests per cycle
-    expect(itipisoStep(lastLineEnd - 1, 2).line).toBe(13);
-    expect(itipisoStep(lastLineEnd, 2)).toEqual({ step: 16, line: null, wordOffset: 0 });
-    expect(itipisoStep(cycle * 2 - 1, 2).line).toBe(null);
-    expect(itipisoStep(cycle * 2, 2)).toEqual({ step: 17, line: 0, wordOffset: 0 });
+    expect(itipisoStep(lastLineEnd - 1, 2)).toMatchObject({ step: 13, line: 13 });
+    expect(itipisoStep(lastLineEnd, 2)).toMatchObject({ step: 13, line: 13 });
+    expect(itipisoStep(cycle * 2 - 1, 2)).toMatchObject({ step: 13, line: 13 });
+    expect(itipisoStep(cycle * 2, 2)).toEqual({ step: 14, line: 0, wordOffset: 0 });
   });
 
   it('shows the first line for nothing sat or a missing pace', () => {

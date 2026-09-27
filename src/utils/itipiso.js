@@ -64,34 +64,31 @@ export const ITIPISO_LINES = [
 
 export const paliWords = (line) => line.pali.split(/\s+/);
 
-// Rests, in words' time: between sections, and before beginning again
+// Rests, in words' time, after a section and before beginning again. The
+// line just finished stays on screen through them.
 const SECTION_REST = 2;
 const END_REST = 4;
 
-// One cycle, in words: each line (line: its index) and each rest (line: null)
-const SCHEDULE = ITIPISO_LINES.flatMap((line, index) => {
+// One cycle: each line's time in words, its rest included
+const LINE_UNITS = ITIPISO_LINES.map((line, index) => {
   const next = ITIPISO_LINES[index + 1];
-  const entry = { line: index, units: paliWords(line).length };
-  if (!next) return [entry, { line: null, units: END_REST }];
-  if (next.section !== line.section) return [entry, { line: null, units: SECTION_REST }];
-  return [entry];
+  const rest = !next ? END_REST : next.section !== line.section ? SECTION_REST : 0;
+  return paliWords(line).length + rest;
 });
-const CYCLE_UNITS = SCHEDULE.reduce((sum, entry) => sum + entry.units, 0);
+const CYCLE_UNITS = LINE_UNITS.reduce((sum, units) => sum + units, 0);
 
 // What to show after `elapsed` seconds at `pace` seconds per word. `step`
-// keeps counting across cycles (a new step = a new line or rest); `line` is
-// the index into ITIPISO_LINES, or null for a rest; `wordOffset` is how many
-// seconds into it we are.
+// keeps counting across cycles (a new step = a new line); `line` is the index
+// into ITIPISO_LINES; `wordOffset` is how many seconds into the line we are
+// (past its last word during a rest).
 export const itipisoStep = (elapsed, pace) => {
   if (!(pace > 0) || !(elapsed > 0)) return { step: 0, line: 0, wordOffset: 0 };
   const units = elapsed / pace;
   const cycle = Math.floor(units / CYCLE_UNITS);
   let into = units - cycle * CYCLE_UNITS;
-  for (const [index, entry] of SCHEDULE.entries()) {
-    if (into < entry.units) {
-      return { step: cycle * SCHEDULE.length + index, line: entry.line, wordOffset: into * pace };
-    }
-    into -= entry.units;
+  for (const [line, lineUnits] of LINE_UNITS.entries()) {
+    if (into < lineUnits) return { step: cycle * LINE_UNITS.length + line, line, wordOffset: into * pace };
+    into -= lineUnits;
   }
-  return { step: (cycle + 1) * SCHEDULE.length, line: 0, wordOffset: 0 }; // rounding at a cycle's end
+  return { step: (cycle + 1) * LINE_UNITS.length, line: 0, wordOffset: 0 }; // rounding at a cycle's end
 };
