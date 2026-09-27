@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import App from './App';
 import { audioManager } from './utils/audioManager';
 import { button, click, startBellCount, renderApp, completeOneMinuteSession, setUpAppTests } from './test/appTestUtils';
@@ -250,6 +250,93 @@ describe('App', () => {
       click('Show settings');
       expect(button('30m').disabled).toBe(true);
       expect(button('Increase custom length').disabled).toBe(true);
+    });
+  });
+
+  // A stray tap on a phone lying on a cushion shouldn't end a sit
+  describe('Reset during a sit', () => {
+    const reset = () => button('Reset');
+    const hint = () => screen.queryByText('Hold Reset to end the sit');
+    // A finger or mouse: press, (hold,) let go - then the click that follows
+    const tap = () => {
+      fireEvent.pointerDown(reset(), { button: 0 });
+      fireEvent.pointerUp(reset());
+      fireEvent.click(reset(), { detail: 1 });
+    };
+
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    it('a quick tap does not end the sit, but says to hold it', async () => {
+      await renderApp();
+      click('Start');
+      tap();
+
+      expect(screen.getByText('Meditating...')).toBeTruthy();
+      expect(hint()).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(hint()).toBe(null);
+    });
+
+    it('holding it for a second ends the sit - running or paused', async () => {
+      await renderApp();
+      click('Start');
+      fireEvent.pointerDown(reset(), { button: 0 });
+      act(() => {
+        vi.advanceTimersByTime(999);
+      });
+      expect(screen.getByText('Meditating...')).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(screen.getByText('Ready')).toBeTruthy();
+      // The click after letting go doesn't do anything more
+      fireEvent.pointerUp(reset());
+      fireEvent.click(reset(), { detail: 1 });
+      expect(hint()).toBe(null);
+
+      click('Start');
+      click('Pause');
+      tap();
+      expect(screen.getByText('Paused')).toBeTruthy();
+      fireEvent.pointerDown(reset(), { button: 0 });
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(screen.getByText('Ready')).toBeTruthy();
+    });
+
+    it('letting go too soon, or sliding off the button, cancels the hold', async () => {
+      await renderApp();
+      click('Start');
+      fireEvent.pointerDown(reset(), { button: 0 });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      fireEvent.pointerLeave(reset());
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      expect(screen.getByText('Meditating...')).toBeTruthy();
+    });
+
+    it('from the keyboard (Enter or Space on the button), resets at once', async () => {
+      await renderApp();
+      click('Start');
+      fireEvent.click(reset(), { detail: 0 });
+      expect(screen.getByText('Ready')).toBeTruthy();
+    });
+
+    it('outside a sit, and while settling in, a tap is enough', async () => {
+      await renderApp();
+      click('Settle in for 10s');
+      click('Start');
+      tap();
+      expect(screen.getByText('Ready')).toBeTruthy();
+      expect(hint()).toBe(null);
     });
   });
 

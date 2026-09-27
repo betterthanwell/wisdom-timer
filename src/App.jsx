@@ -553,6 +553,7 @@ function MeditationTimerApp() {
             onFinish={finishTimer}
             showFinish={openEnded && (timer.isRunning || timer.isPaused)}
             onReset={handleReset}
+            holdToReset={timer.isRunning || timer.isPaused}
             disabled={!isInitialized}
             startDisabled={(timer.timeRemaining === 0 && !timer.isComplete) || (guided && !guidedTrackKept)}
           />
