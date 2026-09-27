@@ -56,7 +56,7 @@ Free for anyone, anywhere, any time, for ever.
 - **Settings are remembered** in the browser (localStorage) and checked when loaded, so old or damaged saved values fall back to the defaults
 - **Accessible** - labelled controls for screen readers, and animations are switched off when your system asks for reduced motion
 - **Responsive** - works on phones, tablets and desktops
-- **Works offline** - after one visit the app and its bells are kept on your device, so it opens and runs in airplane mode or without signal; bells are held in memory, so losing wifi mid-session changes nothing. Can be added to the home screen
+- **Works offline** - once opened with a connection, the app and its bells are kept on your device (within moments, no need to open it again), so it opens and runs in airplane mode or without signal; bells are held in memory, so losing wifi mid-session changes nothing. Can be added to the home screen
 - **Ambient sounds download when you choose one** (with a progress ring), then stay on your device, offline too - so the app itself loads fast
 - **Security headers** - Content Security Policy, clickjacking protection and more (`vercel.json`, plus meta tags in `index.html`)
 

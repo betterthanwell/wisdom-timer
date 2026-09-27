@@ -8,7 +8,8 @@
 // - Install: download everything in PRECACHE into a cache named after
 //   VERSION. VERSION changes whenever any of those files does, so each
 //   deploy that changes something brings a new worker and a fresh cache.
-// - Activate: delete the caches of older versions.
+// - Activate: delete the caches of older versions, and take over open pages
+//   (clients.claim), including the first visit's.
 // - Fetch: files in PRECACHE (and page loads) come from the cache. Ambient
 //   sounds and guided meditations come from AMBIENT_CACHE once the app has downloaded them there
 //   (utils/ambientDownloads.js; kept across versions), else the network.
@@ -38,6 +39,11 @@ self.addEventListener('activate', (event) => {
       .then((keys) =>
         Promise.all(keys.filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE).map((key) => caches.delete(key)))
       )
+      // Take over pages already open - above all the one that installed this
+      // worker (a phone's first visit), which would otherwise fetch from the
+      // network until opened again: airplane mode right after opening the app
+      // for the first time would leave its ambient sound unplayable
+      .then(() => self.clients.claim())
   );
 });
 
