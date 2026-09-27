@@ -146,6 +146,14 @@ describe('App', () => {
       expect(audioManager.cancelPendingBells).not.toHaveBeenCalled();
     });
 
+    it('Reset stops bell strikes still to ring', async () => {
+      await renderApp();
+      click('Start');
+      vi.clearAllMocks();
+      click('Reset');
+      expect(audioManager.cancelPendingBells).toHaveBeenCalled();
+    });
+
     it('does not count a session that was reset before finishing', async () => {
       await renderApp();
       click('Start');

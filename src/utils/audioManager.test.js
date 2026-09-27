@@ -645,6 +645,8 @@ class FakeAudioContext {
   static failDecoding = false;
   // Audio taken away by the system (iOS: a call, another app) and not given back
   static stayInterrupted = false;
+  // resume() settles, but the system still hasn't given the audio back
+  static resumeSettlesInterrupted = false;
 
   constructor() {
     // Browsers create audio contexts suspended until a tap unlocks them
@@ -660,7 +662,7 @@ class FakeAudioContext {
     this.resumed = FakeAudioContext.stayInterrupted
       ? new Promise(() => {})
       : Promise.resolve().then(() => {
-          this.state = 'running';
+          if (!FakeAudioContext.resumeSettlesInterrupted) this.state = 'running';
         });
     return this.resumed;
   }
@@ -733,6 +735,7 @@ describe('AudioManager with Web Audio', () => {
     FakeAudioContext.instances = [];
     FakeAudioContext.failDecoding = false;
     FakeAudioContext.stayInterrupted = false;
+    FakeAudioContext.resumeSettlesInterrupted = false;
     vi.stubGlobal('Audio', FakeAudio);
     vi.stubGlobal('AudioContext', FakeAudioContext);
     stubDownloads();
@@ -875,6 +878,20 @@ describe('AudioManager with Web Audio', () => {
     const ringing = manager.playBell('end');
     await vi.advanceTimersByTimeAsync(1000);
     await ringing;
+    expect(bellsRung()).toEqual([]);
+    expect(bellElements().at(-1).src).toBe('/audio/bells/bell-end.mp3');
+    expect(bellElements().at(-1).paused).toBe(false);
+  });
+
+  it('rings on an <audio> element if resuming settles without giving the audio back', async () => {
+    await initAndUnlock();
+    await manager.resuming;
+    context().state = 'interrupted';
+    FakeAudioContext.resumeSettlesInterrupted = true;
+
+    await manager.playBell('end');
+    expect(context().state).toBe('interrupted');
+    // A bell started on an interrupted context would stay silent
     expect(bellsRung()).toEqual([]);
     expect(bellElements().at(-1).src).toBe('/audio/bells/bell-end.mp3');
     expect(bellElements().at(-1).paused).toBe(false);
