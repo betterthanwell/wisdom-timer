@@ -84,6 +84,21 @@ describe('sanitizeSettings', () => {
     expect(sanitizeSettings({ mettaSeconds: 7 }, defaults).mettaSeconds).toBe(undefined);
   });
 
+  it('only accepts a boolean for itipi so mode and a listed pace per word', () => {
+    expect(sanitizeSettings({ itipisoMode: true }, defaults).itipisoMode).toBe(true);
+    expect(sanitizeSettings({ itipisoMode: 1 }, defaults).itipisoMode).toBe(undefined);
+    for (const pace of [1, 2, 3, 5]) {
+      expect(sanitizeSettings({ itipisoPace: pace }, defaults).itipisoPace).toBe(pace);
+    }
+    expect(sanitizeSettings({ itipisoPace: 4 }, defaults).itipisoPace).toBe(undefined);
+  });
+
+  it('keeps metta mode when both it and itipi so mode were saved on', () => {
+    const result = sanitizeSettings({ mettaMode: true, itipisoMode: true }, defaults);
+    expect(result.mettaMode).toBe(true);
+    expect(result.itipisoMode).toBe(false);
+  });
+
   it('only accepts a boolean for interval bells', () => {
     expect(sanitizeSettings({ intervalBellsEnabled: 'yes' }, defaults).intervalBellsEnabled).toBe(false);
   });
@@ -144,7 +159,7 @@ describe('sanitizeSettings', () => {
 
 describe('pickSavedSettings', () => {
   it('saves every validated setting, and nothing else', () => {
-    const saved = pickSavedSettings({ ...defaults, keepScreenAwake: false, settleSeconds: 20, startStrikes: 3, intervalStrikes: 1, endStrikes: 2, gentleEnding: true, openEnded: true, showBellStrikes: true, mettaMode: true, mettaSeconds: 20, dimScreen: false, dimLevel: 0.5, somethingElse: 1 });
+    const saved = pickSavedSettings({ ...defaults, keepScreenAwake: false, settleSeconds: 20, startStrikes: 3, intervalStrikes: 1, endStrikes: 2, gentleEnding: true, openEnded: true, showBellStrikes: true, mettaMode: true, mettaSeconds: 20, itipisoMode: false, itipisoPace: 3, dimScreen: false, dimLevel: 0.5, somethingElse: 1 });
     expect(saved).toEqual({
       duration: 2700,
       intervalBellsEnabled: false,
@@ -163,6 +178,8 @@ describe('pickSavedSettings', () => {
       showBellStrikes: true,
       mettaMode: true,
       mettaSeconds: 20,
+      itipisoMode: false,
+      itipisoPace: 3,
       dimScreen: false,
       dimLevel: 0.5,
     });

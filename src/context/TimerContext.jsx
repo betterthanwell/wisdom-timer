@@ -23,6 +23,8 @@ const initialState = {
   showBellStrikes: false, // bell strike choices tucked away (UI only)
   mettaMode: false, // show the metta phrases in turn during a session
   mettaSeconds: 10, // how long each metta phrase shows
+  itipisoMode: false, // show the Itipi so, line by line, during a session (not with metta)
+  itipisoPace: 2, // seconds per Pali word
   dimScreen: true, // dim the page while sitting (quiet screen)
   dimLevel: 0.25, // how dark: 25% black
   guidedMode: false, // a guided meditation sets the session (voice + bells only)
@@ -91,8 +93,17 @@ export const TimerProvider = ({ children }) => {
     setGentleEnding: (enabled) => setSetting('gentleEnding', enabled),
     setOpenEnded: (enabled) => setSetting('openEnded', enabled),
     setShowBellStrikes: (shown) => setSetting('showBellStrikes', shown),
-    setMettaMode: (enabled) => setSetting('mettaMode', enabled),
+    // Metta and itipi so mode are one or the other: turning one on turns the other off
+    setMettaMode: (enabled) => {
+      setSetting('mettaMode', enabled);
+      if (enabled) setSetting('itipisoMode', false);
+    },
     setMettaSeconds: (seconds) => setSetting('mettaSeconds', seconds),
+    setItipisoMode: (enabled) => {
+      setSetting('itipisoMode', enabled);
+      if (enabled) setSetting('mettaMode', false);
+    },
+    setItipisoPace: (pace) => setSetting('itipisoPace', pace),
     setDimScreen: (enabled) => setSetting('dimScreen', enabled),
     setDimLevel: (level) => setSetting('dimLevel', level),
     setGuidedMode: (enabled) => setSetting('guidedMode', enabled),

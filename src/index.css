@@ -74,6 +74,36 @@
   animation-fill-mode: both;
 }
 
+/* Itipi so: each line fades in, and each Pali word brightens in turn
+   (duration and delay set inline from the pace, per word) */
+@keyframes itipisoLineIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes itipisoWord {
+  0%, 100% {
+    opacity: 0.55;
+  }
+  15%, 85% {
+    opacity: 1;
+  }
+}
+
+.itipiso-line {
+  animation: itipisoLineIn 0.8s ease-out both;
+}
+
+.itipiso-word {
+  opacity: 0.55;
+  animation-name: itipisoWord;
+  animation-timing-function: ease-in-out;
+}
+
 /* The nimitta's glow breathes: 4 s swelling, 4 s settling. Small enough that
    the light stays steady; paused (animation-play-state) when not sitting. */
 @keyframes nimittaBreath {
@@ -139,7 +169,14 @@
 
   /* No flashing: just show each phrase; a still glow */
   .metta-phrase,
+  .itipiso-line,
+  .itipiso-word,
   .nimitta-breath {
     animation: none !important;
+  }
+
+  /* Itipi so: the whole line bright, no word moving */
+  .itipiso-word {
+    opacity: 1;
   }
 }

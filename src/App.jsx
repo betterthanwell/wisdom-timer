@@ -32,10 +32,12 @@ import { SettleSetting } from './components/Settings/SettleSetting';
 import { GentleEndingSetting } from './components/Settings/GentleEndingSetting';
 import { OpenEndedSetting } from './components/Settings/OpenEndedSetting';
 import { MettaSetting } from './components/Settings/MettaSetting';
+import { ItipisoSetting } from './components/Settings/ItipisoSetting';
 import { DimSetting } from './components/Settings/DimSetting';
 import { NimittaSizeSetting } from './components/Settings/NimittaSizeSetting';
 import { GuidedSetting } from './components/Settings/GuidedSetting';
 import { MettaCard } from './components/Timer/MettaCard';
+import { ItipisoPali, ItipisoEnglish } from './components/Timer/ItipisoCard';
 import { InterruptedPause } from './components/Timer/InterruptedPause';
 
 // Open-ended sitting counts up, as a countdown from 24 hours
@@ -450,6 +452,10 @@ function MeditationTimerApp() {
   // Bright background after completion, fading back once the 9-second burst ends
   const [brightBgFaded, setBrightBgFaded] = useState(false);
   const showBrightBg = timer.isComplete && !brightBgFaded;
+  // Phrase cards (metta or itipi so) show while a session is under way
+  const phrasesShown = !guided && (timer.isRunning || timer.isPaused);
+  const showMetta = state.mettaMode && phrasesShown;
+  const showItipiso = state.itipisoMode && phrasesShown;
 
   useEffect(() => {
     if (!timer.isComplete) return;
@@ -569,18 +575,30 @@ function MeditationTimerApp() {
       />
 
       <div className="w-full max-w-md sm:max-w-xl space-y-4">
+        {/* No title while a phrase card is up: the phrases take its place */}
+        {!showMetta && !showItipiso && (
         <h1
           className="text-3xl sm:text-5xl font-bold tracking-tight text-white text-center"
           style={{ textShadow: '0 1px 3px rgba(120, 53, 15, 0.3), 0 0 24px rgba(255, 255, 255, 0.35)' }}
         >
           {showBrightBg ? 'Wisdom Time!' : 'Wisdom Timer'}
         </h1>
+        )}
 
         {/* Metta phrases in their own card, above everything while a session is under way */}
-        {state.mettaMode && !guided && (timer.isRunning || timer.isPaused) && (
+        {showMetta && (
           <MettaCard
             elapsed={timer.duration - timer.timeRemaining}
             seconds={state.mettaSeconds}
+            isRunning={timer.isRunning}
+          />
+        )}
+
+        {/* Itipi so: the Pali line above the time (the English is below it) */}
+        {showItipiso && (
+          <ItipisoPali
+            elapsed={timer.duration - timer.timeRemaining}
+            pace={state.itipisoPace}
             isRunning={timer.isRunning}
           />
         )}
@@ -601,6 +619,10 @@ function MeditationTimerApp() {
           settleRemaining={isSettling ? settleRemaining : null}
           glowScale={nimittaSize}
         />
+        )}
+
+        {showItipiso && (
+          <ItipisoEnglish elapsed={timer.duration - timer.timeRemaining} pace={state.itipisoPace} />
         )}
 
         {/* A regular sit interrupted from outside, or running on after a
@@ -761,6 +783,12 @@ function MeditationTimerApp() {
                   seconds={state.mettaSeconds}
                   onToggle={actions.setMettaMode}
                   onSecondsChange={actions.setMettaSeconds}
+                />
+                <ItipisoSetting
+                  enabled={state.itipisoMode}
+                  pace={state.itipisoPace}
+                  onToggle={actions.setItipisoMode}
+                  onPaceChange={actions.setItipisoPace}
                 />
               </section>
               )}
