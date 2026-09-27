@@ -7,11 +7,18 @@ const installFakeWakeLock = () => {
   const locks = [];
   const wakeLock = {
     request: vi.fn(async () => {
+      const listeners = [];
       const lock = {
         released: false,
         release: vi.fn(async () => {
           lock.released = true;
         }),
+        addEventListener: (type, fn) => type === 'release' && listeners.push(fn),
+        // The system lets go of the lock (e.g. a battery saver)
+        releaseBySystem: () => {
+          lock.released = true;
+          listeners.forEach((fn) => fn());
+        },
       };
       locks.push(lock);
       return lock;
@@ -106,13 +113,49 @@ describe('useWakeLock', () => {
       await waitFor(() => expect(lateLock.release).toHaveBeenCalled());
     });
 
-    it('carries on quietly if the request is refused (e.g. low battery)', async () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    it('reports that it failed if the request is refused (e.g. low battery), until inactive', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
       fake.wakeLock.request.mockRejectedValueOnce(new Error('NotAllowedError'));
 
+      const { result, rerender } = renderHook(({ active }) => useWakeLock(active), { initialProps: { active: true } });
+      await waitFor(() => expect(result.current).toBe(true));
+
+      rerender({ active: false });
+      expect(result.current).toBe(false);
+    });
+
+    it('does not report a failure while the lock is held', async () => {
+      const { result } = renderHook(() => useWakeLock(true));
+      await waitFor(() => expect(fake.locks).toHaveLength(1));
+      expect(result.current).toBe(false);
+    });
+
+    it('asks again if the system lets go of the lock while the page is visible', async () => {
       renderHook(() => useWakeLock(true));
-      await waitFor(() => expect(warn).toHaveBeenCalled());
-      warn.mockRestore();
+      await waitFor(() => expect(fake.locks).toHaveLength(1));
+
+      fake.locks[0].releaseBySystem();
+      await waitFor(() => expect(fake.locks).toHaveLength(2));
+    });
+
+    it('reports that it failed if asking again is refused', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { result } = renderHook(() => useWakeLock(true));
+      await waitFor(() => expect(fake.locks).toHaveLength(1));
+
+      fake.wakeLock.request.mockRejectedValueOnce(new Error('NotAllowedError'));
+      fake.locks[0].releaseBySystem();
+      await waitFor(() => expect(result.current).toBe(true));
+    });
+
+    it('does not ask again after releasing the lock itself', async () => {
+      const { rerender } = renderHook(({ active }) => useWakeLock(active), { initialProps: { active: true } });
+      await waitFor(() => expect(fake.locks).toHaveLength(1));
+
+      rerender({ active: false });
+      fake.locks[0].releaseBySystem();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(fake.wakeLock.request).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -120,6 +163,14 @@ describe('useWakeLock', () => {
     it('is reported as unsupported and does nothing', () => {
       expect(isWakeLockSupported()).toBe(false);
       expect(() => renderHook(() => useWakeLock(true))).not.toThrow();
+    });
+
+    it('reports that it failed while active, since the screen may lock', () => {
+      const { result, rerender } = renderHook(({ active }) => useWakeLock(active), { initialProps: { active: false } });
+      expect(result.current).toBe(false);
+
+      rerender({ active: true });
+      expect(result.current).toBe(true);
     });
   });
 });

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Clock, Eye, Settings as SettingsIcon } from 'lucide-react';
+import { Clock, Eye, Settings as SettingsIcon, TriangleAlert } from 'lucide-react';
 import { TimerProvider } from './context/TimerContext';
 import { useTimerContext } from './context/useTimerContext';
 import { useTimer } from './hooks/useTimer';
 import { useAudio } from './hooks/useAudio';
 import { useMediaSession } from './hooks/useMediaSession';
 import { useSessionCounter } from './hooks/useSessionCounter';
-import { useWakeLock } from './hooks/useWakeLock';
+import { isWakeLockSupported, useWakeLock } from './hooks/useWakeLock';
 import { useSettleCountdown } from './hooks/useSettleCountdown';
 import { useAmbientDownloads } from './hooks/useAmbientDownloads';
 import { gentleEndingLevel } from './utils/gentleEnding';
@@ -283,7 +283,9 @@ function MeditationTimerApp() {
 
   // Keep the screen on while a session is running, so the phone doesn't lock.
   // Always, for now: its switch (KeepAwakeSetting, keepScreenAwake) isn't shown.
-  useWakeLock(inSession);
+  // If that fails, say so: a locked phone may not ring the end bell on time
+  // (iOS pauses the page until it's unlocked).
+  const screenMayLock = useWakeLock(inSession);
 
   // Duration can only change between sessions, not while running or paused
   const durationLocked = timer.isRunning || timer.isPaused || isSettling;
@@ -522,6 +524,17 @@ function MeditationTimerApp() {
         />
         )}
 
+        {/* The screen couldn't be kept on: above the dim, so it's read */}
+        {screenMayLock && (
+          <p
+            data-testid="screen-may-lock"
+            className="relative z-20 mx-auto flex max-w-sm items-start gap-2 rounded-xl bg-black/35 px-4 py-2 text-sm text-white"
+          >
+            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            The screen may lock by itself - keep it on, or the end bell may not ring on time.
+          </p>
+        )}
+
         {/* The controls, on the card below it */}
         <GlassCard strong className="px-5 py-5">
           <TimerControls
@@ -537,6 +550,16 @@ function MeditationTimerApp() {
             startDisabled={(timer.timeRemaining === 0 && !timer.isComplete) || (guided && !guidedTrackKept)}
           />
         </GlassCard>
+
+        {/* Phones and tablets (a touch screen as the main pointer): a locked
+            screen pauses the page on iOS, so the end bell can't ring */}
+        {!quiet && (
+          <p data-testid="lock-hint" className="hidden pointer-coarse:block px-2 text-center text-xs text-white/75">
+            {isWakeLockSupported()
+              ? "Don't lock the phone while you sit: a locked phone may not ring the end bell on time."
+              : "This browser can't keep the screen on: turn off auto-lock for the sit, or the end bell may not ring on time."}
+          </p>
+        )}
 
         {/* While running, settings stay out of the way until asked for */}
         {inSession && (

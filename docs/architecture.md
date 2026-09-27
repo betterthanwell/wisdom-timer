@@ -38,7 +38,7 @@
 - Ambient sounds and guided meditations (`DOWNLOADED_SOUNDS`): `ambientDownloads` stores them in the `AMBIENT_CACHE` cache (`constants/audioSources.js`, injected into the worker with `AMBIENT_PATHS`), which isn't versioned or deleted on deploys; the worker plays them from there (Range → 206), else the network. Rename the cache if an ambient file changes. Without Cache Storage every sound counts as kept and streams as before.
 
 ## Known platform limits
-- iOS pauses JavaScript when the screen locks, so no timer runs until unlock; bells can't ring while locked.
+- iOS pauses JavaScript when the screen locks, so no timer runs until unlock; bells can't ring while locked. The app keeps the screen awake (`useWakeLock`), asks users not to lock the phone (on touch screens), and warns during a sit when the screen can't be kept awake.
 - Dark Reader (the extension, and Firefox for iOS's night mode built on it) repainted the page near-black and hid the switches and slider tracks (faint white tints). `index.html` opts out with `<meta name="darkreader-lock">`; the app has its own dimming. `e2e/darkreader.spec.js` runs Dark Reader against the page.
 - iOS ignores `HTMLMediaElement.volume` (confirmed on an iPhone: gentle ending didn't fade). Bells and the ambient sound now go through Web Audio gains.
 - Lock screen controls go through the Media Session API (`hooks/useMediaSession.js`: `play`/`pause` action handlers, registered once and calling the latest App handlers through a ref; `playbackState` and `metadata` follow the session). Without handlers, iOS's lock-screen pause paused only the `<audio>` element and the clock ran on. Where the API is missing it does nothing.

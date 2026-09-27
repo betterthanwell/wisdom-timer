@@ -218,6 +218,50 @@ describe('App', () => {
       click('Start');
       await waitFor(() => expect(wakeLock.request).toHaveBeenCalledWith('screen'));
     });
+
+    // A locked phone may not ring the end bell on time (iOS pauses the page)
+    const screenWarning = () => screen.queryByTestId('screen-may-lock');
+    const lockHint = () => screen.queryByTestId('lock-hint');
+
+    it('asks, before a sit, not to lock the phone', async () => {
+      await renderApp();
+      expect(lockHint().textContent).toBe("Don't lock the phone while you sit: a locked phone may not ring the end bell on time.");
+
+      click('Start');
+      expect(lockHint()).toBe(null); // the quiet screen
+    });
+
+    it('shows no warning while the screen is kept awake', async () => {
+      await renderApp();
+      click('Start');
+      await waitFor(() => expect(wakeLock.request).toHaveBeenCalled());
+      expect(screenWarning()).toBe(null);
+    });
+
+    it('warns during a sit if the screen could not be kept awake (e.g. low battery), until it ends', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      wakeLock.request.mockRejectedValue(new Error('NotAllowedError'));
+      await renderApp();
+      expect(screenWarning()).toBe(null);
+
+      click('Start');
+      await waitFor(() => expect(screenWarning()).not.toBe(null));
+      expect(screenWarning().textContent).toBe('The screen may lock by itself - keep it on, or the end bell may not ring on time.');
+
+      click('Reset');
+      expect(screenWarning()).toBe(null);
+    });
+
+    it('where the browser cannot keep the screen on at all: says so before a sit, and warns during it', async () => {
+      delete navigator.wakeLock;
+      await renderApp();
+      expect(lockHint().textContent).toBe(
+        "This browser can't keep the screen on: turn off auto-lock for the sit, or the end bell may not ring on time."
+      );
+
+      click('Start');
+      expect(screenWarning()).not.toBe(null);
+    });
   });
 
   describe('settings validation', () => {

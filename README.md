@@ -25,7 +25,7 @@ Free for anyone, anywhere, any time, for ever.
 - **"Ends at 07:45"** under the timer while a session runs (in your device's time format)
 - **Quiet screen while sitting** - while the timer runs, the settings and hints are hidden and the page dims around the glowing time and the metta phrase (on by default; how dark is up to you, 10-90%); "Show settings" brings them back
 - **Session counter** - "Session 1", "Session 2", … for sessions completed today (kept in memory: it starts over on reload and on a new day)
-- **Keeps the screen awake** while a session runs, so your phone doesn't lock mid-session - in browsers that support it
+- **Keeps the screen awake** while a session runs, so your phone doesn't lock mid-session - in browsers that support it. If it can't (an older browser, or refused on low battery), it says so on screen, since a locked phone may not ring the end bell on time
 - **Stays on time in background tabs** - the end and interval bells are scheduled directly, so they ring on time even when the browser slows down timers for a hidden tab
 
 ### Sound
