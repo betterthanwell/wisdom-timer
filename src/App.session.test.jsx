@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import App from './App';
 import { audioManager } from './utils/audioManager';
-import { button, click, startBellCount, renderApp, completeOneMinuteSession, setUpAppTests } from './test/appTestUtils';
+import { button, click, startBellCount, renderApp, completeOneMinuteSession, setStepper, setUpAppTests } from './test/appTestUtils';
 
 vi.mock('./utils/audioManager', () => import('./test/audioManagerMock'));
 
@@ -337,6 +337,83 @@ describe('App', () => {
       tap();
       expect(screen.getByText('Ready')).toBeTruthy();
       expect(hint()).toBe(null);
+    });
+  });
+
+  // iOS may keep the sound off after an interruption until a tap, so the
+  // end bell wouldn't ring; a regular sit runs on, and offers that tap
+  describe('interrupted from outside in a regular sit (iOS: a call, Siri, an alarm)', () => {
+    const interrupt = () => act(() => audioManager.interruptionListener(null));
+    const restore = () => screen.queryByRole('button', { name: 'Restore the bell' });
+
+    it('runs on, and offers a tap that restores the sound - ambient included - so the end bell can ring', async () => {
+      await renderApp();
+      click('Rain');
+      click('Start');
+      vi.clearAllMocks();
+      interrupt();
+
+      expect(screen.getByText('Meditating...')).toBeTruthy();
+      expect(screen.getByRole('alert').textContent).toMatch(/sound was interrupted/i);
+      fireEvent.click(restore());
+
+      // Fresh audio in this tap, then the ambient sound again - no start bell
+      expect(audioManager.unlock).toHaveBeenCalledTimes(1);
+      expect(audioManager.playAmbient).toHaveBeenCalledWith('rain');
+      expect(audioManager.unlock.mock.invocationCallOrder[0]).toBeLessThan(
+        audioManager.playAmbient.mock.invocationCallOrder[0]
+      );
+      expect(startBellCount()).toBe(0);
+      expect(restore()).toBe(null);
+      expect(screen.getByText('Meditating...')).toBeTruthy();
+    });
+
+    it('while settling in, primes the ambient sound again in the tap (the countdown starts it)', async () => {
+      await renderApp();
+      click('Rain');
+      click('Settle in for 10s');
+      click('Start');
+      vi.clearAllMocks();
+      interrupt();
+
+      fireEvent.click(restore());
+      expect(audioManager.unlock).toHaveBeenCalledTimes(1);
+      expect(audioManager.primeAmbient).toHaveBeenCalledWith('rain');
+      expect(audioManager.playAmbient).not.toHaveBeenCalled();
+    });
+
+    it('goes away on Reset', async () => {
+      await renderApp();
+      click('Start');
+      interrupt();
+      click('Reset');
+      expect(restore()).toBe(null);
+    });
+
+    it('goes away when the sit ends', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      await renderApp();
+      setStepper('Custom length', 1);
+      click('Start');
+      interrupt();
+      expect(restore()).not.toBe(null);
+
+      act(() => {
+        vi.advanceTimersByTime(60_100);
+      });
+      expect(screen.getByText('Complete')).toBeTruthy();
+      expect(restore()).toBe(null);
+    });
+
+    it('is not offered outside a sit, or while paused - the next Start restores the sound anyway', async () => {
+      await renderApp();
+      interrupt();
+      expect(restore()).toBe(null);
+
+      click('Start');
+      click('Pause');
+      interrupt();
+      expect(restore()).toBe(null);
     });
   });
 

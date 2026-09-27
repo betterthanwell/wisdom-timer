@@ -92,6 +92,35 @@ test('after the Start tap, the woodblock and end bell ring through unlocked Web 
   ]);
 });
 
+test('a regular sit interrupted from outside runs on, offers to restore the sound, and then rings the end bell', { tag: '@webaudio' }, async ({ page }) => {
+  await expect.poll(() => page.evaluate(() => window.__decodedSounds), { timeout: 30_000 }).toBe(3);
+  await setDuration(page, 1);
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect.poll(() => countSound(page, 'bell-start')).toBe(1);
+
+  // Something outside the app takes the audio away (iOS: a call - the
+  // context turns "interrupted")
+  await page.evaluate(() => {
+    const context = window.__audioContext;
+    Object.defineProperty(context, 'state', { configurable: true, get: () => 'interrupted' });
+    context.dispatchEvent(new Event('statechange'));
+  });
+  const restore = page.getByRole('button', { name: 'Restore the bell' });
+  await expect(restore).toBeVisible();
+  await expect(page.getByText('Meditating...')).toBeVisible();
+
+  // The tap builds fresh audio
+  await restore.click();
+  await expect(restore).toBeHidden();
+  await passMinutes(page, 1);
+  await expect(page.getByText('Complete')).toBeVisible();
+  await expect.poll(async () => (await soundLog(page)).at(-1)).toEqual({
+    path: '/audio/bells/bell-end.mp3',
+    via: 'webaudio',
+    state: 'running',
+  });
+});
+
 test('the interval woodblock starts after its own time, repeats, and skips the end', async ({ page }) => {
   await turnOnWoodblock(page);
   await setStepper(page, 'Woodblock interval', 4);
