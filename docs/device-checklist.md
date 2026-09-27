@@ -50,7 +50,7 @@ Each check starts from Ready, with a short custom length (1-3 minutes, or 10 wit
 
 ### 7. Offline and long
 
-- **7a. Airplane mode** after one visit: the app opens, and the bells ring.
+- **7a. Airplane mode:** with a connection, open the app (on a first visit too - clear the site's data first), choose rain and wait until it's selected, then turn on airplane mode and start without reopening the app: the rain and the bells play. Then close the app and open it again, still in airplane mode: it opens, and the bells ring.
 - **7b. One real sit of 45-60 minutes**, screen on: the end bell rings on time.
 
 ## Results
