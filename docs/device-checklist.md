@@ -2,7 +2,7 @@
 
 The end bell is the one thing the app must get right: in a group sit, if it doesn't ring, everyone sits on past the end. Tests run the app in real browser engines, but no emulator enforces iOS's rules - no sound without a tap, a page paused while the screen is locked, audio taken away by a call. So before a release that touches the session, the timer or audio (and before calling it 1.0), run this list on real devices and note the results below.
 
-**Where:** the PR's Vercel preview, with `?debug` (the card at the end of the page logs how each bell played, or why it didn't). `?speed=60` makes a 10-minute sit take 10 seconds - but leave it off for the reload check (6), which it disables.
+**Where:** the PR's Vercel preview, with `?debug` (the card at the end of the page logs how each bell played, or why it didn't). `?speed=60` makes a 10-minute sit take 10 seconds.
 
 **Devices:** the ones your groups will use - at least an iPhone (in Safari, and added to the Home Screen), an Android phone in Chrome, and a laptop.
 
@@ -42,7 +42,7 @@ Each check starts from Ready, with a short custom length (1-3 minutes, or 10 wit
 - **5a. A quick tap on Reset** mid-sit: the sit goes on; "Hold Reset to end the sit" shows for a moment.
 - **5b. Hold Reset** for a second: the sit ends. No text selection, magnifier or callout appears.
 
-### 6. A reload (no `?speed`)
+### 6. A reload
 
 - **6a. Pull down to reload** mid-sit: the sit runs on to the same end; "The page reloaded during the sit…" shows; tap Restore the bell - the end bell rings.
 - **6b. Reload after the end has passed** (lock the phone before the end, reload after): "Your last sit ended at HH:MM…" shows; nothing rings late.
