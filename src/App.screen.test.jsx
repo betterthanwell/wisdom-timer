@@ -268,14 +268,18 @@ describe('App', () => {
   describe('group sit tips', () => {
     const tips = () => screen.queryByText('Leading a group sit?');
 
-    it('are there before a sit, folded away, and cover the sound check, the screen and interruptions', async () => {
+    it('are there before a sit, folded away: set-up steps in order, the Test bell last', async () => {
       await renderApp();
       const details = tips().closest('details');
       expect(details.open).toBe(false);
-      expect(details.textContent).toMatch(/Test bell/);
-      expect(details.textContent).toMatch(/Don't lock the phone/);
-      expect(details.textContent).toMatch(/Do Not Disturb/);
-      expect(details.textContent).toMatch(/Restore the bell/);
+      // Steps in order: online set-up, calls, battery, then the Test bell last
+      const steps = [...details.querySelectorAll('ol > li')].map((step) => step.textContent);
+      expect(steps).toHaveLength(6);
+      expect(steps[0]).toMatch(/^Set up with a connection/);
+      expect(steps[1]).toMatch(/airplane mode/);
+      expect(steps[3]).toMatch(/^Ring the Test bell last/);
+      expect(steps[4]).toMatch(/^Don't lock the phone/);
+      expect(steps[5]).toMatch(/Restore the bell/);
     });
 
     it('stay out of the quiet screen', async () => {

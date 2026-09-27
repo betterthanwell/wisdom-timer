@@ -66,15 +66,16 @@ Free for anyone, anywhere, any time, for ever.
 
 ## 🧘 Leading a group sit
 
-The end bell matters most when a group sits together. So that it rings:
+The end bell matters most when a group sits together. So that it rings, in this order:
 
-- **Ring the Test bell first** (under the volume sliders): loud enough for the room, and from the phone's speaker, not someone's earbuds.
-- **Don't lock the phone while you sit:** a locked phone may not ring the end bell on time. The app keeps the screen on and dims it.
-- **Turn on Do Not Disturb or a Focus mode,** so calls are less likely to interrupt the sound. If something does, tap **Restore the bell**.
-- **Plug the phone in, or start with plenty of battery:** on low battery it may not keep the screen on.
-- **Open the app once before, with a connection:** after that it works offline.
+1. **Set up with a connection:** open the app and choose your ambient sound or guided meditation. Once it's selected, it's kept on the phone, and the app works offline.
+2. **Keep calls away:** airplane mode with Wi-Fi off keeps them all out; Do Not Disturb, most. Silent mode is fine.
+3. **Charge the phone,** or plug it in. Around 20% battery, power saving may turn on and let the screen lock mid-sit.
+4. **Ring the Test bell last** (under the volume sliders), with everything set: loud enough for the room, and from the right speaker, not a pair of earbuds.
+5. **Don't lock the phone while you sit.** The app keeps the screen on and dims it; a locked phone may not ring the end bell on time.
+6. If the sound is interrupted anyway, tap **Restore the bell**.
 
-The app shows the same tips under the settings ("Leading a group sit?").
+The app shows the same steps under the settings ("Leading a group sit?").
 
 ## 🚀 Getting Started
 
