@@ -103,6 +103,24 @@ test('an ambient sound downloaded once plays offline, and is chosen again after 
   expect(played).toBe('played');
 });
 
+// The page that installs the worker (a phone's first visit) is taken over
+// by it once it's ready: going offline right away (airplane mode after
+// opening the app for the first time) works without opening it again
+test('on a first visit, the same page works offline once the app is kept, without a reload', async ({ page }) => {
+  const server = await serveBuild();
+  await page.goto(server.url);
+  expect(await waitUntilAvailableOffline(page)).toBe(true);
+  const forest = page.getByRole('button', { name: 'Forest' });
+  await forest.click();
+  await expect(forest).toHaveAttribute('aria-pressed', 'true', { timeout: 10_000 });
+  await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null), { timeout: 10_000 }).toBe(true);
+
+  await server.stop();
+  const reach = (path) => page.evaluate((p) => fetch(p).then((response) => (response.ok ? 'fetched' : `status ${response.status}`), () => 'unreachable'), path);
+  expect(await reach('/audio/ambient/forest.mp3')).toBe('fetched');
+  expect(await reach('/audio/bells/bell-end.mp3')).toBe('fetched');
+});
+
 test('the app can be installed: it has a web app manifest with icons', async ({ page, request }) => {
   await page.goto('/');
   const href = await page.locator('link[rel="manifest"]').getAttribute('href');
