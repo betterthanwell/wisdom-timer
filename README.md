@@ -80,7 +80,7 @@ npm run dev          # http://localhost:5173
 | `npm run build` | Production build to `dist/` |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | ESLint |
-| `npm test` | Unit and component tests (Vitest), about 10 s |
+| `npm test` | Unit and component tests (Vitest), about 20 s |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run test:e2e` | End-to-end tests (Playwright) in Chromium, Firefox, WebKit and an iPhone profile; builds first. One-time setup: `npx playwright install chromium firefox webkit` |
 
@@ -209,7 +209,7 @@ The bells and ambient sounds are licensed under **CC0 1.0 Universal (Public Doma
 
 ## 🤝 Contributing
 
-Contributions welcome - bug reports, ideas, audio recommendations and pull requests. Please run `npm run lint`, `npm test` and, for UI changes, `npm run test:e2e` before opening a PR; CI runs them too.
+Contributions welcome - bug reports, ideas, audio recommendations and pull requests. Please run `npm run lint`, `npm test` and, for UI changes, `npm run test:e2e` before opening a PR; CI runs them too. Commit messages say why, for whoever reads them a year from now - see [CLAUDE.md](CLAUDE.md#commit-messages-and-prs) for how to write them and what goes in a PR description.
 
 ---
 

@@ -79,7 +79,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 ├── e2e/                         # Playwright: session.spec.js, offline.spec.js, darkreader.spec.js, sounds.js (sound recorder)
 ├── public/audio/bells|ambient/  # Sound files (see docs/architecture.md, Audio)
 ├── public/manifest.webmanifest  # Web app manifest (install to home screen) + public/icons/
-├── .github/workflows/           # ci.yml (lint, test, build), e2e.yml (Playwright)
+├── .github/                     # workflows/ (ci.yml: lint, test, build; e2e.yml: Playwright), pull_request_template.md
 ├── index.html                   # HTML shell + CSP meta tags + darkreader-lock
 ├── vercel.json                  # HTTP security headers (the effective ones)
 ├── vite.config.js               # Vite + Vitest config; serviceWorker() plugin builds /sw.js
@@ -138,8 +138,21 @@ New ambient sounds, preset durations and background colors: see README, "Customi
 
 ## Workflow
 
-- Commit messages explain the why; PR descriptions are short and include what was verified (test counts, what fails on the old code, manual test steps).
 - Keep this file, `docs/` and `README.md` in sync with behavior changes.
+
+### Commit messages and PRs
+
+PRs are merged with merge commits, so every commit message stays in `git log` and `git blame` for good, and the PR title goes into the merge commit. Write them for someone reading the code a year from now who wasn't there - another developer, the owner, a Claude session with none of today's context - and re-read them as that person before pushing.
+
+- **Scale to the change.** A typo fix needs one line; a change whose reason isn't obvious from the diff needs the reason.
+- **Subject: what changed, in plain words**, in ~72 characters or fewer, so it fits one line in `git log --oneline` and GitHub doesn't cut it off. PR titles too.
+- **Body: why** - not a line-by-line retelling of the diff. The problem as it showed up, with numbers you measured ("6 of 92 e2e tests skipped in the last runs on `main`", not "some tests skip"); why this fix and not another; its limits. Plain text wrapped at ~72 characters, `- ` for lists.
+- **What was tried and rejected, and why** ("splitting the test files made the run 2 s slower"), so nobody tries it again.
+- **How you know it works**, when that isn't obvious - the new test that fails on the old code, a measurement, a check on a device - and what you couldn't check.
+- **Name things**: files, functions, tests, earlier PRs (#41). Nothing that needs today's conversation to make sense ("as discussed", "the approach above", "per feedback"): say what was decided, and by whom if that's the reason ("as the owner decided").
+- **One logical change per commit**, working on its own (lint and tests pass), so it can be reverted or bisected alone. A follow-up commit (a review or CI fix) still says what it fixes and why - "Fix lint" means nothing a year later.
+- **What must stay true goes in the code too.** A constraint the code has to keep respecting (an iOS rule, a browser quirk) belongs in a comment or `docs/`, where the next person looks first; the commit message explains the change.
+- **PR descriptions** follow `.github/pull_request_template.md` and stay short: they're for the reviewer, and the full reasons are in the commits. A short paragraph per change on what and why; **Verified**: test counts, which new test fails on the old code, manual checks and where; **Not checked, or still open**: what you couldn't verify (with steps for any check that needs a real iPhone, on the Vercel preview - see "Testing on a phone"), known limits, questions for the owner. "Nothing" is fine there.
 
 ## Testing on a phone (previews and local only)
 
