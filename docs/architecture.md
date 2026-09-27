@@ -44,7 +44,7 @@
 - Lock screen controls go through the Media Session API (`hooks/useMediaSession.js`: `play`/`pause` action handlers, registered once and calling the latest App handlers through a ref; `playbackState` and `metadata` follow the session). Without handlers, iOS's lock-screen pause paused only the `<audio>` element and the clock ran on. Where the API is missing it does nothing.
 
 ## Security headers
-`vercel.json` sets the real HTTP headers: CSP (incl. `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, Permissions-Policy. `index.html` repeats CSP and others as `<meta>` tags, but browsers ignore `frame-ancestors` and `X-Frame-Options` in meta tags - clickjacking protection comes from `vercel.json`. Keep both CSPs in sync; the CSP allows only same-origin scripts and media. No `X-XSS-Protection` (deprecated; the CSP covers it) or `interest-cohort` (FLoC is gone; Chrome warns about it).
+`vercel.json` sets the real HTTP headers: CSP (incl. `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy, Permissions-Policy. `index.html` repeats CSP and others as `<meta>` tags, but browsers ignore `frame-ancestors` and `X-Frame-Options` in meta tags - clickjacking protection comes from `vercel.json`. Keep both in sync (`src/securityHeaders.test.js` checks: the meta CSP is the header's minus `upgrade-insecure-requests`); the CSP allows only same-origin scripts and media. No `X-XSS-Protection` (deprecated; the CSP covers it) or `interest-cohort` (FLoC is gone; Chrome warns about it).
 
 Caching: `/assets/*` (content-hashed build files) is `immutable` for a year; `/sw.js` is `no-cache`; everything else uses Vercel's default (revalidate).
 

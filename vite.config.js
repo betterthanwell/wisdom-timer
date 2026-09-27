@@ -62,5 +62,9 @@ export default defineConfig({
     environment: 'jsdom',
     // Playwright's end-to-end tests in e2e/ run separately (npm run test:e2e)
     include: ['src/**/*.test.{js,jsx}'],
+    // Before each test, undo vi.spyOn() (e.g. a silenced console.warn) and
+    // vi.stubGlobal() left over from the one before
+    restoreMocks: true,
+    unstubGlobals: true,
   },
 })

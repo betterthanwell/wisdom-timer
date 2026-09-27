@@ -31,6 +31,17 @@ export const setStepper = (name, minutes) => {
   expect(stepperValue(name)).toBe(minutes);
 };
 
+// Moves the fake clock on in steps of up to 1 second, so React re-renders
+// between ticks
+export const passMs = (ms) => {
+  for (; ms > 0; ms -= 1000) {
+    act(() => {
+      vi.advanceTimersByTime(Math.min(ms, 1000));
+    });
+  }
+};
+export const passSeconds = (seconds) => passMs(seconds * 1000);
+
 // Runs a 1-minute session to completion on a fake clock
 export const completeOneMinuteSession = () => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
