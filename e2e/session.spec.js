@@ -211,6 +211,22 @@ test('quiet screen: the dim covers the whole page, cards and text included - all
   expect(await dimIsOnTop('[data-testid="metta-phrase"]')).toBe(false);
 });
 
+test('Reset during a sit: a quick tap only says to hold it; holding it for a second ends the sit', async ({ page }) => {
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(page.getByText('Meditating...')).toBeVisible();
+  const reset = page.getByRole('button', { name: 'Reset' });
+
+  await reset.click();
+  await expect(page.getByText('Hold Reset to end the sit')).toBeVisible();
+  await expect(page.getByText('Meditating...')).toBeVisible();
+
+  await reset.hover();
+  await page.mouse.down();
+  await page.clock.fastForward(1000);
+  await page.mouse.up();
+  await expect(page.getByText('Ready')).toBeVisible();
+});
+
 test('settling in: a silent countdown, then the start bell', async ({ page }) => {
   await page.getByRole('button', { name: 'Settle in for 20s' }).click();
   await page.getByRole('button', { name: 'Start', exact: true }).click();
@@ -331,7 +347,8 @@ test('metta mode: the phrases take turns above the timer while sitting', async (
   await page.clock.fastForward(30_000);
   await expect(phrase).toHaveText('May I be happy.');
 
-  await page.getByRole('button', { name: 'Reset' }).click();
+  // Enter on the button resets at once (a tap has to be held during a sit)
+  await page.getByRole('button', { name: 'Reset' }).press('Enter');
   await expect(phrase).toBeHidden();
 });
 
