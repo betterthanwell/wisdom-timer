@@ -1,15 +1,16 @@
-import { Flower2 } from 'lucide-react';
+import { Sun } from 'lucide-react';
 import { ITIPISO_PACES } from '../../utils/settings';
 import { Switch } from '../UI/Switch';
 import { SettingLabel } from '../UI/SettingLabel';
 import { ChoiceButton } from '../UI/ChoiceButton';
 
-// Itipi so mode on/off, and how long each word takes
+// Itipi so mode on/off, and how long each word takes. Its icon is an
+// eight-rayed sun, for the kinsman of the sun (ādiccabandhu).
 export const ItipisoSetting = ({ enabled, pace, onToggle, onPaceChange }) => {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-4">
-        <SettingLabel icon={Flower2}>Itipi so mode</SettingLabel>
+        <SettingLabel icon={Sun}>Itipi so mode</SettingLabel>
         <Switch checked={enabled} onChange={onToggle} label="Itipi so mode" />
       </div>
       {enabled && (
