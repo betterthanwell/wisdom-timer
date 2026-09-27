@@ -3,7 +3,9 @@
 // picks it up instead of losing it silently. A new tab starts fresh.
 //
 // { mode: 'timed' | 'openEnded' | 'guided', duration (s), and either
-//   endsAt (ms, the session clock's time) while running, or
+//   endsAt (ms, real time - Date.now() - so it means the same after a
+//   reload, even with ?speed, whose clock starts over on every load) while
+//   running, or
 //   remaining (s) while paused }
 const KEY = 'wisdomTimerSit';
 const MODES = ['timed', 'openEnded', 'guided'];
@@ -41,11 +43,12 @@ export const loadSit = () => {
   }
 };
 
-// What a saved sit is `now`: still running (to the same end), paused (with
-// the same time left), or ended while the page was away
-export const resumeSit = (sit, now) => {
+// What a saved sit is `now` (real time): still running (to the same end),
+// paused (with the same time left), or ended while the page was away. With
+// ?speed, the real time left runs `speed` times faster in session time.
+export const resumeSit = (sit, now, speed = 1) => {
   if (Number.isFinite(sit.endsAt)) {
-    const remainingMs = sit.endsAt - now;
+    const remainingMs = (sit.endsAt - now) * speed;
     return remainingMs > 0 ? { running: true, remainingMs } : { endedAt: sit.endsAt };
   }
   return { running: false, remainingMs: sit.remaining * 1000 };

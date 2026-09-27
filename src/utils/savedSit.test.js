@@ -46,6 +46,12 @@ describe('resumeSit', () => {
     expect(resumeSit({ mode: 'timed', duration: 600, endsAt: now }, now)).toEqual({ endedAt: now });
   });
 
+  it('with ?speed, the real time left runs that much faster (the end is kept in real time)', () => {
+    // 90 real seconds left at speed 60: an hour and a half of session time
+    expect(resumeSit({ mode: 'timed', duration: 7200, endsAt: now + 90_000 }, now, 60)).toEqual({ running: true, remainingMs: 5_400_000 });
+    expect(resumeSit({ mode: 'timed', duration: 7200, endsAt: now - 1 }, now, 60)).toEqual({ endedAt: now - 1 });
+  });
+
   it('a paused sit stays paused with the same time left', () => {
     expect(resumeSit({ mode: 'timed', duration: 600, remaining: 125 }, now)).toEqual({ running: false, remainingMs: 125_000 });
   });

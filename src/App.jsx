@@ -82,12 +82,12 @@ function MeditationTimerApp() {
 
   // A sit this tab saved before a reload, picked up on the first render:
   // running on to the same end, paused, or ended meanwhile. Not if the
-  // settings that shape the sit changed since, nor with ?speed (its clock
-  // starts over on every load).
+  // settings that shape the sit changed since. (Its end is kept in real
+  // time, so this works with ?speed too, whose clock starts over on load.)
   const [reloaded] = useState(() => {
     const sit = loadSit();
-    if (!sit || testingTools.speed !== 1 || sit.mode !== sitMode || sit.duration !== sessionSeconds) return null;
-    return resumeSit(sit, sessionClock.now());
+    if (!sit || sit.mode !== sitMode || sit.duration !== sessionSeconds) return null;
+    return resumeSit(sit, Date.now(), testingTools.speed);
   });
   const reloadedMidSit = reloaded !== null && reloaded.endedAt === undefined;
   // When a sit ended while the page was away (said until the next Start)
@@ -351,9 +351,10 @@ function MeditationTimerApp() {
   // Running: its end; paused: the time left; otherwise nothing.
   const pausedRemaining = timer.isPaused ? timer.timeRemaining : null;
   useEffect(() => {
-    if (testingTools.speed !== 1) return;
     if (timer.isRunning) {
-      saveSit({ mode: sitMode, duration: timer.duration, endsAt: timer.endsAt });
+      // The end in real time (timer.endsAt is on the session clock)
+      const endsAt = Date.now() + sessionClock.realDelay(timer.endsAt - sessionClock.now());
+      saveSit({ mode: sitMode, duration: timer.duration, endsAt: Math.round(endsAt) });
     } else if (pausedRemaining !== null) {
       saveSit({ mode: sitMode, duration: timer.duration, remaining: pausedRemaining });
     } else {
