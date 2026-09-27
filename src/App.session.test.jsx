@@ -431,6 +431,38 @@ describe('App', () => {
       expect(screen.getByText('Ready')).toBeTruthy();
     });
 
+    // On a busy device React runs effects in a later task than the render
+    // they follow; a shortcut set up in one lagged behind the screen, and a
+    // Space pressed as Start lit up was ignored (seen as a rare failure of
+    // 'unlocks audio when Space starts a session', in CI too)
+    it('works from the moment Start does, even when effects run a task later', async () => {
+      // Every task seems to take 10 ms, so React yields after each one:
+      // effects come in the next task
+      let now = performance.now();
+      vi.spyOn(performance, 'now').mockImplementation(() => (now += 10));
+      // (Loading resolves outside act() here, as in a browser)
+      const actEnvironment = globalThis.IS_REACT_ACT_ENVIRONMENT;
+      globalThis.IS_REACT_ACT_ENVIRONMENT = false;
+      try {
+        render(<App />);
+        const start = button('Start');
+        expect(start.disabled).toBe(true);
+        // Space, in the same moment Start becomes enabled
+        const unlocks = await new Promise((resolve) => {
+          const observer = new MutationObserver(() => {
+            if (start.disabled) return;
+            observer.disconnect();
+            fireEvent.keyDown(window, { code: 'Space', key: ' ' });
+            resolve(audioManager.unlock.mock.calls.length);
+          });
+          observer.observe(start, { attributes: true, attributeFilter: ['disabled'] });
+        });
+        expect(unlocks).toBe(1);
+      } finally {
+        globalThis.IS_REACT_ACT_ENVIRONMENT = actEnvironment;
+      }
+    });
+
     it('ignores a held-down Space (key repeat)', async () => {
       await renderApp();
       fireEvent.keyDown(window, { code: 'Space', key: ' ' });
