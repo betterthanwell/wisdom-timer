@@ -260,6 +260,13 @@ function MeditationTimerApp() {
     playBell('interval', 1);
   };
 
+  // A sound check before a sit: the end bell once, at the bell volume (from
+  // the tap, so iOS allows it). Not while a sit runs - it would ring over it.
+  const handleTestBell = () => {
+    unlockAudio();
+    playBell('end', 1);
+  };
+
   const [previewingDim, setPreviewingDim] = useState(false);
   // The glow's size, tried out with ?debug (not saved)
   const [nimittaSize, setNimittaSize] = useState(1);
@@ -653,6 +660,8 @@ function MeditationTimerApp() {
                 <VolumeControls
                   bellVolume={state.bellVolume}
                   ambientVolume={state.ambientVolume}
+                  onTestBell={handleTestBell}
+                  testBellDisabled={!isInitialized || inSession}
                   guided={guided}
                   onBellVolumeChange={(vol) => {
                     actions.setBellVolume(vol);

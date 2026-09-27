@@ -1,4 +1,5 @@
 import { Bell, Headphones, Volume2 } from 'lucide-react';
+import { Button } from '../UI/Button';
 import { SettingLabel } from '../UI/SettingLabel';
 
 const VolumeSlider = ({ icon: Icon, label, value, onChange, disabled }) => {
@@ -30,6 +31,8 @@ export const VolumeControls = ({
   ambientVolume,
   onBellVolumeChange,
   onAmbientVolumeChange,
+  onTestBell,
+  testBellDisabled = false,
   guided = false,
   disabled = false,
 }) => {
@@ -46,6 +49,15 @@ export const VolumeControls = ({
         onChange={onAmbientVolumeChange}
         disabled={disabled}
       />
+      {/* A sound check before a sit: is the end bell loud enough, and coming
+          out of the right speaker (not someone's earbuds)? */}
+      <div className="flex items-center gap-3">
+        <Button variant="secondary" size="sm" onClick={onTestBell} disabled={testBellDisabled}>
+          <Bell className="w-4 h-4 mr-2" aria-hidden="true" />
+          Test bell
+        </Button>
+        <span className="text-xs text-white/70">The end bell, at this volume</span>
+      </div>
     </div>
   );
 };
