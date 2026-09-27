@@ -95,6 +95,8 @@ npm run dev          # http://localhost:5173
 
 Bugs are fixed test-first: a test that fails on the old code, then the fix.
 
+What no emulator can check - iOS's no-sound-without-a-tap rule, a locked screen, a phone call - is in the [device checklist](docs/device-checklist.md), run on real phones before a release.
+
 ## 🛠️ Tech Stack
 
 - **React 19** with Context + `useReducer` for settings
@@ -118,7 +120,7 @@ src/
 └── constants/       # Sound file paths and the ambient sound list
 e2e/                 # Playwright end-to-end tests
 public/audio/        # Bell and ambient sound files
-docs/                # Session behavior and architecture notes
+docs/                # Session behavior, architecture notes, device checklist
 ```
 
 The file-by-file map is in [CLAUDE.md](CLAUDE.md).

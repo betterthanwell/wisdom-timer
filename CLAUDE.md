@@ -15,6 +15,7 @@ These are firm. Everything else in this file and in `docs/` describes how things
 ## Docs
 
 - `docs/behavior.md` - how a session behaves (layout, bells, locking, quiet screen, settling in, metta, open-ended …). Read the relevant part before changing session behavior.
+- `docs/device-checklist.md` - the end-of-sit checks to run on real devices (iPhone, Android, laptop) before a release, with a results table.
 - `docs/architecture.md` - state, `useTimer`, `audioManager` and its iOS constraints, the service worker, platform limits, security headers, accessibility. Read the relevant part before touching audio, offline or headers.
 - Product direction (see README, "Free, for good"): functional meditation features only - no streaks, stats, accounts, ads, analytics or payments, and no social sharing or similar engagement features. Free for anyone, for ever.
 
@@ -135,7 +136,7 @@ New ambient sounds, preset durations and background colors: see README, "Customi
   - Firefox's Web Audio needs a sound device: without one its audio context stays `suspended` and `resume()` never settles, so bells wait on the frozen clock's 1s fallback forever. `e2e.yml` starts PulseAudio with a null sink; locally, have a sound server running. A failed session test prints its audio state, sounds and console to the log (`reportSoundsOnFailure()` in `e2e/sounds.js`).
   - Don't simulate losing the network with `context.setOffline()` or `route()` in WebKit: both cut WebKit off before its service worker can answer (and its offline emulation also blocks media from memory). `offline.spec.js` serves a build itself with Vite's `preview()` and stops that server.
 - **CI**: `ci.yml` (npm ci, lint, test, build) and `e2e.yml` (Playwright, report uploaded on failure), both on Node 24, on every PR and push to `main`.
-- Still manual: real audio in different browsers, **iPhone (every bell - start, woodblock, end - after a real session; emulators don't enforce iOS's no-sound-without-a-tap rule)**, locked screen, volume, layout on real devices, long real-time sessions.
+- Still manual: real audio in different browsers, **iPhone (every bell - start, woodblock, end - after a real session; emulators don't enforce iOS's no-sound-without-a-tap rule)**, locked screen, volume, layout on real devices, long real-time sessions. Run `docs/device-checklist.md` on real devices before a release that touches the session, the timer or audio, and note the results there.
 
 ## Workflow
 
