@@ -56,7 +56,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   │   ├── useTimer.js          # Countdown from the clock, pause/resume, interval bells, wake-ups
 │   │   ├── useAudio.js          # React wrapper around the audioManager singleton
 │   │   ├── useSessionCounter.js # Sessions completed today (memory only, resets daily)
-│   │   ├── useWakeLock.js       # Keeps the screen on (Screen Wake Lock API) while active
+│   │   ├── useWakeLock.js       # Keeps the screen on (Screen Wake Lock API) while active; reports when it can't
 │   │   ├── useMediaSession.js   # Lock screen play/pause act on the session (Media Session API)
 │   │   ├── useSettleCountdown.js # Settling-in countdown before a new session
 │   │   ├── useAmbientDownloads.js # Each ambient sound's download status (useSyncExternalStore)
@@ -96,7 +96,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 - Tailwind utility classes; custom CSS only in `index.css` (glass cards, keyframes). Inline styles for complex values (shadows, radial gradients).
 - **Base CSS goes in `@layer base`.** Tailwind 4 puts utilities in cascade layers, and unlayered CSS beats any layer: a bare `* { padding: 0 }` once silently wiped out every `p-*`/`m-*`/`space-y-*` in the app. Tailwind's preflight already resets margins and box-sizing.
 - Give a button one rounding class (`Button`'s `round` prop): conflicting ones like `rounded-xl rounded-full` resolve by stylesheet order, not class order.
-- Settings rows: `SettingLabel` for the heading, `Switch` for on/off, `ChoiceButton` for options, `Stepper` for minutes (custom length, woodblock times) - not `type="number"` (its corrections mid-typing made 05 impossible to type) nor long lists (99 options was too many to scan). The settings card is grouped into `<section>`s divided by lines: duration, bells, metta, ambient sound (+ gentle ending), volume ("Sound volume" heading over the Bells and Ambient sliders - Voice in guided mode), then "Visual controls" last (dimming; with `?debug`, nimitta size).
+- Settings rows: `SettingLabel` for the heading, `Switch` for on/off, `ChoiceButton` for options, `Stepper` for minutes (custom length, woodblock times) - not `type="number"` (its corrections mid-typing made 05 impossible to type) nor long lists (99 options was too many to scan). The settings card is grouped into `<section>`s divided by lines: duration, bells, metta, ambient sound (+ gentle ending), volume ("Sound volume" heading over the Bells and Ambient sliders - Voice in guided mode - and a Test bell button), then "Visual controls" last (dimming; with `?debug`, nimitta size).
 - Global settings via context actions; local UI state with `useState`; refs for values that mustn't re-render.
 - Handlers passed to `useTimer` or used in effects are wrapped in `useCallback` - `useTimer`'s timer effect depends on `onComplete`, so an unstable callback would restart it every render.
 - The react-hooks lint rules include `set-state-in-effect` and exhaustive deps.

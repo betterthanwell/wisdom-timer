@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, screen, waitFor, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor, render } from '@testing-library/react';
 import App from './App';
 import { audioManager } from './utils/audioManager';
 import { button, click, renderApp, setStepper, setUpAppTests, stepperValue } from './test/appTestUtils';
@@ -218,6 +218,50 @@ describe('App', () => {
       click('Start');
       await waitFor(() => expect(wakeLock.request).toHaveBeenCalledWith('screen'));
     });
+
+    // A locked phone may not ring the end bell on time (iOS pauses the page)
+    const screenWarning = () => screen.queryByTestId('screen-may-lock');
+    const lockHint = () => screen.queryByTestId('lock-hint');
+
+    it('asks, before a sit, not to lock the phone', async () => {
+      await renderApp();
+      expect(lockHint().textContent).toBe("Don't lock the phone while you sit: a locked phone may not ring the end bell on time.");
+
+      click('Start');
+      expect(lockHint()).toBe(null); // the quiet screen
+    });
+
+    it('shows no warning while the screen is kept awake', async () => {
+      await renderApp();
+      click('Start');
+      await waitFor(() => expect(wakeLock.request).toHaveBeenCalled());
+      expect(screenWarning()).toBe(null);
+    });
+
+    it('warns during a sit if the screen could not be kept awake (e.g. low battery), until it ends', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      wakeLock.request.mockRejectedValue(new Error('NotAllowedError'));
+      await renderApp();
+      expect(screenWarning()).toBe(null);
+
+      click('Start');
+      await waitFor(() => expect(screenWarning()).not.toBe(null));
+      expect(screenWarning().textContent).toBe('The screen may lock by itself - keep it on, or the end bell may not ring on time.');
+
+      click('Reset');
+      expect(screenWarning()).toBe(null);
+    });
+
+    it('where the browser cannot keep the screen on at all: says so before a sit, and warns during it', async () => {
+      delete navigator.wakeLock;
+      await renderApp();
+      expect(lockHint().textContent).toBe(
+        "This browser can't keep the screen on: turn off auto-lock for the sit, or the end bell may not ring on time."
+      );
+
+      click('Start');
+      expect(screenWarning()).not.toBe(null);
+    });
   });
 
   describe('settings validation', () => {
@@ -257,6 +301,33 @@ describe('App', () => {
 
       fireEvent.click(screen.getByRole('switch', { name: 'Interval woodblock' }));
       expect(woodblocks()).toHaveLength(2);
+    });
+
+    it('Test bell rings the end bell once, from the tap, so the volume can be checked before a sit', async () => {
+      localStorage.setItem('wisdomTimerSettings', JSON.stringify({ endStrikes: 3 }));
+      await renderApp();
+      click('Test bell');
+
+      expect(audioManager.playBell.mock.calls).toEqual([['end', 1]]);
+      // Played from the tap, so iOS allows it
+      expect(audioManager.unlock.mock.invocationCallOrder[0]).toBeLessThan(
+        audioManager.playBell.mock.invocationCallOrder[0]
+      );
+    });
+
+    it('Test bell waits for the sounds, and never rings over a running sit', async () => {
+      audioManager.init.mockImplementationOnce(() => new Promise(() => {}));
+      render(<App />);
+      expect(button('Test bell').disabled).toBe(true);
+      cleanup();
+
+      await renderApp();
+      click('Start');
+      click('Show settings');
+      expect(button('Test bell').disabled).toBe(true);
+
+      click('Pause');
+      expect(button('Test bell').disabled).toBe(false);
     });
 
     it('offers the woodblock every 10 minutes, starting after 5, by default', async () => {

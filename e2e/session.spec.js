@@ -295,6 +295,12 @@ test('keyboard: Space presses a button reached with Tab, but starts the session 
   await expect(page.getByText('30:00')).toBeVisible();
 });
 
+test('Test bell rings the end bell once, before a sit', async ({ page }) => {
+  await page.getByRole('button', { name: 'Test bell' }).click();
+  await expect.poll(() => countSound(page, 'bell-end')).toBe(1);
+  await expect(page.getByText('Ready')).toBeVisible();
+});
+
 test('settings survive a reload', async ({ page }) => {
   await page.getByRole('button', { name: '30m' }).click();
   await expect(page.getByText('30:00')).toBeVisible();
