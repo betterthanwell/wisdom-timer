@@ -14,6 +14,8 @@ import { ambientDownloads } from './utils/ambientDownloads';
 import { testingTools, sessionClock } from './utils/testingTools';
 import { AUDIO_SOURCES, GUIDED_LEAD_IN_SECONDS } from './constants/audioSources';
 import { debugLog } from './utils/debugLog';
+import { clearSit, loadSit, resumeSit, saveSit } from './utils/savedSit';
+import { formatClockTime } from './utils/timeFormatter';
 import { DebugPanel } from './components/UI/DebugPanel';
 import { GlassCard } from './components/UI/GlassCard';
 import { SettingLabel } from './components/UI/SettingLabel';
@@ -76,6 +78,20 @@ function MeditationTimerApp() {
   const guidedSeconds = GUIDED_LEAD_IN_SECONDS + AUDIO_SOURCES.guided[guidedTrack].seconds;
   const openEnded = state.openEnded && !guided;
   const sessionSeconds = guided ? guidedSeconds : openEnded ? OPEN_ENDED_SECONDS : state.duration;
+  const sitMode = guided ? 'guided' : openEnded ? 'openEnded' : 'timed';
+
+  // A sit this tab saved before a reload, picked up on the first render:
+  // running on to the same end, paused, or ended meanwhile. Not if the
+  // settings that shape the sit changed since. (Its end is kept in real
+  // time, so this works with ?speed too, whose clock starts over on load.)
+  const [reloaded] = useState(() => {
+    const sit = loadSit();
+    if (!sit || sit.mode !== sitMode || sit.duration !== sessionSeconds) return null;
+    return resumeSit(sit, Date.now(), testingTools.speed);
+  });
+  const reloadedMidSit = reloaded !== null && reloaded.endedAt === undefined;
+  // When a sit ended while the page was away (said until the next Start)
+  const [sitEndedAt, setSitEndedAt] = useState(() => reloaded?.endedAt ?? null);
 
   // The voice waiting for the lead-in to end
   const voiceTimeoutRef = useRef(null);
@@ -89,10 +105,16 @@ function MeditationTimerApp() {
   // screen): it pauses where the voice stopped, and says so loudly until
   // carried on or reset. (Other sessions run on: the sit's length is the
   // point there.)
-  const [interrupted, setInterrupted] = useState(false);
+  // A guided sit that was running before a reload comes back like this too:
+  // its voice needs a tap.
+  const [interrupted, setInterrupted] = useState(() => guided && reloadedMidSit && reloaded.running);
   // A regular sit interrupted from outside runs on, but iOS may keep the sound
-  // off until a tap - so the end bell wouldn't ring. It offers that tap.
-  const [soundInterrupted, setSoundInterrupted] = useState(false);
+  // off until a tap - so the end bell wouldn't ring. It offers that tap. So
+  // does a sit running on after a reload: audio needs a tap on every browser
+  // then. Why: 'interrupted' or 'reloaded' (null: nothing to restore).
+  const [soundInterrupted, setSoundInterrupted] = useState(() =>
+    !guided && reloadedMidSit && reloaded.running ? 'reloaded' : null
+  );
   const pauseAtRef = useRef(null);
   const rescueSession = useCallback(
     (voicePosition) => {
@@ -140,7 +162,7 @@ function MeditationTimerApp() {
       return;
     }
     debugLog.add('session complete');
-    setSoundInterrupted(false);
+    setSoundInterrupted(null);
     cancelVoice();
     playBell('end', state.endStrikes);
     stopAmbient();
@@ -165,7 +187,9 @@ function MeditationTimerApp() {
     handleTimerComplete,
     state.intervalBellsEnabled && !guided
       ? { interval: state.intervalDuration, firstAt: state.intervalStart, callback: handleIntervalBell }
-      : null
+      : null,
+    // A guided sit comes back paused, with Carry on
+    reloadedMidSit ? { running: reloaded.running && !guided, remainingMs: reloaded.remainingMs } : null
   );
   const { start: startTimer, pause: pauseTimer, pauseAt, finish: finishTimer, reset: resetTimer, updateDuration } = timer;
   useEffect(() => {
@@ -199,7 +223,7 @@ function MeditationTimerApp() {
       if (!guided) {
         if (timer.isRunning || isSettling) {
           debugLog.add('sound interrupted during a sit: offering to restore it');
-          setSoundInterrupted(true);
+          setSoundInterrupted('interrupted');
         }
         return;
       }
@@ -230,7 +254,8 @@ function MeditationTimerApp() {
     debugLog.add(`Start tapped${!timer.isPaused && state.settleSeconds > 0 ? `, settling in ${state.settleSeconds}s` : ''}`);
     unlockAudio();
     setInterrupted(false);
-    setSoundInterrupted(false);
+    setSoundInterrupted(null);
+    setSitEndedAt(null);
     setSettingsRevealed(false); // every start begins quiet
     // A new session: end-bell strikes of the last one still to ring would
     // clash with the start bell (resuming keeps the start bell's strikes)
@@ -253,7 +278,7 @@ function MeditationTimerApp() {
   const handleRestoreSound = useCallback(() => {
     debugLog.add('Restore the bell tapped');
     unlockAudio();
-    setSoundInterrupted(false);
+    setSoundInterrupted(null);
     if (!activeAmbient) return;
     if (timer.isRunning) playAmbient(activeAmbient);
     else if (isSettling) primeAmbient(activeAmbient);
@@ -262,7 +287,8 @@ function MeditationTimerApp() {
   // Handle reset - stop ambient sound
   const handleReset = useCallback(() => {
     setInterrupted(false);
-    setSoundInterrupted(false);
+    setSoundInterrupted(null);
+    setSitEndedAt(null);
     cancelSettling();
     cancelVoice();
     cancelPendingBells();
@@ -320,6 +346,21 @@ function MeditationTimerApp() {
   // If that fails, say so: a locked phone may not ring the end bell on time
   // (iOS pauses the page until it's unlocked).
   const screenMayLock = useWakeLock(inSession);
+
+  // Keep the sit in progress for this tab, so a reload picks it up (above).
+  // Running: its end; paused: the time left; otherwise nothing.
+  const pausedRemaining = timer.isPaused ? timer.timeRemaining : null;
+  useEffect(() => {
+    if (timer.isRunning) {
+      // The end in real time (timer.endsAt is on the session clock)
+      const endsAt = Date.now() + sessionClock.realDelay(timer.endsAt - sessionClock.now());
+      saveSit({ mode: sitMode, duration: timer.duration, endsAt: Math.round(endsAt) });
+    } else if (pausedRemaining !== null) {
+      saveSit({ mode: sitMode, duration: timer.duration, remaining: pausedRemaining });
+    } else {
+      clearSit();
+    }
+  }, [timer.isRunning, timer.endsAt, timer.duration, pausedRemaining, sitMode]);
 
   // Duration can only change between sessions, not while running or paused
   const durationLocked = timer.isRunning || timer.isPaused || isSettling;
@@ -558,15 +599,32 @@ function MeditationTimerApp() {
         />
         )}
 
-        {/* A regular sit interrupted from outside: above the dim, so it's seen */}
+        {/* A regular sit interrupted from outside, or running on after a
+            reload: above the dim, so it's seen */}
         {soundInterrupted && inSession && (
           <div
             data-testid="sound-interrupted"
             className="relative z-20 mx-auto flex max-w-sm flex-col items-center gap-3 rounded-xl bg-black/35 px-4 py-3 text-center text-sm text-white"
           >
-            <p role="alert">The sound was interrupted (a call, Siri, an alarm?), so the end bell may not ring.</p>
-            <Button onClick={handleRestoreSound}>Restore the bell</Button>
+            <p role="alert">
+              {soundInterrupted === 'reloaded'
+                ? "The page reloaded during the sit, so the end bell can't ring until you tap."
+                : 'The sound was interrupted (a call, Siri, an alarm?), so the end bell may not ring.'}
+            </p>
+            <Button onClick={handleRestoreSound} disabled={!isInitialized}>
+              Restore the bell
+            </Button>
           </div>
+        )}
+
+        {/* A sit that ended while the page was away (a reload) */}
+        {sitEndedAt !== null && !inSession && (
+          <p
+            data-testid="sit-ended"
+            className="mx-auto max-w-sm rounded-xl bg-black/20 px-4 py-2 text-center text-sm text-white"
+          >
+            Your last sit ended at {formatClockTime(sitEndedAt)}, while the page was reloading.
+          </p>
         )}
 
         {/* The screen couldn't be kept on: above the dim, so it's read */}

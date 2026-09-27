@@ -57,6 +57,8 @@ export const completeOneMinuteSession = () => {
 export const setUpAppTests = () => {
   beforeEach(() => {
     localStorage.clear();
+    // A sit in progress is kept here across a reload (utils/savedSit.js)
+    sessionStorage.clear();
     vi.clearAllMocks();
   });
 

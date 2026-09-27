@@ -37,7 +37,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 ```
 ├── src/
 │   ├── App.jsx                  # Session flow, keyboard shortcuts, layout (default export)
-│   ├── App.*.test.jsx           # Component tests: whole app, audioManager mocked (session, settle, modes, screen, lockscreen, …)
+│   ├── App.*.test.jsx           # Component tests: whole app, audioManager mocked (session, settle, modes, screen, lockscreen, reload, …)
 │   ├── test/                    # appTestUtils.jsx (renderApp, click, passSeconds, …), audioManagerMock.js (+ a test that it matches AudioManager)
 │   ├── main.jsx                 # Entry point (StrictMode); registers the service worker once bells load
 │   ├── sw.js                    # Service worker source (offline use) - emitted as /sw.js by vite.config.js
@@ -72,6 +72,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   │   ├── gentleEnding.js      # gentleEndingLevel() - ambient level over the last minute
 │   │   ├── metta.js             # METTA_PHRASES + mettaStep() - which phrase shows when
 │   │   ├── settings.js          # sanitizeSettings() - validates saved settings
+│   │   ├── savedSit.js          # The sit in progress, kept for the tab (sessionStorage) across a reload
 │   │   ├── debugLog.js          # debugLog.add() - audio events for the ?debug panel
 │   │   ├── testingTools.js      # ?speed / ?debug, off on wisdomtimer.app
 │   │   └── timeFormatter.js     # formatTime (MM:SS), formatClockTime (wall-clock time)
