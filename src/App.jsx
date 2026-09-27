@@ -27,6 +27,7 @@ import { DurationSelector } from './components/Settings/DurationSelector';
 import { IntervalSettings } from './components/Settings/IntervalSettings';
 import { AmbientSoundSelector } from './components/Settings/AmbientSoundSelector';
 import { VolumeControls } from './components/Settings/VolumeControls';
+import { GroupSitTips } from './components/Settings/GroupSitTips';
 import { SettleSetting } from './components/Settings/SettleSetting';
 import { GentleEndingSetting } from './components/Settings/GentleEndingSetting';
 import { OpenEndedSetting } from './components/Settings/OpenEndedSetting';
@@ -814,6 +815,9 @@ function MeditationTimerApp() {
             )}
           </GlassCard>
         )}
+
+        {/* For someone leading a group: what to set up so the end bell rings */}
+        {!quiet && <GroupSitTips />}
 
         {/* Keyboard shortcuts - only where there's likely a keyboard (a
             mouse or trackpad as the main pointer), not on touch screens */}

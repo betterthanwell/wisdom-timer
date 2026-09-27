@@ -166,7 +166,7 @@ describe('App', () => {
         interrupt(20);
 
         expect(screen.getByText('PAUSED')).toBeTruthy();
-        expect(screen.getByText(/interrupted/i)).toBeTruthy();
+        expect(screen.getByText(/Interrupted from outside the app/)).toBeTruthy();
         // Announced at once to a screen reader
         expect(screen.getByRole('alert').textContent).toMatch(/PAUSED.*Interrupted from outside the app/);
         expect(carryOn()).toBeTruthy();

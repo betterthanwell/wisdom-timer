@@ -264,6 +264,31 @@ describe('App', () => {
     });
   });
 
+  // Advice for someone leading a group, where the end bell matters most
+  describe('group sit tips', () => {
+    const tips = () => screen.queryByText('Leading a group sit?');
+
+    it('are there before a sit, folded away: set-up steps in order, the Test bell last', async () => {
+      await renderApp();
+      const details = tips().closest('details');
+      expect(details.open).toBe(false);
+      // Steps in order: online set-up, calls, battery, then the Test bell last
+      const steps = [...details.querySelectorAll('ol > li')].map((step) => step.textContent);
+      expect(steps).toHaveLength(6);
+      expect(steps[0]).toMatch(/^Set up with a connection/);
+      expect(steps[1]).toMatch(/airplane mode/);
+      expect(steps[3]).toMatch(/^Ring the Test bell last/);
+      expect(steps[4]).toMatch(/^Don't lock the phone/);
+      expect(steps[5]).toMatch(/Restore the bell/);
+    });
+
+    it('stay out of the quiet screen', async () => {
+      await renderApp();
+      click('Start');
+      expect(tips()).toBe(null);
+    });
+  });
+
   describe('settings validation', () => {
     it('shows that the bells are loading, with Start disabled until they are ready', async () => {
       audioManager.init.mockImplementationOnce(() => new Promise(() => {}));
