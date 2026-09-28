@@ -348,6 +348,24 @@ describe('App', () => {
       );
     });
 
+    it('End test, on the same line, stops the test bell', async () => {
+      await renderApp();
+      click('Test bell');
+      const endTest = button('End test');
+      expect(endTest.parentElement).toBe(button('Test bell').parentElement);
+      expect(audioManager.stopBells).not.toHaveBeenCalled();
+
+      fireEvent.click(endTest);
+      expect(audioManager.stopBells).toHaveBeenCalledTimes(1);
+    });
+
+    it('End test, like Test bell, is off during a sit, so it can’t silence the sit’s bells', async () => {
+      await renderApp();
+      click('Start');
+      click('Show settings');
+      expect(button('End test').disabled).toBe(true);
+    });
+
     it('Test bell waits for the sounds, and never rings over a running sit', async () => {
       audioManager.init.mockImplementationOnce(() => new Promise(() => {}));
       render(<App />);

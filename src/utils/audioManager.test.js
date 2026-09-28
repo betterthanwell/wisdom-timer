@@ -221,6 +221,18 @@ describe('AudioManager', () => {
       expect(first.paused).toBe(false); // the one already ringing rings out
     });
 
+    it('stops bells ringing and strikes not yet rung (End test)', async () => {
+      manager.playBell('end', 3);
+      await vi.advanceTimersByTimeAsync(0);
+      const ringing = bellElements().at(-1);
+      expect(ringing.paused).toBe(false);
+
+      manager.stopBells();
+      expect(ringing.paused).toBe(true);
+      await vi.advanceTimersByTimeAsync(20_000);
+      expect(strikes('bell-end')).toBe(1);
+    });
+
     it('cancels pending strikes on cleanup', async () => {
       manager.playBell('start', 3);
       await vi.advanceTimersByTimeAsync(0);
@@ -753,6 +765,16 @@ describe('AudioManager with Web Audio', () => {
     await manager.init();
     manager.unlock();
   };
+
+  it('stops a bell ringing through Web Audio (End test)', async () => {
+    await initAndUnlock();
+    await manager.playBell('end');
+    const bell = lastBell();
+    expect(bell.playing).toBe(true);
+
+    manager.stopBells();
+    expect(bell.playing).toBe(false);
+  });
 
   it('downloads and decodes each bell once, and rings it through Web Audio', async () => {
     await initAndUnlock();

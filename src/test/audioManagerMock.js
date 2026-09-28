@@ -8,6 +8,7 @@ export const audioManager = {
   cleanup: vi.fn(),
   playBell: vi.fn(async () => {}),
   cancelPendingBells: vi.fn(),
+  stopBells: vi.fn(),
   playAmbient: vi.fn(async () => {}),
   pauseAmbient: vi.fn(),
   resumeAmbient: vi.fn(),
