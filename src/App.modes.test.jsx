@@ -268,6 +268,20 @@ describe('App', () => {
       expect(follows(card, screen.getByTestId('nimitta'))).toBe(true);
     });
 
+    // A running CSS animation whose delay changes jumps along its timeline:
+    // re-timing the words every second ran the highlight at double speed
+    it('times each word once, when its line appears, not again every second', async () => {
+      await renderApp();
+      fireEvent.click(itipisoSwitch());
+      click('Start');
+      passSeconds(1);
+      const delays = () => [...screen.getByTestId('itipiso-pali').querySelectorAll('.itipiso-word')].map((word) => word.style.animationDelay);
+      const first = delays();
+      expect(first[1]).toBe('2s'); // "so": the second word, 2 s after the line began
+      passSeconds(3);
+      expect(delays()).toEqual(first);
+    });
+
     it('holds the line while paused and carries on after resuming', async () => {
       await renderApp();
       fireEvent.click(itipisoSwitch());
