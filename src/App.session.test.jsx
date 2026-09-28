@@ -368,6 +368,14 @@ describe('App', () => {
       expect(screen.getByText('Meditating...')).toBeTruthy();
     });
 
+    it('shows the notice right below the controls', async () => {
+      await renderApp();
+      click('Start');
+      interrupt();
+      const follows = (a, b) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(follows(button('Pause'), screen.getByTestId('sound-interrupted'))).toBe(true);
+    });
+
     it('while settling in, primes the ambient sound again in the tap (the countdown starts it)', async () => {
       await renderApp();
       click('Rain');

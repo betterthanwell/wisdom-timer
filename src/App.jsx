@@ -628,24 +628,6 @@ function MeditationTimerApp() {
           />
         )}
 
-        {/* A regular sit interrupted from outside, or running on after a
-            reload: above the dim, so it's seen */}
-        {soundInterrupted && inSession && (
-          <div
-            data-testid="sound-interrupted"
-            className="relative z-20 mx-auto flex max-w-sm flex-col items-center gap-3 rounded-xl bg-black/35 px-4 py-3 text-center text-sm text-white"
-          >
-            <p role="alert">
-              {soundInterrupted === 'reloaded'
-                ? "The page reloaded during the sit, so the end bell can't ring until you tap."
-                : 'The sound was interrupted (a call, Siri, an alarm?), so the end bell may not ring.'}
-            </p>
-            <Button onClick={handleRestoreSound} disabled={!isInitialized}>
-              Restore the bell
-            </Button>
-          </div>
-        )}
-
         {/* A sit that ended while the page was away (a reload) */}
         {sitEndedAt !== null && !inSession && (
           <p
@@ -653,17 +635,6 @@ function MeditationTimerApp() {
             className="mx-auto max-w-sm rounded-xl bg-black/20 px-4 py-2 text-center text-sm text-white"
           >
             Your last sit ended at {formatClockTime(sitEndedAt)}, while the page was reloading.
-          </p>
-        )}
-
-        {/* The screen couldn't be kept on: above the dim, so it's read */}
-        {screenMayLock && (
-          <p
-            data-testid="screen-may-lock"
-            className="relative z-20 mx-auto flex max-w-sm items-start gap-2 rounded-xl bg-black/35 px-4 py-2 text-sm text-white"
-          >
-            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            The screen may lock by itself - keep it on, or the end bell may not ring on time.
           </p>
         )}
 
@@ -683,6 +654,35 @@ function MeditationTimerApp() {
             startDisabled={(timer.timeRemaining === 0 && !timer.isComplete) || (guided && !guidedTrackKept)}
           />
         </GlassCard>
+
+        {/* A regular sit interrupted from outside, or running on after a
+            reload: right below the controls and above the dim, so it's seen */}
+        {soundInterrupted && inSession && (
+          <div
+            data-testid="sound-interrupted"
+            className="relative z-20 mx-auto flex max-w-sm flex-col items-center gap-3 rounded-xl bg-black/35 px-4 py-3 text-center text-sm text-white"
+          >
+            <p role="alert">
+              {soundInterrupted === 'reloaded'
+                ? "The page reloaded during the sit, so the end bell can't ring until you tap."
+                : 'The sound was interrupted (a call, Siri, an alarm?), so the end bell may not ring.'}
+            </p>
+            <Button onClick={handleRestoreSound} disabled={!isInitialized}>
+              Restore the bell
+            </Button>
+          </div>
+        )}
+
+        {/* The screen couldn't be kept on: below the controls, above the dim, so it's read */}
+        {screenMayLock && (
+          <p
+            data-testid="screen-may-lock"
+            className="relative z-20 mx-auto flex max-w-sm items-start gap-2 rounded-xl bg-black/35 px-4 py-2 text-sm text-white"
+          >
+            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            The screen may lock by itself - keep it on, or the end bell may not ring on time.
+          </p>
+        )}
 
         {/* Phones and tablets (a touch screen as the main pointer): a locked
             screen pauses the page on iOS, so the end bell can't ring */}
