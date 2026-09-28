@@ -252,6 +252,14 @@ describe('App', () => {
       expect(screenWarning()).toBe(null);
     });
 
+    it('shows the warning right below the controls', async () => {
+      delete navigator.wakeLock;
+      await renderApp();
+      click('Start');
+      const follows = (a, b) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(follows(button('Pause'), screenWarning())).toBe(true);
+    });
+
     it('where the browser cannot keep the screen on at all: says so before a sit, and warns during it', async () => {
       delete navigator.wakeLock;
       await renderApp();
