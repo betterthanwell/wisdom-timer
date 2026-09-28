@@ -1,3 +1,5 @@
+import { recitationStep, splitWords } from './recitation';
+
 // Itipi so: the recollection of the Buddha, the Dhamma and the Saṅgha
 // (Pali, with the owner's English). One line shows at a time.
 export const ITIPISO_LINES = [
@@ -62,33 +64,20 @@ export const ITIPISO_LINES = [
   },
 ];
 
-export const paliWords = (line) => line.pali.split(/\s+/);
+export const paliWords = (line) => splitWords(line.pali);
 
 // Rests, in words' time, after a section and before beginning again. The
 // line just finished stays on screen through them.
 const SECTION_REST = 2;
 const END_REST = 4;
 
-// One cycle: each line's time in words, its rest included
+// Each line's time in words, its rest included
 const LINE_UNITS = ITIPISO_LINES.map((line, index) => {
   const next = ITIPISO_LINES[index + 1];
   const rest = !next ? END_REST : next.section !== line.section ? SECTION_REST : 0;
   return paliWords(line).length + rest;
 });
-const CYCLE_UNITS = LINE_UNITS.reduce((sum, units) => sum + units, 0);
 
-// What to show after `elapsed` seconds at `pace` seconds per word. `step`
-// keeps counting across cycles (a new step = a new line); `line` is the index
-// into ITIPISO_LINES; `wordOffset` is how many seconds into the line we are
-// (past its last word during a rest).
-export const itipisoStep = (elapsed, pace) => {
-  if (!(pace > 0) || !(elapsed > 0)) return { step: 0, line: 0, wordOffset: 0 };
-  const units = elapsed / pace;
-  const cycle = Math.floor(units / CYCLE_UNITS);
-  let into = units - cycle * CYCLE_UNITS;
-  for (const [line, lineUnits] of LINE_UNITS.entries()) {
-    if (into < lineUnits) return { step: cycle * LINE_UNITS.length + line, line, wordOffset: into * pace };
-    into -= lineUnits;
-  }
-  return { step: (cycle + 1) * LINE_UNITS.length, line: 0, wordOffset: 0 }; // rounding at a cycle's end
-};
+// Which line to show after `elapsed` seconds at `pace` seconds a word
+// (recitationStep: `line` indexes ITIPISO_LINES)
+export const itipisoStep = (elapsed, pace) => recitationStep(LINE_UNITS, elapsed, pace);

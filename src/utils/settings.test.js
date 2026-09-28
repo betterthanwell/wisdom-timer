@@ -93,6 +93,25 @@ describe('sanitizeSettings', () => {
     expect(sanitizeSettings({ itipisoPace: 4 }, defaults).itipisoPace).toBe(undefined);
   });
 
+  it('only accepts a boolean for metta sutta mode and a listed pace per word', () => {
+    expect(sanitizeSettings({ mettaSuttaMode: true }, defaults).mettaSuttaMode).toBe(true);
+    expect(sanitizeSettings({ mettaSuttaMode: 'on' }, defaults).mettaSuttaMode).toBe(undefined);
+    for (const pace of [0.5, 0.75, 1, 1.5]) {
+      expect(sanitizeSettings({ mettaSuttaPace: pace }, defaults).mettaSuttaPace).toBe(pace);
+    }
+    expect(sanitizeSettings({ mettaSuttaPace: 2 }, defaults).mettaSuttaPace).toBe(undefined);
+  });
+
+  it('keeps only the first of the phrase modes saved on: metta, then itipi so, then metta sutta', () => {
+    const on = (saved) => {
+      const result = sanitizeSettings(saved, defaults);
+      return ['mettaMode', 'itipisoMode', 'mettaSuttaMode'].filter((key) => result[key]);
+    };
+    expect(on({ itipisoMode: true, mettaSuttaMode: true })).toEqual(['itipisoMode']);
+    expect(on({ mettaMode: true, itipisoMode: true, mettaSuttaMode: true })).toEqual(['mettaMode']);
+    expect(on({ mettaSuttaMode: true })).toEqual(['mettaSuttaMode']);
+  });
+
   it('keeps metta mode when both it and itipi so mode were saved on', () => {
     const result = sanitizeSettings({ mettaMode: true, itipisoMode: true }, defaults);
     expect(result.mettaMode).toBe(true);
@@ -159,7 +178,7 @@ describe('sanitizeSettings', () => {
 
 describe('pickSavedSettings', () => {
   it('saves every validated setting, and nothing else', () => {
-    const saved = pickSavedSettings({ ...defaults, keepScreenAwake: false, settleSeconds: 20, startStrikes: 3, intervalStrikes: 1, endStrikes: 2, gentleEnding: true, openEnded: true, showBellStrikes: true, mettaMode: true, mettaSeconds: 20, itipisoMode: false, itipisoPace: 3, dimScreen: false, dimLevel: 0.5, somethingElse: 1 });
+    const saved = pickSavedSettings({ ...defaults, keepScreenAwake: false, settleSeconds: 20, startStrikes: 3, intervalStrikes: 1, endStrikes: 2, gentleEnding: true, openEnded: true, showBellStrikes: true, mettaMode: true, mettaSeconds: 20, itipisoMode: false, itipisoPace: 3, mettaSuttaMode: false, mettaSuttaPace: 1, dimScreen: false, dimLevel: 0.5, somethingElse: 1 });
     expect(saved).toEqual({
       duration: 2700,
       intervalBellsEnabled: false,
@@ -180,6 +199,8 @@ describe('pickSavedSettings', () => {
       mettaSeconds: 20,
       itipisoMode: false,
       itipisoPace: 3,
+      mettaSuttaMode: false,
+      mettaSuttaPace: 1,
       dimScreen: false,
       dimLevel: 0.5,
     });

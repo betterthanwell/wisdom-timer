@@ -1,6 +1,6 @@
 import { useReducer, useEffect } from 'react';
 import { TimerContext } from './useTimerContext';
-import { pickSavedSettings, sanitizeSettings } from '../utils/settings';
+import { PHRASE_MODES, pickSavedSettings, sanitizeSettings } from '../utils/settings';
 
 // Default settings
 const initialState = {
@@ -23,8 +23,10 @@ const initialState = {
   showBellStrikes: false, // bell strike choices tucked away (UI only)
   mettaMode: false, // show the metta phrases in turn during a session
   mettaSeconds: 10, // how long each metta phrase shows
-  itipisoMode: false, // show the Itipi so, line by line, during a session (not with metta)
+  itipisoMode: false, // show the Itipi so, line by line, during a session
   itipisoPace: 2, // seconds per Pali word
+  mettaSuttaMode: false, // show the Metta Sutta, a couplet at a time, during a session
+  mettaSuttaPace: 0.75, // seconds per word
   dimScreen: true, // dim the page while sitting (quiet screen)
   dimLevel: 0.25, // how dark: 25% black
   guidedMode: false, // a guided meditation sets the session (voice + bells only)
@@ -79,6 +81,12 @@ export const TimerProvider = ({ children }) => {
 
   // Actions
   const setSetting = (key, value) => dispatch({ type: 'SET_SETTING', key, value });
+  // The phrase modes (metta, itipi so, metta sutta) are one at a time:
+  // turning one on turns the others off
+  const setPhraseMode = (key, enabled) => {
+    setSetting(key, enabled);
+    if (enabled) for (const other of PHRASE_MODES) if (other !== key) setSetting(other, false);
+  };
   const actions = {
     setDuration: (duration) => setSetting('duration', duration),
     setIntervalBells: (enabled) => setSetting('intervalBellsEnabled', enabled),
@@ -93,17 +101,12 @@ export const TimerProvider = ({ children }) => {
     setGentleEnding: (enabled) => setSetting('gentleEnding', enabled),
     setOpenEnded: (enabled) => setSetting('openEnded', enabled),
     setShowBellStrikes: (shown) => setSetting('showBellStrikes', shown),
-    // Metta and itipi so mode are one or the other: turning one on turns the other off
-    setMettaMode: (enabled) => {
-      setSetting('mettaMode', enabled);
-      if (enabled) setSetting('itipisoMode', false);
-    },
+    setMettaMode: (enabled) => setPhraseMode('mettaMode', enabled),
     setMettaSeconds: (seconds) => setSetting('mettaSeconds', seconds),
-    setItipisoMode: (enabled) => {
-      setSetting('itipisoMode', enabled);
-      if (enabled) setSetting('mettaMode', false);
-    },
+    setItipisoMode: (enabled) => setPhraseMode('itipisoMode', enabled),
     setItipisoPace: (pace) => setSetting('itipisoPace', pace),
+    setMettaSuttaMode: (enabled) => setPhraseMode('mettaSuttaMode', enabled),
+    setMettaSuttaPace: (pace) => setSetting('mettaSuttaPace', pace),
     setDimScreen: (enabled) => setSetting('dimScreen', enabled),
     setDimLevel: (level) => setSetting('dimLevel', level),
     setGuidedMode: (enabled) => setSetting('guidedMode', enabled),

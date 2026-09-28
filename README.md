@@ -36,6 +36,7 @@ Free for anyone, anywhere, any time, for ever.
 - **End bell** - resonant "gling" (~35 s)
 - **Ambient sounds** - rain, ocean waves or forest, looping, with a 0.5 s fade in and out
 - **Metta mode** (optional) - the four loving-kindness phrases take turns in large letters above the timer while you sit: *May I be happy. May my loved ones be happy. May those I find difficult be happy. May all beings everywhere be happy.* Each shows for 5, 10, 20 or 30 seconds (default 10), then the cycle starts again
+- **Metta Sutta mode** (optional) - the Buddha's words on loving-kindness (Karaniya Metta Sutta, Amaravati Sangha translation), a couplet at a time above the timer, each word brightening in turn. 0.5, 0.75, 1 or 1.5 seconds per word (default 0.75). One at a time with metta and Itipi so mode; the (i) button shows the translation's source and license.
 - **Itipi so mode** (optional) - the recollection of the Buddha, Dhamma and Saṅgha, one line at a time on a card above the timer: the Pali, each word brightening in turn, and under it the English. 1, 2, 3 or 5 seconds per word (default 2). One or the other with metta mode.
 - **Gentle ending** (on by default) - the ambient sound fades out over the last minute, so the end bell arrives into silence; the bells themselves never fade
 - **Separate volume sliders** for bells and ambient sound; changes apply immediately, including to a bell that is still ringing
@@ -225,6 +226,11 @@ The bells and ambient sounds are licensed under **CC0 1.0 Universal (Public Doma
 - **Metta Meditation**, **Breath Meditation - Quick Version**, **Breath Meditation - Older Version** and **Breath Meditation with Instructions for Leaving Meditation** by Thanissaro Bhikkhu
   Source: [dhammatalks.org](https://www.dhammatalks.org/Archive/guided_meditations/guided_meditations.html)
   License: [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) / for free distribution only - never to be sold. Included unmodified (renamed files only).
+
+### Texts
+- **Metta Sutta mode** - "Karaniya Metta Sutta: The Buddha's Words on Loving-Kindness" (Sn 1.8), translated from the Pali by The Amaravati Sangha. Source: [Access to Insight](https://www.accesstoinsight.org/tipitaka/kn/snp/snp.1.08.amar.html). Shown in the app a couplet at a time (`src/utils/mettaSutta.js`); the app shows this license too, under the setting's (i) button.
+  License: ©1994 English Sangha Trust. You may copy, reformat, reprint, republish, and redistribute this work in any medium whatsoever, provided that: (1) you only make such copies, etc. available free of charge; (2) you clearly indicate that any derivatives of this work (including translations) are derived from this source document; and (3) you include the full text of this license in any copies or derivatives of this work. Otherwise, all rights reserved.
+  From Chanting Book: Morning and Evening Puja and Reflections (Hemel Hempstead: Amaravati Publications, 1994). Used with permission of the English Sangha Trust, Ltd.
 
 ## 🤝 Contributing
 

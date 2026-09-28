@@ -275,7 +275,7 @@ describe('App', () => {
       fireEvent.click(itipisoSwitch());
       click('Start');
       passSeconds(1);
-      const delays = () => [...screen.getByTestId('itipiso-pali').querySelectorAll('.itipiso-word')].map((word) => word.style.animationDelay);
+      const delays = () => [...screen.getByTestId('itipiso-pali').querySelectorAll('.recitation-word')].map((word) => word.style.animationDelay);
       const first = delays();
       expect(first[1]).toBe('2s'); // "so": the second word, 2 s after the line began
       passSeconds(3);
@@ -345,6 +345,123 @@ describe('App', () => {
       await renderApp();
       fireEvent.click(screen.getByRole('switch', { name: 'Guided meditation' }));
       expect(screen.queryByRole('switch', { name: 'Itipi so mode' })).toBe(null);
+    });
+  });
+
+  describe('metta sutta mode', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const suttaSwitch = () => screen.getByRole('switch', { name: 'Metta Sutta mode' });
+    const verse = () => screen.queryByTestId('metta-sutta-verse')?.textContent ?? null;
+    const isOn = (name) => screen.getByRole('switch', { name }).getAttribute('aria-checked') === 'true';
+
+    it('is off by default: no verses during a session', async () => {
+      await renderApp();
+      expect(isOn('Metta Sutta mode')).toBe(false);
+      expect(screen.queryByRole('group', { name: 'Metta Sutta pace' })).toBe(null);
+      click('Start');
+      passSeconds(15);
+      expect(verse()).toBe(null);
+    });
+
+    it('shows the sutta a couplet at a time on a card above the time, at 0.75 s a word', async () => {
+      await renderApp();
+      fireEvent.click(suttaSwitch());
+      expect(verse()).toBe(null); // only during a session
+
+      click('Start');
+      expect(verse()).toBe('This is what should be done By one who is skilled in goodness,');
+      const card = screen.getByTestId('metta-sutta-verse').closest('.glass-card');
+      expect(card.compareDocumentPosition(screen.getByTestId('nimitta')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(screen.queryByRole('heading', { name: 'Wisdom Timer' })).toBe(null);
+
+      passSeconds(11); // 13 words and a breath, at 0.75 s: 10.5 s, rounded up
+      expect(verse()).toBe('And who knows the path of peace: Let them be able and upright,');
+    });
+
+    it('holds the couplet while paused and carries on after resuming', async () => {
+      await renderApp();
+      fireEvent.click(suttaSwitch());
+      click('Start');
+      passSeconds(5);
+      click('Pause');
+      passSeconds(60);
+      expect(verse()).toMatch(/^This is what should be done/);
+
+      click('Start');
+      passSeconds(6);
+      expect(verse()).toMatch(/^And who knows the path of peace/);
+    });
+
+    it('goes away on Reset, and the title comes back', async () => {
+      await renderApp();
+      fireEvent.click(suttaSwitch());
+      click('Start');
+      click('Reset');
+      expect(verse()).toBe(null);
+      expect(screen.queryByRole('heading', { name: 'Wisdom Timer' })).toBeTruthy();
+    });
+
+    it('follows the chosen pace, and remembers it', async () => {
+      await renderApp();
+      fireEvent.click(suttaSwitch());
+      expect(button('0.75 seconds per word').getAttribute('aria-pressed')).toBe('true');
+      click('0.5 seconds per word');
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings'))).toMatchObject({ mettaSuttaMode: true, mettaSuttaPace: 0.5 });
+
+      click('Start');
+      passSeconds(7); // 14 words' time at 0.5 s
+      expect(verse()).toMatch(/^And who knows the path of peace/);
+    });
+
+    it('is offered between metta and itipi so mode', async () => {
+      await renderApp();
+      const names = screen.getAllByRole('switch').map((toggle) => toggle.getAttribute('aria-label'));
+      const at = (name) => names.indexOf(name);
+      expect(at('Metta mode')).toBeLessThan(at('Metta Sutta mode'));
+      expect(at('Metta Sutta mode')).toBeLessThan(at('Itipi so mode'));
+    });
+
+    it('is one or the other with metta and itipi so mode', async () => {
+      await renderApp();
+      fireEvent.click(screen.getByRole('switch', { name: 'Metta mode' }));
+      fireEvent.click(suttaSwitch());
+      expect([isOn('Metta mode'), isOn('Itipi so mode'), isOn('Metta Sutta mode')]).toEqual([false, false, true]);
+
+      fireEvent.click(screen.getByRole('switch', { name: 'Itipi so mode' }));
+      expect([isOn('Metta mode'), isOn('Itipi so mode'), isOn('Metta Sutta mode')]).toEqual([false, true, false]);
+
+      fireEvent.click(suttaSwitch());
+      fireEvent.click(screen.getByRole('switch', { name: 'Metta mode' }));
+      expect([isOn('Metta mode'), isOn('Itipi so mode'), isOn('Metta Sutta mode')]).toEqual([true, false, false]);
+    });
+
+    it('shows the translation’s source and full license behind a small (i) button', async () => {
+      await renderApp();
+      fireEvent.click(suttaSwitch());
+      const info = button('Metta Sutta source and license');
+      expect(info.getAttribute('aria-expanded')).toBe('false');
+      expect(screen.queryByText(/English Sangha Trust\. You may copy/)).toBe(null);
+
+      fireEvent.click(info);
+      expect(info.getAttribute('aria-expanded')).toBe('true');
+      expect(screen.getByText(/^©1994 English Sangha Trust\. You may copy.*Otherwise, all rights reserved\.$/)).toBeTruthy();
+      expect(screen.getByRole('link', { name: /Karaniya Metta Sutta/ }).getAttribute('href')).toBe(
+        'https://www.accesstoinsight.org/tipitaka/kn/snp/snp.1.08.amar.html'
+      );
+    });
+
+    it('isn’t offered in guided mode', async () => {
+      await renderApp();
+      expect(suttaSwitch()).toBeTruthy();
+      fireEvent.click(screen.getByRole('switch', { name: 'Guided meditation' }));
+      expect(screen.queryByRole('switch', { name: 'Metta Sutta mode' })).toBe(null);
     });
   });
 });

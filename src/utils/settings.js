@@ -6,6 +6,10 @@ export const SETTLE_SECONDS = [0, 5, 10, 20, 60];
 export const METTA_SECONDS = [5, 10, 20, 30];
 // Itipi so mode: how long each word takes, in seconds
 export const ITIPISO_PACES = [1, 2, 3, 5];
+// Metta Sutta mode: seconds per word - an unhurried English reading pace
+export const METTA_SUTTA_PACES = [0.5, 0.75, 1, 1.5];
+// The phrase modes, one at a time: a saved clash keeps the first
+export const PHRASE_MODES = ['mettaMode', 'itipisoMode', 'mettaSuttaMode'];
 // How dark the quiet screen's dim can be (0.1 = 10% black)
 export const DIM_LEVEL_MIN = 0.1;
 export const DIM_LEVEL_MAX = 0.9;
@@ -34,6 +38,8 @@ const validators = {
   mettaSeconds: (value) => METTA_SECONDS.includes(value),
   itipisoMode: (value) => typeof value === 'boolean',
   itipisoPace: (value) => ITIPISO_PACES.includes(value),
+  mettaSuttaMode: (value) => typeof value === 'boolean',
+  mettaSuttaPace: (value) => METTA_SUTTA_PACES.includes(value),
   dimScreen: (value) => typeof value === 'boolean',
   guidedMode: (value) => typeof value === 'boolean',
   guidedTrack: (value) => typeof value === 'string' && Object.hasOwn(AUDIO_SOURCES.guided, value),
@@ -64,6 +70,7 @@ export const sanitizeSettings = (saved, defaults) => {
     if (isValid(value)) result[key] = value;
   }
   // Only one set of phrases at a time
-  if (result.mettaMode && result.itipisoMode) result.itipisoMode = false;
+  const firstOn = PHRASE_MODES.find((key) => result[key]);
+  for (const key of PHRASE_MODES) if (result[key] && key !== firstOn) result[key] = false;
   return result;
 };
