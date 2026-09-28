@@ -56,6 +56,7 @@ function MeditationTimerApp() {
     unlock: unlockAudio,
     playBell,
     cancelPendingBells,
+    stopBells,
     playAmbient,
     primeAmbient,
     pauseAmbient,
@@ -831,6 +832,7 @@ function MeditationTimerApp() {
                   bellVolume={state.bellVolume}
                   ambientVolume={state.ambientVolume}
                   onTestBell={handleTestBell}
+                  onEndTest={stopBells}
                   testBellDisabled={!isInitialized || inSession}
                   guided={guided}
                   onBellVolumeChange={(vol) => {

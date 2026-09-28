@@ -8,6 +8,8 @@ const passThrough = {
   unlock: () => audioManager.unlock(),
   // Stop strikes of a bell pattern that haven't rung yet
   cancelPendingBells: () => audioManager.cancelPendingBells(),
+  // Silence the bells now: ringing and not yet rung (End test)
+  stopBells: () => audioManager.stopBells(),
   // Call during a tap when the ambient sound will start later (settling in)
   primeAmbient: (soundId) => audioManager.primeAmbient(soundId),
   pauseAmbient: () => audioManager.pauseAmbient(),

@@ -40,7 +40,7 @@ Free for anyone, anywhere, any time, for ever.
 - **Itipi so mode** (optional) - the recollection of the Buddha, Dhamma and Saṅgha, one line at a time on a card above the timer: the Pali, each word brightening in turn, and under it the English. 1, 2, 3 or 5 seconds per word (default 2). One or the other with metta mode.
 - **Gentle ending** (on by default) - the ambient sound fades out over the last minute, so the end bell arrives into silence; the bells themselves never fade
 - **Separate volume sliders** for bells and ambient sound; changes apply immediately, including to a bell that is still ringing
-- **Test bell** - rings the end bell at the chosen volume, for a sound check before a sit (is it loud enough for the room, and coming out of the speaker rather than someone's earbuds?)
+- **Test bell** - rings the end bell at the chosen volume, for a sound check before a sit (is it loud enough for the room, and coming out of the speaker rather than someone's earbuds?); **End test** stops it (the end bell rings for over half a minute)
 
 ### While a session is in progress
 | | Running | Paused |

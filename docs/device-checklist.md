@@ -15,7 +15,7 @@ Each check starts from Ready, with a short custom length (1-3 minutes, or 10 wit
 - **1a. A plain sit:** Start, wait for the end. Start bell, then the end bell on time.
 - **1b. With an ambient sound** (rain) and gentle ending: the rain fades over the last minute, then the end bell rings into silence.
 - **1c. Interval woodblock** every minute in a 3-minute sit: knocks at 1 and 2 minutes, none at the end.
-- **1d. Test bell** (under the volume sliders): rings the end bell once at the bell volume. With AirPods connected, it rings in the AirPods - which is what it's there to catch.
+- **1d. Test bell** (under the volume sliders): rings the end bell once at the bell volume. With AirPods connected, it rings in the AirPods - which is what it's there to catch. **End test** stops it at once.
 - **1e. iPhone ring/silent switch on silent:** the bells still ring.
 
 ### 2. The screen stays on

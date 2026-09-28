@@ -1,4 +1,4 @@
-import { Bell, Headphones, Volume2 } from 'lucide-react';
+import { Bell, BellOff, Headphones, Volume2 } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { SettingLabel } from '../UI/SettingLabel';
 
@@ -32,6 +32,7 @@ export const VolumeControls = ({
   onBellVolumeChange,
   onAmbientVolumeChange,
   onTestBell,
+  onEndTest,
   testBellDisabled = false,
   guided = false,
   disabled = false,
@@ -50,13 +51,22 @@ export const VolumeControls = ({
         disabled={disabled}
       />
       {/* A sound check before a sit: is the end bell loud enough, and coming
-          out of the right speaker (not someone's earbuds)? */}
-      <div className="flex items-center gap-3">
-        <Button variant="secondary" size="sm" onClick={onTestBell} disabled={testBellDisabled}>
-          <Bell className="w-4 h-4 mr-2" aria-hidden="true" />
-          Test bell
-        </Button>
-        <span className="text-xs text-white/70">The end bell, at this volume</span>
+          out of the right speaker (not someone's earbuds)? The bell rings for
+          over half a minute, so End test (at the end of the line) stops it.
+          Phones get the note on a line of its own, so the buttons fit. */}
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" size="sm" onClick={onTestBell} disabled={testBellDisabled} className="shrink-0 whitespace-nowrap">
+            <Bell className="w-4 h-4 mr-2" aria-hidden="true" />
+            Test bell
+          </Button>
+          <span className="hidden sm:inline text-xs text-white/70">The end bell, at this volume</span>
+          <Button variant="secondary" size="sm" onClick={onEndTest} disabled={testBellDisabled} className="ml-auto shrink-0 whitespace-nowrap">
+            <BellOff className="w-4 h-4 mr-2" aria-hidden="true" />
+            End test
+          </Button>
+        </div>
+        <p className="sm:hidden text-xs text-white/70">The end bell, at this volume</p>
       </div>
     </div>
   );

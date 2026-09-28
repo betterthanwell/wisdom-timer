@@ -318,6 +318,16 @@ export class AudioManager {
     this.pendingStrikes.clear();
   }
 
+  // Silence the bells: strikes not yet rung, and any still ringing (End
+  // test - the end bell rings for over half a minute)
+  stopBells() {
+    this.cancelPendingBells();
+    this.ringingBells.forEach((audio) => audio.pause());
+    this.ringingBells.clear();
+    this.ringingSources.forEach((source) => source.stop());
+    this.ringingSources.clear();
+  }
+
   async strikeBell(type) {
     if (!this.isInitialized) {
       console.warn('AudioManager not initialized. Call init() first.');
@@ -637,11 +647,7 @@ export class AudioManager {
   // (React StrictMode) can use them without loading everything again.
   cleanup() {
     this.clearFade();
-    this.cancelPendingBells();
-    this.ringingBells.forEach(audio => audio.pause());
-    this.ringingBells.clear();
-    this.ringingSources.forEach((source) => source.stop());
-    this.ringingSources.clear();
+    this.stopBells();
     if (this.ambientAudio) {
       this.ambientAudio.pause();
       this.ambientAudio.currentTime = 0;
