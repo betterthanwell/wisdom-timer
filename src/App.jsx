@@ -37,7 +37,7 @@ import { DimSetting } from './components/Settings/DimSetting';
 import { NimittaSizeSetting } from './components/Settings/NimittaSizeSetting';
 import { GuidedSetting } from './components/Settings/GuidedSetting';
 import { MettaCard } from './components/Timer/MettaCard';
-import { ItipisoPali, ItipisoEnglish } from './components/Timer/ItipisoCard';
+import { ItipisoCard } from './components/Timer/ItipisoCard';
 import { InterruptedPause } from './components/Timer/InterruptedPause';
 
 // Open-ended sitting counts up, as a countdown from 24 hours
@@ -596,9 +596,13 @@ function MeditationTimerApp() {
           />
         )}
 
-        {/* Itipi so: the English line above the time (the Pali is below it) */}
+        {/* Itipi so: the Pali line and its English, on one card above the time */}
         {showItipiso && (
-          <ItipisoEnglish elapsed={timer.duration - timer.timeRemaining} pace={state.itipisoPace} />
+          <ItipisoCard
+            elapsed={timer.duration - timer.timeRemaining}
+            pace={state.itipisoPace}
+            isRunning={timer.isRunning}
+          />
         )}
 
         {/* The time, shining free of any card - or, after an interruption,
@@ -618,14 +622,6 @@ function MeditationTimerApp() {
           glowScale={nimittaSize}
           compact={showItipiso}
         />
-        )}
-
-        {showItipiso && (
-          <ItipisoPali
-            elapsed={timer.duration - timer.timeRemaining}
-            pace={state.itipisoPace}
-            isRunning={timer.isRunning}
-          />
         )}
 
         {/* A sit that ended while the page was away (a reload) */}
