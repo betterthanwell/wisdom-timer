@@ -36,8 +36,8 @@ Free for anyone, anywhere, any time, for ever.
 - **End bell** - resonant "gling" (~35 s)
 - **Ambient sounds** - rain, ocean waves or forest, looping, with a 0.5 s fade in and out
 - **Metta mode** (optional) - the four loving-kindness phrases take turns in large letters above the timer while you sit: *May I be happy. May my loved ones be happy. May those I find difficult be happy. May all beings everywhere be happy.* Each shows for 5, 10, 20 or 30 seconds (default 10), then the cycle starts again
-- **Itipi so mode** (optional) - the recollection of the Buddha, Dhamma and Saṅgha, one line at a time on a card above the timer: the Pali, each word brightening in turn, and under it the English. 1, 2, 3 or 5 seconds per word (default 2). One or the other with metta mode.
 - **Metta Sutta mode** (optional) - the Buddha's words on loving-kindness (Karaniya Metta Sutta, Amaravati Sangha translation), a couplet at a time above the timer, each word brightening in turn. 0.5, 0.75, 1 or 1.5 seconds per word (default 0.75). One at a time with metta and Itipi so mode; the (i) button shows the translation's source and license.
+- **Itipi so mode** (optional) - the recollection of the Buddha, Dhamma and Saṅgha, one line at a time on a card above the timer: the Pali, each word brightening in turn, and under it the English. 1, 2, 3 or 5 seconds per word (default 2). One or the other with metta mode.
 - **Gentle ending** (on by default) - the ambient sound fades out over the last minute, so the end bell arrives into silence; the bells themselves never fade
 - **Separate volume sliders** for bells and ambient sound; changes apply immediately, including to a bell that is still ringing
 - **Test bell** - rings the end bell at the chosen volume, for a sound check before a sit (is it loud enough for the room, and coming out of the speaker rather than someone's earbuds?)

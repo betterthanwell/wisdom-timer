@@ -796,17 +796,17 @@ function MeditationTimerApp() {
                   onToggle={actions.setMettaMode}
                   onSecondsChange={actions.setMettaSeconds}
                 />
-                <ItipisoSetting
-                  enabled={state.itipisoMode}
-                  pace={state.itipisoPace}
-                  onToggle={actions.setItipisoMode}
-                  onPaceChange={actions.setItipisoPace}
-                />
                 <MettaSuttaSetting
                   enabled={state.mettaSuttaMode}
                   pace={state.mettaSuttaPace}
                   onToggle={actions.setMettaSuttaMode}
                   onPaceChange={actions.setMettaSuttaPace}
+                />
+                <ItipisoSetting
+                  enabled={state.itipisoMode}
+                  pace={state.itipisoPace}
+                  onToggle={actions.setItipisoMode}
+                  onPaceChange={actions.setItipisoPace}
                 />
               </section>
               )}

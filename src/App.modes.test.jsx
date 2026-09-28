@@ -420,6 +420,14 @@ describe('App', () => {
       expect(verse()).toMatch(/^And who knows the path of peace/);
     });
 
+    it('is offered between metta and itipi so mode', async () => {
+      await renderApp();
+      const names = screen.getAllByRole('switch').map((toggle) => toggle.getAttribute('aria-label'));
+      const at = (name) => names.indexOf(name);
+      expect(at('Metta mode')).toBeLessThan(at('Metta Sutta mode'));
+      expect(at('Metta Sutta mode')).toBeLessThan(at('Itipi so mode'));
+    });
+
     it('is one or the other with metta and itipi so mode', async () => {
       await renderApp();
       fireEvent.click(screen.getByRole('switch', { name: 'Metta mode' }));
