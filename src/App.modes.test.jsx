@@ -195,12 +195,138 @@ describe('App', () => {
       expect(button('10 seconds per phrase').getAttribute('aria-pressed')).toBe('true');
     });
 
+    it('hides the title during a session, and brings it back after', async () => {
+      await renderApp();
+      const title = () => screen.queryByRole('heading', { name: 'Wisdom Timer' });
+      fireEvent.click(mettaSwitch());
+      expect(title()).toBeTruthy();
+      click('Start');
+      expect(title()).toBe(null);
+      click('Reset');
+      expect(title()).toBeTruthy();
+    });
+
     it('stays visible on the quiet screen', async () => {
       await renderApp();
       fireEvent.click(mettaSwitch());
       click('Start');
       expect(screen.queryByRole('heading', { name: 'Settings' })).toBe(null);
       expect(phrase()).toBe('May I be happy.');
+    });
+  });
+
+  describe('itipi so mode', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const itipisoSwitch = () => screen.getByRole('switch', { name: 'Itipi so mode' });
+    const mettaSwitch = () => screen.getByRole('switch', { name: 'Metta mode' });
+    const pali = () => screen.queryByTestId('itipiso-pali')?.textContent ?? null;
+    const english = () => screen.queryByTestId('itipiso-english')?.textContent ?? null;
+    const title = () => screen.queryByRole('heading', { name: 'Wisdom Timer' });
+
+    it('is off by default: no cards during a session', async () => {
+      await renderApp();
+      expect(itipisoSwitch().getAttribute('aria-checked')).toBe('false');
+      expect(screen.queryByRole('group', { name: 'Itipi so pace' })).toBe(null);
+      click('Start');
+      passSeconds(15);
+      expect(pali()).toBe(null);
+      expect(english()).toBe(null);
+    });
+
+    it('shows the Pali and the English, line by line, at 2 s a word', async () => {
+      await renderApp();
+      fireEvent.click(itipisoSwitch());
+      expect(screen.getByText('Itipi so.')).toBeTruthy();
+      expect(pali()).toBe(null); // only during a session
+
+      click('Start');
+      expect(pali()).toBe('Itipi so bhagavā arahaṃ sammāsambuddho');
+      expect(english()).toBe('That Blessed One is perfected, a fully awakened Buddha,');
+      passSeconds(10); // five words
+      expect(pali()).toBe('vijjācaraṇasampanno sugato lokavidū');
+      expect(english()).toBe('accomplished in knowledge and conduct, holy, knower of the world,');
+    });
+
+    it('puts the English above the time and the Pali below it', async () => {
+      await renderApp();
+      fireEvent.click(itipisoSwitch());
+      click('Start');
+      const nimitta = screen.getByTestId('nimitta');
+      const follows = (a, b) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(follows(screen.getByTestId('itipiso-english'), nimitta)).toBe(true);
+      expect(follows(nimitta, screen.getByTestId('itipiso-pali'))).toBe(true);
+    });
+
+    it('holds the line while paused and carries on after resuming', async () => {
+      await renderApp();
+      fireEvent.click(itipisoSwitch());
+      click('Start');
+      passSeconds(12);
+      click('Pause');
+      passSeconds(60);
+      expect(pali()).toBe('vijjācaraṇasampanno sugato lokavidū');
+
+      click('Start');
+      passSeconds(4);
+      expect(pali()).toMatch(/^anuttaro purisadammasārathi/);
+    });
+
+    it('goes away on Reset', async () => {
+      await renderApp();
+      fireEvent.click(itipisoSwitch());
+      click('Start');
+      click('Reset');
+      expect(pali()).toBe(null);
+      expect(english()).toBe(null);
+    });
+
+    it('follows the chosen pace, and remembers it', async () => {
+      await renderApp();
+      fireEvent.click(itipisoSwitch());
+      expect(button('2 seconds per word').getAttribute('aria-pressed')).toBe('true');
+      click('1 second per word');
+      expect(JSON.parse(localStorage.getItem('wisdomTimerSettings'))).toMatchObject({ itipisoMode: true, itipisoPace: 1 });
+
+      click('Start');
+      passSeconds(5);
+      expect(pali()).toBe('vijjācaraṇasampanno sugato lokavidū');
+    });
+
+    it('can’t be on with metta mode: either one turns the other off', async () => {
+      await renderApp();
+      fireEvent.click(mettaSwitch());
+      fireEvent.click(itipisoSwitch());
+      expect(mettaSwitch().getAttribute('aria-checked')).toBe('false');
+      expect(itipisoSwitch().getAttribute('aria-checked')).toBe('true');
+
+      fireEvent.click(mettaSwitch());
+      expect(itipisoSwitch().getAttribute('aria-checked')).toBe('false');
+      expect(mettaSwitch().getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('stays visible on the quiet screen, in place of the title', async () => {
+      await renderApp();
+      fireEvent.click(itipisoSwitch());
+      expect(title()).toBeTruthy();
+      click('Start');
+      expect(screen.queryByRole('heading', { name: 'Settings' })).toBe(null);
+      expect(title()).toBe(null);
+      expect(pali()).toBeTruthy();
+      click('Reset');
+      expect(title()).toBeTruthy();
+    });
+
+    it('isn’t offered in guided mode', async () => {
+      await renderApp();
+      fireEvent.click(screen.getByRole('switch', { name: 'Guided meditation' }));
+      expect(screen.queryByRole('switch', { name: 'Itipi so mode' })).toBe(null);
     });
   });
 });

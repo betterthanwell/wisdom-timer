@@ -14,7 +14,7 @@ These are firm. Everything else in this file and in `docs/` describes how things
 
 ## Docs
 
-- `docs/behavior.md` - how a session behaves (layout, bells, locking, quiet screen, settling in, metta, open-ended …). Read the relevant part before changing session behavior.
+- `docs/behavior.md` - how a session behaves (layout, bells, locking, quiet screen, settling in, metta, itipi so, open-ended …). Read the relevant part before changing session behavior.
 - `docs/device-checklist.md` - the end-of-sit checks to run on real devices (iPhone, Android, laptop) before a release, with a results table.
 - `docs/architecture.md` - state, `useTimer`, `audioManager` and its iOS constraints, the service worker, platform limits, security headers, accessibility. Read the relevant part before touching audio, offline or headers.
 - Product direction (see README, "Free, for good"): functional meditation features only - no streaks, stats, accounts, ads, analytics or payments, and no social sharing or similar engagement features. Free for anyone, for ever.
@@ -45,9 +45,9 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   ├── index.css                # Global styles, .glass-card(-strong), keyframes, reduced motion
 │   ├── components/
 │   │   ├── Timer/               # TimerDisplay (time, status, "Session N", burst), CircularProgress (glow + progress trail),
-│   │   │                        # TimerControls (Start/Pause|Cancel/Finish/Reset; Reset held during a sit), MettaCard, InterruptedPause (loud PAUSED + Carry on)
+│   │   │                        # TimerControls (Start/Pause|Cancel/Finish/Reset; Reset held during a sit), MettaCard, ItipisoCard (English above the time, Pali below), InterruptedPause (loud PAUSED + Carry on)
 │   │   ├── Settings/            # PresetButtons, DurationSelector, IntervalSettings,
-│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings, GentleEndingSetting, OpenEndedSetting, MettaSetting, DimSetting, NimittaSizeSetting (?debug only), GuidedSetting, GroupSitTips (below the card)
+│   │   │                        # AmbientSoundSelector (+ iconMap), VolumeControls, KeepAwakeSetting, SettleSetting, BellPatternSettings, GentleEndingSetting, OpenEndedSetting, MettaSetting, ItipisoSetting, DimSetting, NimittaSizeSetting (?debug only), GuidedSetting, GroupSitTips (below the card)
 │   │   │                        # (KeepAwakeSetting and BellPatternSettings aren't shown for now)
 │   │   └── UI/                  # GlassCard, Button (`round` for circles), Switch (on/off toggle with accessible name),
 │   │                            # SettingLabel (icon + setting name), ChoiceButton (option with aria-pressed),
@@ -71,6 +71,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 │   │   ├── intervalBells.js     # countIntervalBellsDue() - pure bell scheduling
 │   │   ├── gentleEnding.js      # gentleEndingLevel() - ambient level over the last minute
 │   │   ├── metta.js             # METTA_PHRASES + mettaStep() - which phrase shows when
+│   │   ├── itipiso.js           # ITIPISO_LINES (Pali + English) + itipisoStep() - which line, which word
 │   │   ├── settings.js          # sanitizeSettings() - validates saved settings
 │   │   ├── savedSit.js          # The sit in progress, kept for the tab (sessionStorage) across a reload
 │   │   ├── debugLog.js          # debugLog.add() - audio events for the ?debug panel
@@ -98,7 +99,7 @@ npm run test:e2e     # Playwright: builds, then Chromium / Firefox / WebKit / iP
 - Tailwind utility classes; custom CSS only in `index.css` (glass cards, keyframes). Inline styles for complex values (shadows, radial gradients).
 - **Base CSS goes in `@layer base`.** Tailwind 4 puts utilities in cascade layers, and unlayered CSS beats any layer: a bare `* { padding: 0 }` once silently wiped out every `p-*`/`m-*`/`space-y-*` in the app. Tailwind's preflight already resets margins and box-sizing.
 - Give a button one rounding class (`Button`'s `round` prop): conflicting ones like `rounded-xl rounded-full` resolve by stylesheet order, not class order.
-- Settings rows: `SettingLabel` for the heading, `Switch` for on/off, `ChoiceButton` for options, `Stepper` for minutes (custom length, woodblock times) - not `type="number"` (its corrections mid-typing made 05 impossible to type) nor long lists (99 options was too many to scan). The settings card is grouped into `<section>`s divided by lines: duration, bells, metta, ambient sound (+ gentle ending), volume ("Sound volume" heading over the Bells and Ambient sliders - Voice in guided mode - and a Test bell button), then "Visual controls" last (dimming; with `?debug`, nimitta size).
+- Settings rows: `SettingLabel` for the heading, `Switch` for on/off, `ChoiceButton` for options, `Stepper` for minutes (custom length, woodblock times) - not `type="number"` (its corrections mid-typing made 05 impossible to type) nor long lists (99 options was too many to scan). The settings card is grouped into `<section>`s divided by lines: duration, bells, metta + Itipi so, ambient sound (+ gentle ending), volume ("Sound volume" heading over the Bells and Ambient sliders - Voice in guided mode - and a Test bell button), then "Visual controls" last (dimming; with `?debug`, nimitta size).
 - Global settings via context actions; local UI state with `useState`; refs for values that mustn't re-render.
 - Handlers passed to `useTimer` or used in effects are wrapped in `useCallback` - `useTimer`'s timer effect depends on `onComplete`, so an unstable callback would restart it every render.
 - The react-hooks lint rules include `set-state-in-effect` and exhaustive deps.

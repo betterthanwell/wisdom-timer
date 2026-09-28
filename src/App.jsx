@@ -32,10 +32,12 @@ import { SettleSetting } from './components/Settings/SettleSetting';
 import { GentleEndingSetting } from './components/Settings/GentleEndingSetting';
 import { OpenEndedSetting } from './components/Settings/OpenEndedSetting';
 import { MettaSetting } from './components/Settings/MettaSetting';
+import { ItipisoSetting } from './components/Settings/ItipisoSetting';
 import { DimSetting } from './components/Settings/DimSetting';
 import { NimittaSizeSetting } from './components/Settings/NimittaSizeSetting';
 import { GuidedSetting } from './components/Settings/GuidedSetting';
 import { MettaCard } from './components/Timer/MettaCard';
+import { ItipisoPali, ItipisoEnglish } from './components/Timer/ItipisoCard';
 import { InterruptedPause } from './components/Timer/InterruptedPause';
 
 // Open-ended sitting counts up, as a countdown from 24 hours
@@ -450,6 +452,10 @@ function MeditationTimerApp() {
   // Bright background after completion, fading back once the 9-second burst ends
   const [brightBgFaded, setBrightBgFaded] = useState(false);
   const showBrightBg = timer.isComplete && !brightBgFaded;
+  // Phrase cards (metta or itipi so) show while a session is under way
+  const phrasesShown = !guided && (timer.isRunning || timer.isPaused);
+  const showMetta = state.mettaMode && phrasesShown;
+  const showItipiso = state.itipisoMode && phrasesShown;
 
   useEffect(() => {
     if (!timer.isComplete) return;
@@ -544,7 +550,9 @@ function MeditationTimerApp() {
 
   return (
     <div
-      className={`min-h-dvh flex justify-center overflow-x-clip px-4 py-6 sm:py-12 transition-colors duration-[3000ms] ease-in-out ${
+      className={`min-h-dvh flex justify-center overflow-x-clip px-4 ${
+        showMetta || showItipiso ? 'pt-3 pb-6' : 'py-6' // no title: less space above the phrases
+      } sm:py-12 transition-colors duration-[3000ms] ease-in-out ${
         showBrightBg
           ? 'bg-gradient-to-br from-[#FFFBEB] via-[#FEF3C7] to-[#FDE047]'
           : 'bg-gradient-to-br from-[#FDE68A] to-[#F97316]'
@@ -569,20 +577,28 @@ function MeditationTimerApp() {
       />
 
       <div className="w-full max-w-md sm:max-w-xl space-y-4">
+        {/* No title while a phrase card is up: the phrases take its place */}
+        {!showMetta && !showItipiso && (
         <h1
           className="text-3xl sm:text-5xl font-bold tracking-tight text-white text-center"
           style={{ textShadow: '0 1px 3px rgba(120, 53, 15, 0.3), 0 0 24px rgba(255, 255, 255, 0.35)' }}
         >
           {showBrightBg ? 'Wisdom Time!' : 'Wisdom Timer'}
         </h1>
+        )}
 
         {/* Metta phrases in their own card, above everything while a session is under way */}
-        {state.mettaMode && !guided && (timer.isRunning || timer.isPaused) && (
+        {showMetta && (
           <MettaCard
             elapsed={timer.duration - timer.timeRemaining}
             seconds={state.mettaSeconds}
             isRunning={timer.isRunning}
           />
+        )}
+
+        {/* Itipi so: the English line above the time (the Pali is below it) */}
+        {showItipiso && (
+          <ItipisoEnglish elapsed={timer.duration - timer.timeRemaining} pace={state.itipisoPace} />
         )}
 
         {/* The time, shining free of any card - or, after an interruption,
@@ -600,7 +616,16 @@ function MeditationTimerApp() {
           endsAt={openEnded ? null : timer.endsAt}
           settleRemaining={isSettling ? settleRemaining : null}
           glowScale={nimittaSize}
+          compact={showItipiso}
         />
+        )}
+
+        {showItipiso && (
+          <ItipisoPali
+            elapsed={timer.duration - timer.timeRemaining}
+            pace={state.itipisoPace}
+            isRunning={timer.isRunning}
+          />
         )}
 
         {/* A regular sit interrupted from outside, or running on after a
@@ -761,6 +786,12 @@ function MeditationTimerApp() {
                   seconds={state.mettaSeconds}
                   onToggle={actions.setMettaMode}
                   onSecondsChange={actions.setMettaSeconds}
+                />
+                <ItipisoSetting
+                  enabled={state.itipisoMode}
+                  pace={state.itipisoPace}
+                  onToggle={actions.setItipisoMode}
+                  onPaceChange={actions.setItipisoPace}
                 />
               </section>
               )}

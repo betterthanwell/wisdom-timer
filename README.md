@@ -25,7 +25,7 @@ Free for anyone, anywhere, any time, for ever.
 - **Play after a finished session starts the next one** - no need to press Reset
 - **The time as a soft light** - no box around it: the time sits in a warm glow (think *nimitta*) that breathes slowly while you sit - 4 s swelling, 4 s settling - and holds still when paused. The session's progress is a thin trail of light around it; Play, Pause and Reset sit on the card below
 - **"Ends at 07:45"** under the timer while a session runs (in your device's time format)
-- **Quiet screen while sitting** - while the timer runs, the settings and hints are hidden and the page dims around the glowing time and the metta phrase (on by default; how dark is up to you, 10-90%); "Show settings" brings them back
+- **Quiet screen while sitting** - while the timer runs, the settings and hints are hidden and the page dims around the glowing time and the metta phrase (or Itipi so lines) (on by default; how dark is up to you, 10-90%); "Show settings" brings them back
 - **Session counter** - "Session 1", "Session 2", … for sessions completed today (kept in memory: it starts over on reload and on a new day)
 - **Keeps the screen awake** while a session runs, so your phone doesn't lock mid-session - in browsers that support it. If it can't (an older browser, or refused on low battery), it says so on screen, since a locked phone may not ring the end bell on time
 - **Stays on time in background tabs** - the end and interval bells are scheduled directly, so they ring on time even when the browser slows down timers for a hidden tab
@@ -36,6 +36,7 @@ Free for anyone, anywhere, any time, for ever.
 - **End bell** - resonant "gling" (~35 s)
 - **Ambient sounds** - rain, ocean waves or forest, looping, with a 0.5 s fade in and out
 - **Metta mode** (optional) - the four loving-kindness phrases take turns in large letters above the timer while you sit: *May I be happy. May my loved ones be happy. May those I find difficult be happy. May all beings everywhere be happy.* Each shows for 5, 10, 20 or 30 seconds (default 10), then the cycle starts again
+- **Itipi so mode** (optional) - the recollection of the Buddha, Dhamma and Saṅgha, one line at a time: the English above the timer, and the Pali below it, each word brightening in turn. 1, 2, 3 or 5 seconds per word (default 2). One or the other with metta mode.
 - **Gentle ending** (on by default) - the ambient sound fades out over the last minute, so the end bell arrives into silence; the bells themselves never fade
 - **Separate volume sliders** for bells and ambient sound; changes apply immediately, including to a bell that is still ringing
 - **Test bell** - rings the end bell at the chosen volume, for a sound check before a sit (is it loud enough for the room, and coming out of the speaker rather than someone's earbuds?)

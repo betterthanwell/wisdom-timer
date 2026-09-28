@@ -1,7 +1,7 @@
 import { formatClockTime, formatTime } from '../../utils/timeFormatter';
 import { CircularProgress } from './CircularProgress';
 
-export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = false, isComplete, sessionNumber = 1, endsAt = null, settleRemaining = null, glowScale = 1 }) => {
+export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = false, isComplete, sessionNumber = 1, endsAt = null, settleRemaining = null, glowScale = 1, compact = false }) => {
   const isSettling = settleRemaining !== null;
   const getStatusText = () => {
     if (isSettling) return 'Settling in…';
@@ -45,8 +45,9 @@ export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = fa
       )}
 
       {/* The time as a radiant glow (nimitta), free of any card. It stays
-          bright above the quiet screen's dim while the rest of the page dims. */}
-      <div data-testid="nimitta" className="relative z-20 flex flex-col items-center py-2 sm:py-6">
+          bright above the quiet screen's dim while the rest of the page dims.
+          `compact` (Itipi so's two cards) gives phones a little room back. */}
+      <div data-testid="nimitta" className={`relative z-20 flex flex-col items-center ${compact ? '' : 'py-2'} sm:py-6`}>
         <CircularProgress
           progress={isSettling ? 0 : progress}
           breathing={isRunning || isSettling}
@@ -71,7 +72,7 @@ export const TimerDisplay = ({ timeRemaining, progress, isRunning, isPaused = fa
           </div>
         </CircularProgress>
         {/* Keeps its height when empty, so nothing jumps when a session starts */}
-        <div className="h-5 mt-2 text-sm font-medium text-white/85" style={{ textShadow: '0 1px 3px rgba(120, 53, 15, 0.35)' }}>
+        <div className={`h-5 ${compact ? 'mt-1' : 'mt-2'} text-sm font-medium text-white/85`} style={{ textShadow: '0 1px 3px rgba(120, 53, 15, 0.35)' }}>
           {endsAt !== null && `Ends at ${formatClockTime(endsAt)}`}
         </div>
       </div>

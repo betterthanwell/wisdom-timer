@@ -4,6 +4,8 @@ import { AUDIO_SOURCES } from '../constants/audioSources';
 export const SETTLE_SECONDS = [0, 5, 10, 20, 60];
 // Metta mode: how long each phrase shows, in seconds
 export const METTA_SECONDS = [5, 10, 20, 30];
+// Itipi so mode: how long each word takes, in seconds
+export const ITIPISO_PACES = [1, 2, 3, 5];
 // How dark the quiet screen's dim can be (0.1 = 10% black)
 export const DIM_LEVEL_MIN = 0.1;
 export const DIM_LEVEL_MAX = 0.9;
@@ -30,6 +32,8 @@ const validators = {
   showBellStrikes: (value) => typeof value === 'boolean',
   mettaMode: (value) => typeof value === 'boolean',
   mettaSeconds: (value) => METTA_SECONDS.includes(value),
+  itipisoMode: (value) => typeof value === 'boolean',
+  itipisoPace: (value) => ITIPISO_PACES.includes(value),
   dimScreen: (value) => typeof value === 'boolean',
   guidedMode: (value) => typeof value === 'boolean',
   guidedTrack: (value) => typeof value === 'string' && Object.hasOwn(AUDIO_SOURCES.guided, value),
@@ -59,5 +63,7 @@ export const sanitizeSettings = (saved, defaults) => {
     const value = upgrades[key] ? upgrades[key](saved[key]) : saved[key];
     if (isValid(value)) result[key] = value;
   }
+  // Only one set of phrases at a time
+  if (result.mettaMode && result.itipisoMode) result.itipisoMode = false;
   return result;
 };
