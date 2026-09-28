@@ -74,9 +74,9 @@
   animation-fill-mode: both;
 }
 
-/* Itipi so: each line fades in, and each Pali word brightens in turn
+/* Recitation (Itipi so, Metta Sutta): each entry fades in, and each word brightens in turn
    (duration and delay set inline from the pace, per word) */
-@keyframes itipisoLineIn {
+@keyframes recitationLineIn {
   from {
     opacity: 0;
   }
@@ -85,7 +85,7 @@
   }
 }
 
-@keyframes itipisoWord {
+@keyframes recitationWord {
   0%, 100% {
     opacity: 0.55;
   }
@@ -94,13 +94,13 @@
   }
 }
 
-.itipiso-line {
-  animation: itipisoLineIn 0.8s ease-out both;
+.recitation-line {
+  animation: recitationLineIn 0.8s ease-out both;
 }
 
-.itipiso-word {
+.recitation-word {
   opacity: 0.55;
-  animation-name: itipisoWord;
+  animation-name: recitationWord;
   animation-timing-function: ease-in-out;
 }
 
@@ -169,14 +169,14 @@
 
   /* No flashing: just show each phrase; a still glow */
   .metta-phrase,
-  .itipiso-line,
-  .itipiso-word,
+  .recitation-line,
+  .recitation-word,
   .nimitta-breath {
     animation: none !important;
   }
 
-  /* Itipi so: the whole line bright, no word moving */
-  .itipiso-word {
+  /* Recitation: the whole entry bright, no word moving */
+  .recitation-word {
     opacity: 1;
   }
 }

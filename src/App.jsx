@@ -33,11 +33,13 @@ import { GentleEndingSetting } from './components/Settings/GentleEndingSetting';
 import { OpenEndedSetting } from './components/Settings/OpenEndedSetting';
 import { MettaSetting } from './components/Settings/MettaSetting';
 import { ItipisoSetting } from './components/Settings/ItipisoSetting';
+import { MettaSuttaSetting } from './components/Settings/MettaSuttaSetting';
 import { DimSetting } from './components/Settings/DimSetting';
 import { NimittaSizeSetting } from './components/Settings/NimittaSizeSetting';
 import { GuidedSetting } from './components/Settings/GuidedSetting';
 import { MettaCard } from './components/Timer/MettaCard';
 import { ItipisoCard } from './components/Timer/ItipisoCard';
+import { MettaSuttaCard } from './components/Timer/MettaSuttaCard';
 import { InterruptedPause } from './components/Timer/InterruptedPause';
 
 // Open-ended sitting counts up, as a countdown from 24 hours
@@ -452,10 +454,12 @@ function MeditationTimerApp() {
   // Bright background after completion, fading back once the 9-second burst ends
   const [brightBgFaded, setBrightBgFaded] = useState(false);
   const showBrightBg = timer.isComplete && !brightBgFaded;
-  // Phrase cards (metta or itipi so) show while a session is under way
+  // Phrase cards (metta, itipi so or metta sutta) show while a session is under way
   const phrasesShown = !guided && (timer.isRunning || timer.isPaused);
   const showMetta = state.mettaMode && phrasesShown;
   const showItipiso = state.itipisoMode && phrasesShown;
+  const showMettaSutta = state.mettaSuttaMode && phrasesShown;
+  const showPhrases = showMetta || showItipiso || showMettaSutta;
 
   useEffect(() => {
     if (!timer.isComplete) return;
@@ -551,7 +555,7 @@ function MeditationTimerApp() {
   return (
     <div
       className={`min-h-dvh flex justify-center overflow-x-clip px-4 ${
-        showMetta || showItipiso ? 'pt-3 pb-6' : 'py-6' // no title: less space above the phrases
+        showPhrases ? 'pt-3 pb-6' : 'py-6' // no title: less space above the phrases
       } sm:py-12 transition-colors duration-[3000ms] ease-in-out ${
         showBrightBg
           ? 'bg-gradient-to-br from-[#FFFBEB] via-[#FEF3C7] to-[#FDE047]'
@@ -578,7 +582,7 @@ function MeditationTimerApp() {
 
       <div className="w-full max-w-md sm:max-w-xl space-y-4">
         {/* No title while a phrase card is up: the phrases take its place */}
-        {!showMetta && !showItipiso && (
+        {!showPhrases && (
         <h1
           className="text-3xl sm:text-5xl font-bold tracking-tight text-white text-center"
           style={{ textShadow: '0 1px 3px rgba(120, 53, 15, 0.3), 0 0 24px rgba(255, 255, 255, 0.35)' }}
@@ -592,6 +596,15 @@ function MeditationTimerApp() {
           <MettaCard
             elapsed={timer.duration - timer.timeRemaining}
             seconds={state.mettaSeconds}
+            isRunning={timer.isRunning}
+          />
+        )}
+
+        {/* Metta Sutta: a couplet at a time, on a card above the time */}
+        {showMettaSutta && (
+          <MettaSuttaCard
+            elapsed={timer.duration - timer.timeRemaining}
+            pace={state.mettaSuttaPace}
             isRunning={timer.isRunning}
           />
         )}
@@ -788,6 +801,12 @@ function MeditationTimerApp() {
                   pace={state.itipisoPace}
                   onToggle={actions.setItipisoMode}
                   onPaceChange={actions.setItipisoPace}
+                />
+                <MettaSuttaSetting
+                  enabled={state.mettaSuttaMode}
+                  pace={state.mettaSuttaPace}
+                  onToggle={actions.setMettaSuttaMode}
+                  onPaceChange={actions.setMettaSuttaPace}
                 />
               </section>
               )}
